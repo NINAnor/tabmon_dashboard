@@ -9,10 +9,11 @@ option = st.sidebar.selectbox("Choose Dashboard", ["Map Dashboard", "Site Dashbo
 
 parquet_file = "assets/index.parquet"
 site_csv = "assets/site_info.csv"
+picture_mapping = "assets/pictures_mapping.csv"
 
 if option == "Map Dashboard":
     show_map_dashboard(site_csv)
 elif option == "Audio Dashboard":
     show_audio_dashboard(parquet_file)
 elif option == "Site Dashboard":
-    show_site_dashboard(site_csv)
+    show_site_dashboard(site_csv, picture_mapping)

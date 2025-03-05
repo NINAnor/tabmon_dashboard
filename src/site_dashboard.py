@@ -1,17 +1,20 @@
 # site_dashboard.py
 import streamlit as st
 import pandas as pd
+from urllib.parse import quote
 from data_loader import load_site_info
+from urllib.parse import unquote
 
-def show_site_dashboard(site_csv):
+def show_site_dashboard(site_csv, mapping_csv):
     site_info = load_site_info(site_csv)
+    pictures_mapping = pd.read_csv(mapping_csv)
 
     sites = site_info['site'].unique().tolist()
     selected_site = st.sidebar.selectbox("Select Site", sorted(sites))
     
     site_data = site_info[site_info['site'] == selected_site]
     
-    st.title(f"Site Dashboard: {selected_site}")
+    st.title(f"Site: {selected_site}")
     
     record = site_data.iloc[0]
     
@@ -30,3 +33,18 @@ def show_site_dashboard(site_csv):
     st.markdown(f"**Email:** {record.get('Adresse e-mail', 'N/A')}")
     st.markdown(f"**Comment/Remark:** {record.get('Comment/remark', 'N/A')}")
     st.markdown(f"**Score:** {record.get('Score', 'N/A')}")
+
+    # Filter pictures mapping for images corresponding to this device.
+    full_device_id = record.get('deviceID', '')
+    short_device_id = full_device_id[-8:]
+    device_images = pictures_mapping[pictures_mapping['deviceID'] == short_device_id]
+    
+    if not device_images.empty:
+        st.write("### Device Images")
+        for idx, row in device_images.iterrows():
+            # Decode the URL once to remove double encoding.
+            decoded_url = unquote(row['url'])
+            print(decoded_url)
+            st.image(decoded_url, caption=f"{row['picture_type']} view", use_container_width=True)
+    else:
+        st.write("No images found for this device.")

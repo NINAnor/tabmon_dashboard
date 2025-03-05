@@ -9,7 +9,7 @@ def show_audio_dashboard(parquet_file):
 
     # Sidebar filtering for country and device
     st.sidebar.header("Filter by Country and Device")
-    countries = df['country'].unique().tolist()
+    countries = [c for c in df['country'].unique().tolist() if c is not None]
     selected_country = st.sidebar.selectbox("Select Country", sorted(countries))
     
     filtered_df = df[df['country'] == selected_country]
