@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 import duckdb
 import streamlit as st
+
 from utils.data_loader import load_site_info
 
 

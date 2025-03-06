@@ -2,6 +2,7 @@ from urllib.parse import unquote
 
 import pandas as pd
 import streamlit as st
+
 from utils.data_loader import load_site_info
 
 

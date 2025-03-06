@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
+
 from utils.data_loader import load_site_info
 
 
