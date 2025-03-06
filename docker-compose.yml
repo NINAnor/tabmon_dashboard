@@ -1,9 +1,7 @@
 services:
-  app:
+  dashboard:
     build:
       context: .
-    ports:
-      - 8501:8501
     volumes:
       - ./assets/:/app/assets:ro
     develop:
@@ -16,3 +14,10 @@ services:
             - .venv/
         - action: rebuild
           path: ./pyproject.toml
+  rclone:
+    image: rclone/rclone:1.69
+    command: serve http . --addr :8081
+  reverseproxy:
+    build: proxy
+    ports:
+      - 8081:80
