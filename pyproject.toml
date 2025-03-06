@@ -1,15 +1,39 @@
+[dependency-groups]
+dev = [
+  "deptry",
+  "pre-commit"
+]
+
 [project]
-name = "dashboard"
-version = "0.1.0"
-description = "Add your description here"
+authors = [
+  {name = "Benjamin Cretois", email = "benjamin.cretois@nina.no"}
+]
+# PEP 621 project metadata
+# See https://www.python.org/dev/peps/pep-0621/
+dependencies = [
+  "duckdb>=1.2.0",
+  "folium>=0.19.5",
+  "pandas>=2.2.3",
+  "pyyaml>=6.0.2",
+  "streamlit>=1.42.2",
+  "streamlit-folium>=0.24.0"
+]
+description = ""
+license = {text = "GPL-3.0+"}
+name = "tabmon_dashboard"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "duckdb>=1.2.0",
-    "folium>=0.19.5",
-    "pandas>=2.2.3",
-    "pyproject-toml>=0.1.0",
-    "pyyaml>=6.0.2",
-    "streamlit>=1.42.2",
-    "streamlit-folium>=0.24.0",
-]
+version = "0.1.0"
+
+[tool.creosote]
+deps-file = "pyproject.toml"
+paths = ["."]
+sections = ["project.dependencies"]
+venvs = [".venv"]
+
+[tool.ruff]
+fix = true
+
+[tool.ruff.lint]
+ignore = ["COM812"]
+select = ["E", "W", "I", "F", "UP", "S", "B", "A", "COM", "LOG", "PTH", "Q"]

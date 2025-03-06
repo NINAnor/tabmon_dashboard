@@ -1,11 +1,14 @@
 # app.py
 import streamlit as st
+
 from audio_dashboard import show_audio_dashboard
 from map_dashboard import show_map_dashboard
 from site_dashboard import show_site_dashboard
 
 st.sidebar.title("Dashboard Navigation")
-option = st.sidebar.selectbox("Choose Dashboard", ["Map Viz", "Site Metadata", "Audio Data"])
+option = st.sidebar.selectbox(
+    "Choose Dashboard", ["Map Viz", "Site Metadata", "Audio Data"]
+)
 
 parquet_file = "assets/index.parquet"
 site_csv = "assets/site_info.csv"

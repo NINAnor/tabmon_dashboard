@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier
+_commit: v0.1.1
+_src_path: gh:ninanor/python-template
+author_name: Benjamin Cretois
+debug: false
+default_branch_name: main
+docker: true
+email: benjamin.cretois@nina.no
+project_name: TABMON dashboard
+project_slug: tabmon_dashboard
+repo_name: tabmon_dashboard
+repo_org: ninanor
+template_type: python
+type_annotations: false
