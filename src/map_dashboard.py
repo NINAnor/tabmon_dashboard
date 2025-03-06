@@ -1,61 +1,118 @@
-# map_dashboard_folium.py
 import streamlit as st
 import folium
 import pandas as pd
+import duckdb
+import re
+import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
-from data_loader import load_site_info
+from datetime import datetime, timedelta
+from utils.data_loader import load_site_info
+from datetime import datetime, timedelta, timezone
 
-def show_map_dashboard(site_csv):
-    # Load and preprocess the site_info CSV.
+
+def parse_file_datetime(file_str):
+    if not isinstance(file_str, str):
+        return None
+    pattern = re.compile(
+        r"(?P<date>\d{4}-\d{2}-\d{2}T)"
+        r"(?P<hour>\d{2})_(?P<minute>\d{2})_(?P<second>\d{2}\.\d+)"
+        r"Z"
+    )
+    m = pattern.search(file_str)
+    if m:
+        iso_str = m.group("date") + m.group("hour") + ":" + m.group("minute") + ":" + m.group("second") + "Z"
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        return dt
+    return None
+
+def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
+    
+    # Load the full audio index using DuckDB.
+    df = duckdb.query(f"SELECT * FROM read_parquet('{parquet_file}')").to_df()
+    
+    # Parse the recording time from the 'file' column.
+    df['recorded_at'] = df['file'].apply(parse_file_datetime)
+    df = df.dropna(subset=['recorded_at'])
+    if df.empty:
+        return pd.DataFrame()
+    
+    # Normalize and extract the short device id (last 8 characters, lower-case, stripped).
+    df['short_device'] = df['device'].apply(lambda x: x[-8:].strip().lower())
+    
+    # Group by short device and get the maximum (latest) recorded_at time.
+    df_latest = df.groupby('short_device')['recorded_at'].max().reset_index()
+    
+    now = datetime.now(timezone.utc)
+    threshold = timedelta(days=offline_threshold_days)
+    
+    df_latest['status'] = df_latest['recorded_at'].apply(lambda t: "Offline" if now - t > threshold else "Online")
+    return df_latest
+
+@st.cache_data(show_spinner=False)
+def get_status_table(parquet_file, site_csv, offline_threshold_days=5):
+    """
+    Merge device status (from the audio index) with site info,
+    using normalized short device IDs.
+    """
+    df_status = get_device_status_by_recorded_at(parquet_file, offline_threshold_days)
+    if df_status.empty:
+        return pd.DataFrame()
+    
+    # Load site info.
     site_info = load_site_info(site_csv)
     
-    st.title("Interactive Device Locations Map")
-    st.write("Click on a marker to display the deviceID.")
+    # Normalize the short device id in site_info.
+    site_info['short_device'] = site_info['deviceID'].apply(
+        lambda x: x.split("_")[-1].strip().lower() if "_" in x else x[-8:].strip().lower()
+    )
+    
+    merged = pd.merge(site_info, df_status, on='short_device', how='left')
+    merged['status'] = merged['status'].fillna("Offline")
+    merged['last_recorded'] = merged['recorded_at']
 
-    # Create a Folium map centered at the mean coordinates.
+    now = datetime.now(timezone.utc)
+    merged['time_diff'] = (merged['last_recorded'] - now).abs()
+
+    return merged
+
+def show_map_dashboard(site_csv, parquet_file):
+    # Load site_info.
+    site_info = load_site_info(site_csv)
+    
+    df_status = get_status_table(parquet_file, site_csv, offline_threshold_days=16)
+
+    st.title("Interactive Device Locations Map")
+    
     m = folium.Map(
         location=[site_info["latitude"].mean(), site_info["longitude"].mean()], 
         zoom_start=6
     )
-    
-    # Initialize a MarkerCluster.
     marker_cluster = MarkerCluster().add_to(m)
     
-    # Add markers for each device to the cluster.
-    for idx, row in site_info.iterrows():
+    for idx, row in df_status.iterrows():
         popup_text = (
             f"<b>DeviceID:</b> {row['deviceID']}<br>"
             f"<b>Site:</b> {row['site']}<br>"
             f"<b>Country:</b> {row['country']}<br>"
         )
+        # Choose icon color based on status.
+        if row['status'] == "Online":
+            marker_icon = folium.Icon(color="green", icon="microphone", prefix="fa")
+        else:
+            marker_icon = folium.Icon(color="red", icon="microphone", prefix="fa")
+
         folium.Marker(
             location=[row["latitude"], row["longitude"]],
             popup=popup_text,
-            tooltip=row["deviceID"],
-            icon=folium.DivIcon(
-                html=f'<div style="font-size: 24px;">🎙️</div>'
-            )
+            tooltip=row["site"],
+            icon=marker_icon
         ).add_to(marker_cluster)
     
-    # Display the Folium map and capture click events.
-    map_data = st_folium(m, width=1200, height=800)
+    st_folium(m, width=1200, height=800)
     
-    # If the user clicked on the map, try to determine which device was clicked.
-    if map_data.get("last_clicked"):
-        clicked_lat = map_data["last_clicked"]["lat"]
-        clicked_lon = map_data["last_clicked"]["lng"]
-        st.write("Clicked coordinates:", clicked_lat, clicked_lon)
-        
-        # Use a tolerance (in decimal degrees) to match the clicked point to a device.
-        tolerance = 0.01  # adjust as needed (approx. 1km)
-        matched = site_info[
-            (site_info["latitude"].between(clicked_lat - tolerance, clicked_lat + tolerance)) &
-            (site_info["longitude"].between(clicked_lon - tolerance, clicked_lon + tolerance))
-        ]
-        if not matched.empty:
-            device_id = matched.iloc[0]["deviceID"]
-            st.write("Clicked device:", device_id)
-        else:
-            st.write("No device found near the clicked location.")
-    
+    st.write("### Device Status (no data for more than 3 days)")
+    st.dataframe(df_status[["site", "country", "status", "time_diff"]])
+
+
+

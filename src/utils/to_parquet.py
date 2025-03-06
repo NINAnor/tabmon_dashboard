@@ -24,4 +24,4 @@ if __name__ == "__main__":
     if 'ModTime' not in df.columns:
         df['ModTime'] = "N/A"
 
-    df.to_parquet('./assets/index.parquet', engine='pyarrow', index=False)
+    df.to_parquet('parquet_dataset', engine='pyarrow', partition_cols=['country', 'device'])

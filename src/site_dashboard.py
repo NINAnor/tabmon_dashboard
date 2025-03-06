@@ -1,25 +1,35 @@
-# site_dashboard.py
 import streamlit as st
 import pandas as pd
-from urllib.parse import quote
-from data_loader import load_site_info
 from urllib.parse import unquote
+from utils.data_loader import load_site_info  
 
 def show_site_dashboard(site_csv, mapping_csv):
     site_info = load_site_info(site_csv)
     pictures_mapping = pd.read_csv(mapping_csv)
 
-    sites = site_info['site'].unique().tolist()
+    # Choose a acountry.
+    countries = site_info['country'].dropna().unique().tolist()
+    selected_country = st.sidebar.selectbox("Select Country", sorted(countries))
+    
+    # Filter site_info by the selected country.
+    filtered_site_info = site_info[site_info['country'] == selected_country]
+    
+    # Let the user select a site from the filtered site_info.
+    sites = filtered_site_info['site'].dropna().unique().tolist()
     selected_site = st.sidebar.selectbox("Select Site", sorted(sites))
     
-    site_data = site_info[site_info['site'] == selected_site]
+    # Filter the site info to the selected site.
+    site_data = filtered_site_info[filtered_site_info['site'] == selected_site]
+    if site_data.empty:
+        st.error("No site data found for the selected site.")
+        return
+    record = site_data.iloc[0]
     
     st.title(f"Site: {selected_site}")
     
-    record = site_data.iloc[0]
-    
     st.write("### Site Details")
     st.markdown(f"**Country:** {record.get('country', 'N/A')}")
+    st.markdown(f"**Site:** {record.get('site', 'N/A')}")
     st.markdown(f"**Device ID:** {record.get('deviceID', 'N/A')}")
     st.markdown(f"**Coordinates:** Latitude: {record.get('latitude', 'N/A')}, Longitude: {record.get('longitude', 'N/A')}")
     st.markdown(f"**Date:** {record.get('2. Date', 'N/A')}")
@@ -33,18 +43,25 @@ def show_site_dashboard(site_csv, mapping_csv):
     st.markdown(f"**Email:** {record.get('Adresse e-mail', 'N/A')}")
     st.markdown(f"**Comment/Remark:** {record.get('Comment/remark', 'N/A')}")
     st.markdown(f"**Score:** {record.get('Score', 'N/A')}")
-
-    # Filter pictures mapping for images corresponding to this device.
+    
+    # Extract the short device ID. If the DeviceID is formatted like "NO_26_11d0c4a2",
+    # splitting on "_" and taking the last element gives "11d0c4a2".
     full_device_id = record.get('deviceID', '')
-    short_device_id = full_device_id[-8:]
+    if "_" in full_device_id:
+        short_device_id = full_device_id.split("_")[-1].strip()
+    else:
+        short_device_id = full_device_id[-8:]
+    st.write(f"**Short Device ID:** {short_device_id}")
+    
+    # Filter the pictures mapping for images corresponding to this device (using the short device id).
     device_images = pictures_mapping[pictures_mapping['deviceID'] == short_device_id]
     
     if not device_images.empty:
         st.write("### Device Images")
         for idx, row in device_images.iterrows():
-            # Decode the URL once to remove double encoding.
+            # Use unquote to decode the URL so that double encoding is removed.
             decoded_url = unquote(row['url'])
-            print(decoded_url)
             st.image(decoded_url, caption=f"{row['picture_type']} view", use_container_width=True)
     else:
         st.write("No images found for this device.")
+
