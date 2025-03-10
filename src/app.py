@@ -1,23 +1,25 @@
 import streamlit as st
+import environ
+import os
 
 from audio_dashboard import show_audio_dashboard
 from map_dashboard import show_map_dashboard
 from site_dashboard import show_site_dashboard
+
+env_path = os.environ.get("ENV_PATH")
+env = environ.Env(DEBUG=(bool, False))
+environ.Env.read_env(env_path)
 
 st.sidebar.title("Dashboard Navigation")
 option = st.sidebar.selectbox(
     "Choose Dashboard", ["Map Viz", "Site Metadata", "Audio Data"]
 )
 
-parquet_file = "http://rclone:8081/data/index.parquet"  # "assets/index.parquet"
-site_csv = "http://rclone:8081/data/site_info.csv"  # "assets/site_info.csv"
-picture_mapping = (
-    "http://rclone:8081/data/pictures_mapping.csv"  # "assets/pictures_mapping.csv"
-)
+BASE_DATA_DIR=env('BASE_DATA_DIR')
 
 if option == "Map Viz":
-    show_map_dashboard(site_csv, parquet_file)
+    show_map_dashboard(BASE_DATA_DIR) 
 elif option == "Audio Data":
-    show_audio_dashboard(parquet_file, site_csv)
+    show_audio_dashboard(BASE_DATA_DIR)
 elif option == "Site Metadata":
-    show_site_dashboard(site_csv, picture_mapping)
+    show_site_dashboard(BASE_DATA_DIR)

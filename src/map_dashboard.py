@@ -6,25 +6,22 @@ import pandas as pd
 import streamlit as st
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
+import os
 
 from utils.data_loader import load_site_info, parse_file_datetime
 
 
 def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
-    # Load the full audio index using DuckDB.
-    df = duckdb.execute("SELECT * FROM read_parquet(?)", (parquet_file,)).df()
 
-    # Parse the recording time from the 'file' column.
+    df = duckdb.execute("SELECT * FROM read_parquet(?)", (parquet_file,)).df()
     df["recorded_at"] = df["Name"].apply(parse_file_datetime)
     df = df.dropna(subset=["recorded_at"])
     if df.empty:
         return pd.DataFrame()
 
-    # Normalize and extract the short device id
-    # (last 8 characters, lower-case, stripped).
+    # extract the device ID (last 8 characters, lower-case, stripped).
     df["short_device"] = df["device"].apply(lambda x: x[-8:].strip().lower())
 
-    # Group by short device and get the maximum (latest) recorded_at time.
     df_latest = df.groupby("short_device")["recorded_at"].max().reset_index()
 
     now = datetime.now(timezone.utc)
@@ -38,10 +35,7 @@ def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
 
 @st.cache_data(show_spinner=False)
 def get_status_table(parquet_file, site_csv, offline_threshold_days=5):
-    """
-    Merge device status (from the audio index) with site info,
-    using normalized short device IDs.
-    """
+
     df_status = get_device_status_by_recorded_at(parquet_file, offline_threshold_days)
     if df_status.empty:
         return pd.DataFrame()
@@ -66,8 +60,11 @@ def get_status_table(parquet_file, site_csv, offline_threshold_days=5):
     return merged
 
 
-def show_map_dashboard(site_csv, parquet_file):
-    # Load site_info.
+def show_map_dashboard(BASE_DIR):
+
+    site_csv = os.path.join(BASE_DIR, "site_info.csv")
+    parquet_file = os.path.join(BASE_DIR, "index.parquet")
+
     site_info = load_site_info(site_csv)
 
     df_status = get_status_table(parquet_file, site_csv, offline_threshold_days=16)

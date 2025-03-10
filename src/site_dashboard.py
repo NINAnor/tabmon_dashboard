@@ -4,6 +4,7 @@ import duckdb
 import pandas as pd
 import requests
 import streamlit as st
+import os
 
 from utils.data_loader import load_site_info
 
@@ -17,8 +18,8 @@ def get_encoded_title(title):
         return title
 
 
-def generate_pictures_mapping(base_url):
-    index_parquet = duckdb.read_parquet("http://rclone:8081/data/index.parquet")  # noqa
+def generate_pictures_mapping(BASE_DIR):
+    index_parquet = duckdb.read_parquet(os.path.join(BASE_DIR, "index.parquet"))  # noqa
     query = (
         "SELECT * FROM 'index_parquet' WHERE MimeType IN ('image/jpeg', 'image/png')"
     )
@@ -27,19 +28,17 @@ def generate_pictures_mapping(base_url):
 
     data["deviceID"] = data["Name"].str.split("_").str[2]
     data["picture_type"] = data["Name"].str.split("_").str[3].str.split(".").str[0]
-    data["url"] = base_url + data["Path"]
+    data["url"] = BASE_DIR + data["Path"]
 
     return data
 
 
-def show_site_dashboard(site_csv, mapping_csv):
-    site_info = load_site_info(site_csv)
-    pictures_mapping = pd.read_csv(mapping_csv)
+def show_site_dashboard(BASE_DIR):
 
-    base_url = "/data/"
+    site_info = load_site_info(os.path.join(BASE_DIR, "site_info.csv"))
 
     try:
-        pictures_mapping = generate_pictures_mapping(base_url)
+        pictures_mapping = generate_pictures_mapping(BASE_DIR)
     except Exception as e:
         st.error(f"Failed to generate pictures mapping: {e}")
         pictures_mapping = pd.DataFrame()
@@ -100,14 +99,12 @@ def show_site_dashboard(site_csv, mapping_csv):
 
     device_images = pictures_mapping[pictures_mapping["deviceID"] == short_device_id]
 
-    st.write(pictures_mapping)
-
     if not device_images.empty:
         st.write("### Device Images")
         for _idx, row in device_images.iterrows():
             # Use unquote to decode the URL so that double encoding is removed.
             decoded_url = unquote(row["url"])
-            image = requests.get(f"http://rclone:8081/{decoded_url}", timeout=60)
+            image = requests.get(decoded_url, timeout=60)
             st.image(image=image.content, output_format=image.headers["content-type"])
 
     else:
