@@ -66,7 +66,7 @@ if __name__ == "__main__":
     with Path.open("./config.yaml") as f:
         cfg = yaml.safe_load(f, Loader=yaml.FullLoader)
 
-    s3_pictures_path = cfg["S3_PICTURES_PATH"]
+    s3_pictures_path = "nirds3:bencretois-ns8129k-proj-tabmon/pictures"
     output_csv = "./assets/pictures_mapping.csv"
-    base_url = cfg["PICTURES_URL"]
+    base_url = "http://localhost:8081/pictures"
     generate_pictures_mapping(s3_pictures_path, output_csv, base_url)

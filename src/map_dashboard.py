@@ -8,31 +8,7 @@ import streamlit as st
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 
-from utils.data_loader import load_site_info
-
-
-def parse_file_datetime(file_str):
-    if not isinstance(file_str, str):
-        return None
-    pattern = re.compile(
-        r"(?P<date>\d{4}-\d{2}-\d{2}T)"
-        r"(?P<hour>\d{2})_(?P<minute>\d{2})_(?P<second>\d{2}\.\d+)"
-        r"Z"
-    )
-    m = pattern.search(file_str)
-    if m:
-        iso_str = (
-            m.group("date")
-            + m.group("hour")
-            + ":"
-            + m.group("minute")
-            + ":"
-            + m.group("second")
-            + "Z"
-        )
-        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
-        return dt
-    return None
+from utils.data_loader import load_site_info, parse_file_datetime
 
 
 def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
@@ -40,7 +16,7 @@ def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
     df = duckdb.execute("SELECT * FROM read_parquet(?)", (parquet_file,)).df()
 
     # Parse the recording time from the 'file' column.
-    df["recorded_at"] = df["file"].apply(parse_file_datetime)
+    df["recorded_at"] = df["Name"].apply(parse_file_datetime)
     df = df.dropna(subset=["recorded_at"])
     if df.empty:
         return pd.DataFrame()

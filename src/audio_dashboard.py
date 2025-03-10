@@ -1,44 +1,15 @@
 import re
 from datetime import datetime, timezone
 
+import requests
+
 import duckdb
 import streamlit as st
 
-from utils.data_loader import load_site_info
-
-
-def parse_file_datetime(file_str):
-    """
-    Parse the datetime from a file name like:
-    "2024-05-24T15_24_05.762Z.mp3"
-    and return a tz-aware datetime object in UTC.
-    """
-    pattern = re.compile(
-        r"(?P<date>\d{4}-\d{2}-\d{2}T)"
-        r"(?P<hour>\d{2})_(?P<minute>\d{2})_(?P<second>\d{2}\.\d+)"
-        r"Z"
-    )
-    m = pattern.search(file_str)
-    if m:
-        iso_str = (
-            m.group("date")
-            + m.group("hour")
-            + ":"
-            + m.group("minute")
-            + ":"
-            + m.group("second")
-            + "Z"
-        )
-        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
-        return dt
-    return None
+from utils.data_loader import load_site_info, parse_file_datetime
 
 
 def get_filtered_audio_data_by_device(parquet_file, short_device_id):
-    """
-    Uses DuckDB to query the audio index Parquet file for rows whose 'device'
-    field (when taking the RIGHT 8 characters) matches the given short device id.
-    """
     query = """
         SELECT *
         FROM read_parquet(?)
@@ -49,14 +20,13 @@ def get_filtered_audio_data_by_device(parquet_file, short_device_id):
 
 
 def show_audio_dashboard(parquet_file, site_csv):
-    # Load site_info from CSV.
     site_info = load_site_info(site_csv)
 
-    # Let the user select a country.
+    # Select country
     countries = site_info["country"].unique().tolist()
     selected_country = st.sidebar.selectbox("Select Country", sorted(countries))
 
-    # Then filter site_info by the selected country and let the user select a site.
+    # Select site in a country
     filtered_sites = site_info[site_info["country"] == selected_country]
     sites = filtered_sites["site"].unique().tolist()
     selected_site = st.sidebar.selectbox("Select Site", sorted(sites))
@@ -74,7 +44,7 @@ def show_audio_dashboard(parquet_file, site_csv):
     st.markdown(f"**Site:** {record.get('site', 'N/A')}")
     st.markdown(f"**Device ID:** {record.get('deviceID', 'N/A')}")
 
-    # Extract a short device id from the deviceID.
+    # Extract short device id
     full_device_id = record.get("deviceID", "")
     if "_" in full_device_id:
         short_device_id = full_device_id.split("_")[-1].strip()
@@ -100,7 +70,7 @@ def show_audio_dashboard(parquet_file, site_csv):
     )
 
     # Parse the recording time from the file name.
-    df["recorded_at"] = df["file"].apply(parse_file_datetime)
+    df["recorded_at"] = df["Name"].apply(parse_file_datetime)
     df = df.dropna(subset=["recorded_at"])
     if df.empty:
         st.write("No valid recording timestamps could be determined.")
@@ -115,10 +85,13 @@ def show_audio_dashboard(parquet_file, site_csv):
 
     st.write(f"**Selected Time:** {selected_datetime}")
     st.write("### 10 Closest Files to Specified Date")
-    st.dataframe(closest_df[["file", "recorded_at", "time_diff", "Path"]])
+    st.dataframe(closest_df[["Name", "recorded_at", "time_diff", "Path"]])
 
     # Let the user select a file to play from the 10 closest files.
     selected_file = st.selectbox("Select a File to Play", closest_df["Path"].tolist())
     if selected_file:
-        file_url = f"http://localhost:8081/{selected_file}"
-        st.audio(file_url)
+        file_url = f"/data/{selected_file}"
+        st.write(f"[{file_url}]({file_url})")
+        audio = requests.get(f"http://rclone:8081/{file_url}")
+        st.audio(audio.content, audio.headers['content-type'])
+        #st.html(f'<audio src="{file_url}" controls />')
