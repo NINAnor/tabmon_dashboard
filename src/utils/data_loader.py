@@ -1,9 +1,7 @@
-import pandas as pd
-import datetime
 import re
-from datetime import datetime, timezone
-import json
-import subprocess
+from datetime import datetime
+
+import pandas as pd
 
 
 def load_index_parquet(parquet_file):
@@ -36,7 +34,7 @@ def extract_hierarchy(path):
 
 def load_site_info(csv_file, delimiter=","):
     site_info = pd.read_csv(csv_file, delimiter=delimiter)
-    # Rename columns 
+    # Rename columns
     site_info = site_info.rename(
         columns={
             "4. Latitude: decimal degree, WGS84 (ex: 64.65746)": "latitude",
@@ -61,6 +59,7 @@ def aggregate_file_counts(audio_df):
     )
     device_counts["short_device"] = device_counts["device"].str[-8:]
     return device_counts
+
 
 def parse_file_datetime(file_str):
     """
@@ -87,4 +86,3 @@ def parse_file_datetime(file_str):
         dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
         return dt
     return None
-

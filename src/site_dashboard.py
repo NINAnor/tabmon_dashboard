@@ -1,16 +1,12 @@
-from urllib.parse import unquote
-
-import pandas as pd
-import streamlit as st
-import re
-import subprocess
 from urllib.parse import quote, unquote
-import json
-from pathlib import Path
+
 import duckdb
+import pandas as pd
 import requests
+import streamlit as st
 
 from utils.data_loader import load_site_info
+
 
 def get_encoded_title(title):
     if " " in title:
@@ -20,26 +16,28 @@ def get_encoded_title(title):
     else:
         return title
 
-def generate_pictures_mapping(base_url):
 
-    index_parquet = duckdb.read_parquet("http://rclone:8081/data/index.parquet")
-    query = "SELECT * FROM 'index_parquet' WHERE MimeType IN ('image/jpeg', 'image/png')"
+def generate_pictures_mapping(base_url):
+    index_parquet = duckdb.read_parquet("http://rclone:8081/data/index.parquet")  # noqa
+    query = (
+        "SELECT * FROM 'index_parquet' WHERE MimeType IN ('image/jpeg', 'image/png')"
+    )
     data_q = duckdb.sql(query)
     data = data_q.fetchdf()
-    records = []
 
-    data['deviceID'] = data["Name"].str.split("_").str[2]
-    data['picture_type'] = data["Name"].str.split("_").str[3].str.split(".").str[0]
-    data['url'] = base_url + data["Path"]
+    data["deviceID"] = data["Name"].str.split("_").str[2]
+    data["picture_type"] = data["Name"].str.split("_").str[3].str.split(".").str[0]
+    data["url"] = base_url + data["Path"]
 
     return data
+
 
 def show_site_dashboard(site_csv, mapping_csv):
     site_info = load_site_info(site_csv)
     pictures_mapping = pd.read_csv(mapping_csv)
 
     base_url = "/data/"
-    
+
     try:
         pictures_mapping = generate_pictures_mapping(base_url)
     except Exception as e:
@@ -109,12 +107,8 @@ def show_site_dashboard(site_csv, mapping_csv):
         for _idx, row in device_images.iterrows():
             # Use unquote to decode the URL so that double encoding is removed.
             decoded_url = unquote(row["url"])
-            image = requests.get(f"http://rclone:8081/{decoded_url}")
-            st.image(image = image.content, output_format=image.headers['content-type'])
-            #st.image(
-            #    decoded_url,
-            #    caption=f"{row['picture_type']} view",
-            #    use_container_width=True,
-            #)
+            image = requests.get(f"http://rclone:8081/{decoded_url}", timeout=60)
+            st.image(image=image.content, output_format=image.headers["content-type"])
+
     else:
         st.write("No images found for this device.")

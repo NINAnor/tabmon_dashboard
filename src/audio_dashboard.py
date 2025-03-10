@@ -1,9 +1,7 @@
-import re
 from datetime import datetime, timezone
 
-import requests
-
 import duckdb
+import requests
 import streamlit as st
 
 from utils.data_loader import load_site_info, parse_file_datetime
@@ -92,6 +90,6 @@ def show_audio_dashboard(parquet_file, site_csv):
     if selected_file:
         file_url = f"/data/{selected_file}"
         st.write(f"[{file_url}]({file_url})")
-        audio = requests.get(f"http://rclone:8081/{file_url}")
-        st.audio(audio.content, audio.headers['content-type'])
-        #st.html(f'<audio src="{file_url}" controls />')
+        audio = requests.get(f"http://rclone:8081/{file_url}", timeout=60)
+        st.audio(audio.content, audio.headers["content-type"])
+        # st.html(f'<audio src="{file_url}" controls />')
