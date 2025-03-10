@@ -1,23 +1,15 @@
 services:
   dashboard:
-    build:
-      context: .
-    volumes:
-      - ./assets/:/app/assets:ro
-    develop:
-      watch:
-        # Sync the working directory with the `/app` directory in the container
-        - action: sync
-          path: .
-          target: /app
-          ignore:
-            - .venv/
-        - action: rebuild
-          path: ./pyproject.toml
+    image: ghcr.io/ninanor/dashboard-dashboard:main
+    env_file: "stack.env"
   rclone:
     image: rclone/rclone:1.69
-    command: serve http . --addr :8081
+    command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/
+    volumes:
+      - /home/benjamin.cretois/.config/rclone/:/root/.config/rclone/
+    environment:
+      - RCLONE_CONFIG=/root/.config/rclone/rclone.conf #for portainer /run/secrets/rclone.conf
   reverseproxy:
-    build: proxy
+    image: ghcr.io/ninanor/dashboard-proxy:main
     ports:
-      - 8081:80
+      - 8085:80
