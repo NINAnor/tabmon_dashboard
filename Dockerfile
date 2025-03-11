@@ -12,5 +12,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project
 
 ADD src/ /app/src
+ADD .streamlit/ /app/.streamlit
 
 CMD ["uv", "run", "streamlit", "run", "--server.headless", "true", "--server.address", "0.0.0.0", "src/app.py"]
