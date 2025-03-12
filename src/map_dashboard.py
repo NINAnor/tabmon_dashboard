@@ -10,12 +10,8 @@ from streamlit_folium import st_folium
 from utils.data_loader import load_site_info, parse_file_datetime
 
 
-def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=3):
-    query = """
-        SELECT *
-        FROM read_parquet(?)
-    """
-    df = duckdb.execute(query, (parquet_file,)).df()
+def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
+    df = duckdb.execute("SELECT * FROM read_parquet(?)", (parquet_file,)).df()
     df["recorded_at"] = df["Name"].apply(parse_file_datetime)
     df = df.dropna(subset=["recorded_at"])
     if df.empty:
