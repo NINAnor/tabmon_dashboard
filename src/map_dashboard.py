@@ -7,6 +7,7 @@ import streamlit as st
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 import os
+from urllib.parse import urljoin
 
 from utils.data_loader import load_site_info, parse_file_datetime
 
@@ -60,10 +61,7 @@ def get_status_table(parquet_file, site_csv, offline_threshold_days=5):
     return merged
 
 
-def show_map_dashboard(BASE_DIR):
-
-    site_csv = os.path.join(BASE_DIR, "site_info.csv")
-    parquet_file = os.path.join(BASE_DIR, "index.parquet")
+def show_map_dashboard(site_csv, parquet_file):
 
     site_info = load_site_info(site_csv)
 

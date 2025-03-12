@@ -18,9 +18,9 @@ def get_filtered_audio_data_by_device(parquet_file, short_device_id):
     return df
 
 
-def show_audio_dashboard(BASE_DIR):
-    site_info = load_site_info(os.path.join(BASE_DIR, "site_info.csv"))
-    parquet_file = os.path.join(BASE_DIR, "index.parquet")
+def show_audio_dashboard(site_csv, parquet_file):
+
+    site_info = load_site_info(site_csv)
 
     #######################
     # SELECTION DASHBOARD #

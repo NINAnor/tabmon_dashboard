@@ -1,6 +1,8 @@
 services:
   dashboard:
-    image: ghcr.io/ninanor/dashboard-dashboard:main
+    #image: ghcr.io/ninanor/dashboard-dashboard:main
+    build:
+      context: ./
     env_file: "stack.env"
   rclone:
     image: rclone/rclone:1.69

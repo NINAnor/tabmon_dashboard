@@ -18,8 +18,8 @@ def get_encoded_title(title):
         return title
 
 
-def generate_pictures_mapping(BASE_DIR):
-    index_parquet = duckdb.read_parquet(os.path.join(BASE_DIR, "index.parquet"))  # noqa
+def generate_pictures_mapping(parquet_file, BASE_DIR):
+    index_parquet = duckdb.read_parquet(parquet_file)  # noqa
     query = (
         "SELECT * FROM 'index_parquet' WHERE MimeType IN ('image/jpeg', 'image/png')"
     )
@@ -33,12 +33,12 @@ def generate_pictures_mapping(BASE_DIR):
     return data
 
 
-def show_site_dashboard(BASE_DIR):
+def show_site_dashboard(site_csv, parquet_file, BASE_DIR):
 
-    site_info = load_site_info(os.path.join(BASE_DIR, "site_info.csv"))
+    site_info = load_site_info(site_csv)
 
     try:
-        pictures_mapping = generate_pictures_mapping(BASE_DIR)
+        pictures_mapping = generate_pictures_mapping(parquet_file, BASE_DIR)
     except Exception as e:
         st.error(f"Failed to generate pictures mapping: {e}")
         pictures_mapping = pd.DataFrame()
