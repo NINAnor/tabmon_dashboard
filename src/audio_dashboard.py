@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 import duckdb
 import requests
 import streamlit as st
-import os
 
 from utils.data_loader import load_site_info, parse_file_datetime
 
@@ -19,7 +18,6 @@ def get_filtered_audio_data_by_device(parquet_file, short_device_id):
 
 
 def show_audio_dashboard(site_csv, parquet_file):
-
     site_info = load_site_info(site_csv)
 
     #######################

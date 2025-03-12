@@ -1,7 +1,6 @@
 [theme]
-
-primaryColor="#990011"
-backgroundColor="#FCF6F5"  # background of the whole app
-secondaryBackgroundColor="#e0e0ef" # side dashboard 
-textColor="#262730"
-font="sans serif"
+backgroundColor = "#FCF6F5"  # background of the whole app
+font = "sans serif"
+primaryColor = "#990011"
+secondaryBackgroundColor = "#e0e0ef"  # side dashboard
+textColor = "#262730"

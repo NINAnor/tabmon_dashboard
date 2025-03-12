@@ -19,4 +19,3 @@ docker compose up
 ## Acknowledgment
 
 The dashboard has been developped by [Benjamin Cretois](mailto:benjamin.cretois@nina.no) and [Francesco Frassinelli](mailto:francesco.frassinelli@nina.no)
-

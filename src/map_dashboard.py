@@ -6,14 +6,11 @@ import pandas as pd
 import streamlit as st
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
-import os
-from urllib.parse import urljoin
 
 from utils.data_loader import load_site_info, parse_file_datetime
 
 
 def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
-
     df = duckdb.execute("SELECT * FROM read_parquet(?)", (parquet_file,)).df()
     df["recorded_at"] = df["Name"].apply(parse_file_datetime)
     df = df.dropna(subset=["recorded_at"])
@@ -36,7 +33,6 @@ def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
 
 @st.cache_data(show_spinner=False)
 def get_status_table(parquet_file, site_csv, offline_threshold_days=5):
-
     df_status = get_device_status_by_recorded_at(parquet_file, offline_threshold_days)
     if df_status.empty:
         return pd.DataFrame()
@@ -62,7 +58,6 @@ def get_status_table(parquet_file, site_csv, offline_threshold_days=5):
 
 
 def show_map_dashboard(site_csv, parquet_file):
-
     site_info = load_site_info(site_csv)
 
     df_status = get_status_table(parquet_file, site_csv, offline_threshold_days=16)

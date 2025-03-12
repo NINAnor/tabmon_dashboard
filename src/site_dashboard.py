@@ -4,7 +4,6 @@ import duckdb
 import pandas as pd
 import requests
 import streamlit as st
-import os
 
 from utils.data_loader import load_site_info
 
@@ -34,7 +33,6 @@ def generate_pictures_mapping(parquet_file, BASE_DIR):
 
 
 def show_site_dashboard(site_csv, parquet_file, BASE_DIR):
-
     site_info = load_site_info(site_csv)
 
     try:
