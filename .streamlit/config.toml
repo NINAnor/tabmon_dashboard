@@ -1,5 +1,5 @@
 [theme]
-backgroundColor = "#FCF6F5"  # background of the whole app
+backgroundColor = "#FFD6A5"  # background of the whole app
 font = "sans serif"
 primaryColor = "#990011"
 secondaryBackgroundColor = "#e0e0ef"  # side dashboard

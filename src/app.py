@@ -17,7 +17,7 @@ option = st.sidebar.selectbox(
     "Choose Dashboard", ["Map Viz", "Site Metadata", "Audio Data"]
 )
 
-BASE_DIR = env("BASE_DATA_DIR")
+BASE_DIR = "http://rclone:8081/data/" #env("BASE_DATA_DIR")
 site_csv = urljoin(BASE_DIR, "site_info.csv")
 parquet_file = urljoin(BASE_DIR, "index.parquet")
 
