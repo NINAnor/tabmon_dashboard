@@ -4,6 +4,7 @@ import duckdb
 import pandas as pd
 import requests
 import streamlit as st
+from requests.auth import HTTPBasicAuth
 
 from utils.data_loader import load_site_info
 
@@ -32,7 +33,7 @@ def generate_pictures_mapping(parquet_file, BASE_DIR):
     return data
 
 
-def show_site_dashboard(site_csv, parquet_file, BASE_DIR):
+def show_site_dashboard(site_csv, parquet_file, BASE_DIR, USER, PASSWORD):
     site_info = load_site_info(site_csv)
 
     try:
@@ -102,7 +103,9 @@ def show_site_dashboard(site_csv, parquet_file, BASE_DIR):
         for _idx, row in device_images.iterrows():
             # Use unquote to decode the URL so that double encoding is removed.
             decoded_url = unquote(row["url"])
-            image = requests.get(decoded_url, timeout=60)
+            image = requests.get(
+                decoded_url, timeout=60, auth=HTTPBasicAuth(USER, PASSWORD)
+            )
             st.image(image=image.content, output_format=image.headers["content-type"])
 
     else:

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import duckdb
 import requests
 import streamlit as st
+from requests.auth import HTTPBasicAuth
 
 from utils.data_loader import load_site_info, parse_file_datetime
 
@@ -17,7 +18,7 @@ def get_filtered_audio_data_by_device(parquet_file, short_device_id):
     return df
 
 
-def show_audio_dashboard(site_csv, parquet_file):
+def show_audio_dashboard(site_csv, parquet_file, USER, PASSWORD):
     site_info = load_site_info(site_csv)
 
     #######################
@@ -91,6 +92,10 @@ def show_audio_dashboard(site_csv, parquet_file):
     selected_file = st.selectbox("Select a File to Play", closest_df["Path"].tolist())
     if selected_file:
         file_url = f"/data/{selected_file}"
-        audio = requests.get(f"http://rclone:8081/{file_url}", timeout=60)
+        audio = requests.get(
+            f"http://rclone:8081/{file_url}",
+            timeout=60,
+            auth=HTTPBasicAuth(USER, PASSWORD),
+        )
         st.audio(audio.content, audio.headers["content-type"])
         # OTHER WORKAROUND: st.html(f'<audio src="{file_url}" controls />')

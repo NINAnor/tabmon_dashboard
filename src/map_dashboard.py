@@ -11,7 +11,6 @@ from utils.data_loader import load_site_info, parse_file_datetime
 
 
 def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=3):
-
     query = """
         SELECT *
         FROM read_parquet(?)
