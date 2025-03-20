@@ -94,7 +94,7 @@ def show_audio_dashboard(site_csv, parquet_file, USER, PASSWORD):
         file_url = f"/data/{selected_file}"
         audio = requests.get(
             f"http://rclone:8081/{file_url}",
-            timeout=60,
+            timeout=180,
             auth=HTTPBasicAuth(USER, PASSWORD),
         )
         st.audio(audio.content, audio.headers["content-type"])

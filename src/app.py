@@ -42,7 +42,7 @@ def fetch_parquet(url, username, password):
         return tmp.name
 
 
-BASE_DIR = os.environ.get("BASE_DATA_DIR")
+BASE_DIR = "http://rclone:8081/data/" #os.environ.get("BASE_DATA_DIR")
 USER = os.environ.get("USER")
 PASSWORD = os.environ.get("PASSWORD")
 

@@ -104,7 +104,7 @@ def show_site_dashboard(site_csv, parquet_file, BASE_DIR, USER, PASSWORD):
             # Use unquote to decode the URL so that double encoding is removed.
             decoded_url = unquote(row["url"])
             image = requests.get(
-                decoded_url, timeout=60, auth=HTTPBasicAuth(USER, PASSWORD)
+                decoded_url, timeout=180, auth=HTTPBasicAuth(USER, PASSWORD)
             )
             st.image(image=image.content, output_format=image.headers["content-type"])
 
