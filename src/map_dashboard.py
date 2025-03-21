@@ -35,7 +35,7 @@ def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=3):
     return df_latest
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(ttl=3600, show_spinner=False)
 def get_status_table(parquet_file, site_csv, offline_threshold_days=3):
     df_status = get_device_status_by_recorded_at(parquet_file, offline_threshold_days)
     if df_status.empty:
@@ -64,7 +64,7 @@ def get_status_table(parquet_file, site_csv, offline_threshold_days=3):
 def show_map_dashboard(site_csv, parquet_file):
     site_info = load_site_info(site_csv)
 
-    df_status = get_status_table(parquet_file, site_csv, offline_threshold_days=16)
+    df_status = get_status_table(parquet_file, site_csv, offline_threshold_days=3)
 
     st.title("Interactive Device Locations Map")
 

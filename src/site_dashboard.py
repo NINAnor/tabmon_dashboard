@@ -2,9 +2,7 @@ from urllib.parse import quote, unquote
 
 import duckdb
 import pandas as pd
-import requests
 import streamlit as st
-from requests.auth import HTTPBasicAuth
 
 from utils.data_loader import load_site_info
 
@@ -28,12 +26,12 @@ def generate_pictures_mapping(parquet_file, BASE_DIR):
 
     data["deviceID"] = data["Name"].str.split("_").str[2]
     data["picture_type"] = data["Name"].str.split("_").str[3].str.split(".").str[0]
-    data["url"] = BASE_DIR + data["Path"]
+    data["url"] = "/data/" + data["Path"]
 
     return data
 
 
-def show_site_dashboard(site_csv, parquet_file, BASE_DIR, USER, PASSWORD):
+def show_site_dashboard(site_csv, parquet_file, BASE_DIR):
     site_info = load_site_info(site_csv)
 
     try:
@@ -103,10 +101,12 @@ def show_site_dashboard(site_csv, parquet_file, BASE_DIR, USER, PASSWORD):
         for _idx, row in device_images.iterrows():
             # Use unquote to decode the URL so that double encoding is removed.
             decoded_url = unquote(row["url"])
-            image = requests.get(
-                decoded_url, timeout=180, auth=HTTPBasicAuth(USER, PASSWORD)
+            #image = decoded_url
+            # st.image(image=image)
+            st.html(
+                f"<img style='height: 100%; width: 100%; object-fit: contain' "
+                f"src='{decoded_url}' controls />"
             )
-            st.image(image=image.content, output_format=image.headers["content-type"])
 
     else:
         st.write("No images found for this device.")

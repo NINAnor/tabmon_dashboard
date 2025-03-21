@@ -5,19 +5,20 @@ services:
     build:
       context: .
     #image: ghcr.io/ninanor/dashboard-dashboard:main
-    env_file: stack.env
   reverseproxy:
+    build: proxy
     image: ghcr.io/ninanor/dashboard-proxy:main
+    secrets:
+      - htpasswd
     ports:
       - 8085:80
   rclone:
     image: rclone/rclone:1.69
-    command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/ --htpasswd /run/secrets/htpasswd
+    command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/
     environment:
       RCLONE_CONFIG: /run/secrets/tabmon_rclone
     secrets:
       - tabmon_rclone
-      - htpasswd
 
 secrets:
   tabmon_rclone:
