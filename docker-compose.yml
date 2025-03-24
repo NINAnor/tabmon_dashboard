@@ -22,6 +22,6 @@ services:
 
 secrets:
   tabmon_rclone:
-    file: ~/.config/rclone/rclone.conf # external: true
+    file: ~/.config/rclone/rclone.conf
   htpasswd:
     file: ~/htpasswd.txt
