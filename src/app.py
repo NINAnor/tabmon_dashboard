@@ -12,6 +12,8 @@ from site_dashboard import show_site_dashboard
 
 # env = environ.Env(DEBUG=(bool, False))
 
+st.set_page_config(layout="wide")
+
 st.sidebar.title("Dashboard Navigation")
 option = st.sidebar.selectbox(
     "Choose Dashboard", ["Map Viz", "Site Metadata", "Audio Data"]
