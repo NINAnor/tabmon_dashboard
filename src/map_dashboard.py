@@ -32,7 +32,7 @@ def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
     return df_latest
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def get_parquet_site_merged(index_parquet, site):
+def get_parquet_site_merged(index_parquet, site, time_granularity="Day"):
 
     index_parquet = duckdb.read_parquet(index_parquet)  
 
@@ -53,7 +53,7 @@ def get_parquet_site_merged(index_parquet, site):
 
     site['short_device_id'] = site["9. DeploymentID: countryCode_deploymentNumber_DeviceID (e.g. NO_1_ 7ft35sm)"].str.split('_').str[-1]
     site = site.drop_duplicates("short_device_id")
-    print(site)
+
     df_merged = pd.merge(
         data,
         site,
@@ -72,7 +72,29 @@ def get_parquet_site_merged(index_parquet, site):
         "5. Longitude: decimal degree, WGS84 (ex: 5.37463)": "longitude"
     })
 
-    return df_merged
+    df_merged = df_merged[df_merged['datetime'] >= pd.Timestamp('2024-04-01')]
+
+    if time_granularity == "Day":
+        df_merged['time_period'] = df_merged['datetime'].dt.to_period('D').astype(str)
+        period_title = "Day"
+    elif time_granularity == "Week":
+        df_merged['time_period'] = df_merged['datetime'].dt.to_period('W').astype(str)
+        period_title = "Week"
+    else:
+        df_merged['time_period'] = df_merged['datetime'].dt.to_period('M').astype(str)
+        period_title = "Month"
+
+    matrix_data = pd.crosstab(
+        index=[df_merged['country_y'], df_merged['device']],
+        columns=df_merged['time_period'],
+        values=df_merged['datetime'],
+        aggfunc='count'
+    ).fillna(0)
+
+    matrix_data = matrix_data.sort_index()
+
+
+    return matrix_data
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -104,7 +126,6 @@ def get_status_table(parquet_file, site_csv, offline_threshold_days=3):
 def show_map_dashboard(site_csv, parquet_file):
     site_info = load_site_info(site_csv)
     df_status = get_status_table(parquet_file, site_csv, offline_threshold_days=3)
-    df_merged = get_parquet_site_merged(parquet_file, site_info)
 
     st.title("Interactive Device Locations Map")
 
@@ -141,26 +162,7 @@ def show_map_dashboard(site_csv, parquet_file):
         horizontal=True
     )
 
-    df_merged = df_merged[df_merged['datetime'] >= pd.Timestamp('2024-04-01')]
-
-    if time_granularity == "Day":
-        df_merged['time_period'] = df_merged['datetime'].dt.to_period('D').astype(str)
-        period_title = "Day"
-    elif time_granularity == "Week":
-        df_merged['time_period'] = df_merged['datetime'].dt.to_period('W').astype(str)
-        period_title = "Week"
-    else:
-        df_merged['time_period'] = df_merged['datetime'].dt.to_period('M').astype(str)
-        period_title = "Month"
-
-    matrix_data = pd.crosstab(
-        index=[df_merged['country_y'], df_merged['device']],
-        columns=df_merged['time_period'],
-        values=df_merged['datetime'],
-        aggfunc='count'
-    ).fillna(0)
-
-    matrix_data = matrix_data.sort_index()
+    matrix_data = get_parquet_site_merged(parquet_file, site_info, time_granularity)
 
     ytick_labels = []
     prev_country = None
@@ -188,18 +190,16 @@ def show_map_dashboard(site_csv, parquet_file):
     # Update layout
     fig.update_layout(
         title=' ',
-        xaxis_title='{period_title} - Week',
+        xaxis_title=f'Time',
         yaxis_title='Country - Device',
-        height=max(500, len(matrix_data) * 20),  # Dynamic height based on number of rows
+        height=max(500, len(matrix_data) * 20),  
         width=1000,
         yaxis={'side': 'left', 'automargin': True},
         xaxis={'side': 'bottom', 'automargin': True},
-        margin=dict(l=150)  # Add left margin for long labels
+        margin=dict(l=150) 
     )
 
-    st.write("### Number of audio recordings per device per {time_period} - Change time granularity in the sidebar!")
+    st.write("### Number of audio recordings per device per day / week or month - Change time granularity in the sidebar!")
     st.plotly_chart(fig)
 
-    #st.write("### Device Status (no data for more than 3 days)")
-    #st.dataframe(df_status[["site", "country", "status", "time_diff"]])
             
