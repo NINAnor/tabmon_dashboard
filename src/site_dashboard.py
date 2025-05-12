@@ -101,7 +101,7 @@ def show_site_dashboard(site_csv, parquet_file, BASE_DIR):
         for _idx, row in device_images.iterrows():
             # Use unquote to decode the URL so that double encoding is removed.
             decoded_url = unquote(row["url"])
-            #image = decoded_url
+            # image = decoded_url
             # st.image(image=image)
             st.html(
                 f"<img style='height: 100%; width: 100%; object-fit: contain' "
