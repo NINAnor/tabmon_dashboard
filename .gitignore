@@ -178,3 +178,4 @@ pyrightconfig.json
 .duckdb
 stack.env
 assets/
+analysis/
