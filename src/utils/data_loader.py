@@ -34,22 +34,10 @@ def extract_hierarchy(path):
 
 def load_site_info(csv_file, delimiter=","):
     site_info = pd.read_csv(csv_file, delimiter=delimiter)
-    # Rename columns
-    site_info = site_info.rename(
-        columns={
-            "4. Latitude: decimal degree, WGS84 (ex: 64.65746)": "latitude",
-            "5. Longitude: decimal degree, WGS84 (ex: 5.37463)": "longitude",
-            (
-                "8. DeviceID: last digits of the serial number "
-                "(ex: RPiID-100000007ft35sm --> 7ft35sm)"
-            ): "deviceID",
-            "1. Country": "country",
-            "Site": "site",
-        }
-    )
+
     # Convert coordinates to numeric values
-    site_info["latitude"] = pd.to_numeric(site_info["latitude"], errors="coerce")
-    site_info["longitude"] = pd.to_numeric(site_info["longitude"], errors="coerce")
+    site_info["Latitude"] = pd.to_numeric(site_info["Latitude"], errors="coerce")
+    site_info["Longitude"] = pd.to_numeric(site_info["Longitude"], errors="coerce")
     return site_info
 
 
