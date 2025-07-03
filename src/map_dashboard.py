@@ -43,7 +43,6 @@ def get_parquet_site_merged(index_parquet, site, time_granularity="Day"):
             TRY_STRPTIME(Name, '%Y-%m-%dT%H_%M_%SZ.mp3'),
             STRPTIME(Name, '%Y-%m-%dT%H_%MZ.mp3'),
         ) AS datetime,
-        REGEXP_EXTRACT(device, '10000000(.+)$', 1) AS short_device_id
     FROM index_parquet
     WHERE MimeType = 'audio/mpeg'
     """
@@ -51,21 +50,21 @@ def get_parquet_site_merged(index_parquet, site, time_granularity="Day"):
     data_q = duckdb.sql(query)
     data = data_q.fetchdf()
 
-    site["short_device_id"] = (
-        site[
-        "9. DeploymentID: countryCode_deploymentNumber_DeviceID (e.g. NO_1_ 7ft35sm)"
-        ]
-        .str.split("_")
-        .str[-1]
+    # Parse the device ID
+    data["short_device_id"] = (
+        data["Path"]
+            .str.split("/")         
+            .str[-3]              
+            .str.split("-")        
+            .str[-1]                 
+            .str[-8:]               
     )
-    site = site.drop_duplicates("short_device_id")
-    
 
     ####################################
     ##### CLEAN UP THE WHITE SPACES ####
     ####################################
     data['clean_id'] = data['short_device_id'].str.strip()
-    site['clean_id'] = site['short_device_id'].str.strip()
+    site['clean_id'] = site['DeviceID'].str.strip()
 
     df_merged = pd.merge(
         data, site, left_on="clean_id", right_on="clean_id", how="left"
@@ -88,21 +87,15 @@ def get_parquet_site_merged(index_parquet, site, time_granularity="Day"):
     }
 
     for code, country_name in country_map.items():
-        df_merged.loc[df_merged['country_x'] == code, '1. Country'] = country_name
+        df_merged.loc[df_merged['country'] == code, 'Country'] = country_name
 
 
     #####################
     # SOME MORE CLEANUP #
     #####################
-    df_merged = df_merged.rename(
-        columns={
-            "4. Latitude: decimal degree, WGS84 (ex: 64.65746)": "latitude",
-            "5. Longitude: decimal degree, WGS84 (ex: 5.37463)": "longitude",
-        }
-    )
-
-    df_merged = df_merged[df_merged["datetime"] >= pd.Timestamp("2024-04-01")]
-
+    # keep everything *from* 1 Jan 2025 (inclusive)
+    start = pd.Timestamp('2025-01-01', tz=df_merged["datetime"].dt.tz)
+    df_merged = df_merged[df_merged["datetime"] >= start].copy()
 
     ##########################################################
     ##### ADD TIME GRANULARITY FOR SUMMARIZING THE DATA ######
@@ -122,7 +115,7 @@ def get_parquet_site_merged(index_parquet, site, time_granularity="Day"):
     ##### DATA IN MATRIX FORM #####
     ###############################
     matrix_data = pd.crosstab(
-        index=[df_merged["country_y"], df_merged["device"]],
+        index=[df_merged["Country"], df_merged["device"]],
         columns=df_merged["time_period"],
         values=df_merged["datetime"],
         aggfunc="count",
@@ -134,18 +127,13 @@ def get_parquet_site_merged(index_parquet, site, time_granularity="Day"):
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def get_status_table(parquet_file, site_csv, offline_threshold_days=3):
+def get_status_table(parquet_file, site_info, offline_threshold_days=3):
     df_status = get_device_status_by_recorded_at(parquet_file, offline_threshold_days)
     if df_status.empty:
         return pd.DataFrame()
 
-    site_info = load_site_info(site_csv)
-
-    site_info["short_device"] = site_info["deviceID"].apply(
-        lambda x: x.split("_")[-1].strip().lower()
-        if "_" in x
-        else x[-8:].strip().lower()
-    )
+    site_info["short_device"] = site_info["DeploymentID"].apply(
+        lambda x: x.split("_")[-1].strip().lower())
 
     merged = pd.merge(site_info, df_status, on="short_device", how="left")
     merged["status"] = merged["status"].fillna("Offline")
@@ -159,7 +147,8 @@ def get_status_table(parquet_file, site_csv, offline_threshold_days=3):
 
 def show_map_dashboard(site_csv, parquet_file):
     site_info = load_site_info(site_csv)
-    df_status = get_status_table(parquet_file, site_csv, offline_threshold_days=3)
+    site_info = site_info[site_info["Active"] == True]
+    df_status = get_status_table(parquet_file, site_info, offline_threshold_days=3)
 
     ################################################
     ###### PLOT THE MAP WITH DEVICE LOCATIONS ######
@@ -167,16 +156,17 @@ def show_map_dashboard(site_csv, parquet_file):
     st.title("Interactive Device Locations Map")
 
     m = folium.Map(
-        location=[site_info["latitude"].mean(), site_info["longitude"].mean()],
+        location=[site_info["Latitude"].mean(), site_info["Longitude"].mean()],
         zoom_start=6,
     )
     marker_cluster = MarkerCluster().add_to(m)
 
     for _idx, row in df_status.iterrows():
+        loc_txt = row['Cluster'] + ": " + row['Site']
         popup_text = (
-            f"<b>DeviceID:</b> {row['deviceID']}<br>"
-            f"<b>Site:</b> {row['site']}<br>"
-            f"<b>Country:</b> {row['country']}<br>"
+            f"<b>DeviceID:</b> {row['DeviceID']}<br>"
+            f"<b>Site:</b> {loc_txt}<br>"
+            f"<b>Country:</b> {row['Country']}<br>"
         )
         # Choose icon color based on status.
         if row["status"] == "Online":
@@ -185,9 +175,9 @@ def show_map_dashboard(site_csv, parquet_file):
             marker_icon = folium.Icon(color="red", icon="microphone", prefix="fa")
 
         folium.Marker(
-            location=[row["latitude"], row["longitude"]],
+            location=[row["Latitude"], row["Longitude"]],
             popup=popup_text,
-            tooltip=row["site"],
+            tooltip=row["Site"],
             icon=marker_icon,
         ).add_to(marker_cluster)
 
@@ -199,7 +189,7 @@ def show_map_dashboard(site_csv, parquet_file):
 
     # Select and format columns for better readability
     if not df_status.empty:
-        display_cols = ["site", "deviceID", "country", "status", "last_recorded"]
+        display_cols = ["Cluster", "Site", "DeploymentID", "Country", "status", "last_recorded"]
         
         # Create a copy to avoid modifying the original dataframe
         status_display = df_status[display_cols].copy()
@@ -208,7 +198,7 @@ def show_map_dashboard(site_csv, parquet_file):
         status_display["last_recorded"] = status_display["last_recorded"].dt.strftime("%Y-%m-%d %H:%M")
         
         # Add a column showing days since last recording
-        status_display["days_since_last"] = (datetime.now(timezone.utc) - df_status["last_recorded"]).dt.days
+        status_display["days_since_last"] = round((datetime.now(timezone.utc) - df_status["last_recorded"]).dt.days, 0)
         
         # Color-code the status
         def highlight_status(row):
