@@ -3,7 +3,7 @@
 import streamlit as st
 import pandas as pd
 from typing import List, Dict, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 
 def render_country_filter(data: pd.DataFrame, column_name: str = "Country", key_prefix: str = "main") -> List[str]:
@@ -44,19 +44,21 @@ def render_date_range_filter(data: pd.DataFrame, key_prefix: str = "main") -> Tu
     if "last_file" not in data.columns:
         # Return default range if no date column
         end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=30)
+        start_date = date(2020, 1, 1)  # Include all historical data
         return pd.Timestamp(start_date, tz='UTC'), pd.Timestamp(end_date, tz='UTC')
     
-    # Get date range from data
+    # Get date range from data for determining max date only
     dates = pd.to_datetime(data["last_file"], errors='coerce').dropna()
+    
+    # Start date to include all historical data
+    start_date = date(2020, 1, 1)
+    
     if dates.empty:
         end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=30)
     else:
-        min_date = dates.min().date()
         max_date = dates.max().date()
-        start_date = min_date
-        end_date = max_date
+        # Use current date if data max date is in the future
+        end_date = min(max_date, datetime.now().date())
     
     col1, col2 = st.columns(2)
     
@@ -64,8 +66,8 @@ def render_date_range_filter(data: pd.DataFrame, key_prefix: str = "main") -> Tu
         start_date = st.date_input(
             "From",
             value=start_date,
-            min_value=min_date if not dates.empty else start_date,
-            max_value=max_date if not dates.empty else end_date,
+            min_value=date(2020, 1, 1),  # Allow historical data
+            max_value=end_date,
             key=f"start_date_filter_{key_prefix}",
             help="Start date for filtering"
         )
@@ -74,8 +76,8 @@ def render_date_range_filter(data: pd.DataFrame, key_prefix: str = "main") -> Tu
         end_date = st.date_input(
             "To",
             value=end_date,
-            min_value=min_date if not dates.empty else start_date,
-            max_value=max_date if not dates.empty else end_date,
+            min_value=date(2020, 1, 1),  # Allow historical data
+            max_value=datetime.now().date(),
             key=f"end_date_filter_{key_prefix}",
             help="End date for filtering"
         )
@@ -135,14 +137,17 @@ def render_device_type_filter(data: pd.DataFrame, column_name: str = "device_typ
     return selected_types
 
 
-def apply_filters(data: pd.DataFrame,
-                 countries: List[str] = None,
-                 statuses: List[str] = None,
-                 start_date: pd.Timestamp = None,
-                 end_date: pd.Timestamp = None,
-                 sites: List[str] = None,
-                 device_types: List[str] = None) -> pd.DataFrame:
-    """Apply multiple filters to the dataset."""
+def apply_filters(
+    data: pd.DataFrame,
+    countries: List[str] = None,
+    statuses: List[str] = None,
+    start_date: pd.Timestamp = None,
+    end_date: pd.Timestamp = None,
+    sites: List[str] = None,
+    device_types: List[str] = None,
+    advanced_filters: Dict = None
+) -> pd.DataFrame:
+    """Apply all filters to the data."""
     filtered_data = data.copy()
     
     # Country filter
@@ -156,16 +161,24 @@ def apply_filters(data: pd.DataFrame,
     # Date range filter
     if start_date and end_date and "last_file" in filtered_data.columns:
         last_file_dates = pd.to_datetime(filtered_data["last_file"], errors='coerce')
-        # Ensure timezone consistency
-        if start_date.tzinfo is None:
-            start_date = start_date.tz_localize('UTC')
-        if end_date.tzinfo is None:
-            end_date = end_date.tz_localize('UTC')
         
-        filtered_data = filtered_data[
-            (last_file_dates >= start_date) & 
-            (last_file_dates <= end_date)
-        ]
+        # Convert start_date and end_date to same timezone as data (or make timezone-naive)
+        start_date_naive = start_date.tz_localize(None) if start_date.tzinfo else start_date
+        end_date_naive = end_date.tz_localize(None) if end_date.tzinfo else end_date
+        
+        # Make end_date inclusive by extending to end of day
+        end_date_inclusive = end_date_naive + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+        
+        # Ensure dates are timezone-naive for comparison
+        if last_file_dates.dt.tz is not None:
+            last_file_dates = last_file_dates.dt.tz_convert(None)
+        
+        # Include devices with missing dates OR dates within the range
+        date_mask = (
+            last_file_dates.isna() |  # Include devices with missing dates
+            ((last_file_dates >= start_date_naive) & (last_file_dates <= end_date_inclusive))
+        )
+        filtered_data = filtered_data[date_mask]
     
     # Site filter
     if sites and "site_name" in filtered_data.columns:
@@ -187,7 +200,8 @@ def render_advanced_filters(data: pd.DataFrame, key_prefix: str = "main") -> Dic
         with col1:
             # Days since last recording filter
             if "days_since_last" in data.columns:
-                max_days = int(data["days_since_last"].max()) if not data["days_since_last"].isna().all() else 30
+                max_days_value = data["days_since_last"].replace([float('inf'), float('-inf')], float('nan')).max()
+                max_days = int(max_days_value) if not pd.isna(max_days_value) else 30
                 
                 days_threshold = st.slider(
                     "📅 Maximum days since last recording",
@@ -256,6 +270,14 @@ def render_complete_filters(data: pd.DataFrame, key_prefix: str = "main") -> Tup
     """Render all filters and return filtered data with active filter info."""
     st.markdown("### 🔍 Filters")
     
+    # Add reset button
+    if st.button("🔄 Reset All Filters", key=f"reset_filters_{key_prefix}", help="Reset all filters to show all devices"):
+        # Clear all session state for this key prefix
+        keys_to_clear = [key for key in st.session_state.keys() if key.endswith(f"_{key_prefix}")]
+        for key in keys_to_clear:
+            del st.session_state[key]
+        st.rerun()
+    
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -283,7 +305,11 @@ def render_complete_filters(data: pd.DataFrame, key_prefix: str = "main") -> Tup
     
     # Apply advanced filters
     if advanced_filters["days_threshold"] is not None and "days_since_last" in filtered_data.columns:
-        filtered_data = filtered_data[filtered_data["days_since_last"] <= advanced_filters["days_threshold"]]
+        # Handle infinity values in days_since_last
+        days_since_clean = filtered_data["days_since_last"].replace([float('inf'), float('-inf')], float('nan'))
+        filtered_data = filtered_data[
+            days_since_clean.isna() | (days_since_clean <= advanced_filters["days_threshold"])
+        ]
     
     if advanced_filters["min_recordings"] is not None and "total_recordings" in filtered_data.columns:
         filtered_data = filtered_data[filtered_data["total_recordings"] >= advanced_filters["min_recordings"]]

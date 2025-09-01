@@ -89,6 +89,13 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
         
         # Map summary statistics
         st.markdown("#### 📊 Map Summary")
+        
+        # Show filtering info if devices are being filtered out
+        total_devices = len(device_data)
+        shown_devices = len(filtered_data)
+        if shown_devices < total_devices:
+            st.info(f"ℹ️ Showing {shown_devices} of {total_devices} total devices. {total_devices - shown_devices} devices are hidden by current filters.")
+        
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:

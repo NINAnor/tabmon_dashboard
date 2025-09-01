@@ -110,6 +110,7 @@ class DataService:
         
         # Load site information first
         site_info = load_site_info(site_csv_path)
+        
         site_info = site_info[site_info["Active"] == True].copy()
         
         # Create mapping between device IDs - use consistent 8-character suffix
@@ -119,6 +120,7 @@ class DataService:
         # Start with all active sites and merge recording data into them
         # This ensures we get exactly 100 devices (all active sites)
         merged = pd.merge(site_info, df_status, on="short_device", how="left")
+        
         
         # Fill missing values for sites with no recordings
         merged["device_name"] = merged["device"].fillna("RPiID-" + merged["DeviceID"])
@@ -159,6 +161,7 @@ class DataService:
             return (now - last_file_dt).total_seconds() / 86400
         
         merged["days_since_last"] = merged["last_file"].apply(calculate_days_since).round(1)
+        
         
         # We should now have exactly 100 devices (all active sites)
         return merged
