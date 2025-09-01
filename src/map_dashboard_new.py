@@ -76,14 +76,11 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
     st.markdown("### 🗺️ Device Locations and Real-time Status")
     
     # Filters for map view
-    filtered_data, active_filters = render_complete_filters(device_data, key_prefix="map")
+    filtered_data, active_filters = render_complete_filters(device_data)
     
     if not filtered_data.empty:
-        # Get site info for the map
-        site_info = data_service.load_site_info()
-        
         # Render the interactive map
-        render_device_map(site_info, filtered_data)
+        render_device_map(filtered_data)
         
         # Map summary statistics
         st.markdown("#### 📊 Map Summary")
@@ -116,7 +113,7 @@ def render_status_tab(device_data: pd.DataFrame, metrics: dict, data_service: Da
     
     with col1:
         st.markdown("#### 🥧 Status Distribution")
-        render_status_pie_chart(metrics)
+        render_status_pie_chart(device_data)
     
     with col2:
         st.markdown("#### 🌍 Status by Country")
@@ -126,14 +123,14 @@ def render_status_tab(device_data: pd.DataFrame, metrics: dict, data_service: Da
     st.markdown("#### 📋 Detailed Device Status")
     
     # Filters for status table
-    filtered_data, _ = render_complete_filters(device_data, key_prefix="status")
+    filtered_data, _ = render_complete_filters(device_data)
     
     if not filtered_data.empty:
         # Display options
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            per_page = st.selectbox("Devices per page", [10, 25, 50, 100], index=1)
+            show_all_columns = st.checkbox("Show all columns", value=False)
         with col2:
             sort_by = st.selectbox(
                 "Sort by", 
@@ -145,7 +142,7 @@ def render_status_tab(device_data: pd.DataFrame, metrics: dict, data_service: Da
         
         # Sort and display table
         sorted_data = filtered_data.sort_values(by=sort_by, ascending=ascending)
-        render_status_table(sorted_data)
+        render_status_table(sorted_data, show_all_columns=show_all_columns)
         
         # Summary statistics
         st.markdown("#### 📈 Summary Statistics")
@@ -173,38 +170,30 @@ def render_activity_tab(time_granularity: str, data_service: DataService):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Most active devices - recording_data is a crosstab with MultiIndex
-            # Sum across all time periods for each device
-            device_totals = recording_data.sum(axis=1).sort_values(ascending=False)
+            # Most active devices
+            device_totals = recording_data.groupby('device_name')['recording_count'].sum().sort_values(ascending=False)
             
             st.markdown("**🏆 Most Active Devices**")
             top_devices = device_totals.head(10)
-            for device_info, count in top_devices.items():
-                # device_info is a tuple (Country, device) due to MultiIndex
-                if isinstance(device_info, tuple):
-                    country, device = device_info
-                    st.write(f"• **{device}** ({country}): {count:,} recordings")
-                else:
-                    st.write(f"• **{device_info}**: {count:,} recordings")
+            for device, count in top_devices.items():
+                st.write(f"• **{device}**: {count:,} recordings")
         
         with col2:
-            # Activity statistics - recording_data is a crosstab matrix
-            total_recordings = recording_data.sum().sum()  # Sum all values in the matrix
-            device_totals = recording_data.sum(axis=1)  # Sum across time periods for each device
-            avg_per_device = device_totals.mean()
-            active_cells = (recording_data > 0).sum().sum()  # Count non-zero cells
+            # Activity statistics
+            total_recordings = recording_data['recording_count'].sum()
+            avg_per_device = recording_data.groupby('device_name')['recording_count'].sum().mean()
+            active_periods = recording_data[recording_data['recording_count'] > 0].shape[0]
             
             st.markdown("**📊 Activity Statistics**")
-            st.write(f"• **Total recordings**: {total_recordings:,.0f}")
+            st.write(f"• **Total recordings**: {total_recordings:,}")
             st.write(f"• **Average per device**: {avg_per_device:.1f}")
-            st.write(f"• **Active data points**: {active_cells:,}")
-            st.write(f"• **Coverage**: {len(recording_data.index)} devices")
+            st.write(f"• **Active periods**: {active_periods:,}")
+            st.write(f"• **Coverage**: {len(recording_data['device_name'].unique())} devices")
         
         # Downloadable data
         st.markdown("#### 💾 Export Data")
         
-        # Convert crosstab to CSV format
-        csv_data = recording_data.to_csv()
+        csv_data = recording_data.to_csv(index=False)
         st.download_button(
             label="📥 Download activity data as CSV",
             data=csv_data,

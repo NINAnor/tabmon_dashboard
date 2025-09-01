@@ -1,28 +1,62 @@
-from urllib.parse import urljoin
+"""
+Main TABMON Dashboard Application
+"""
 
 import streamlit as st
-
+from config.settings import APP_TITLE, ASSETS_SITE_CSV, ASSETS_PARQUET_FILE
+from map_dashboard import app as map_app
 from audio_dashboard import show_audio_dashboard
-from map_dashboard import show_map_dashboard
 from site_dashboard import show_site_dashboard
 
-# env = environ.Env(DEBUG=(bool, False))
 
-st.set_page_config(layout="wide")
+def main():
+    """Main application entry point."""
+    
+    # Page configuration
+    st.set_page_config(
+        page_title=APP_TITLE,
+        layout="wide",
+        initial_sidebar_state="expanded",
+        page_icon="🎙️"
+    )
+    
+    # Navigation sidebar
+    st.sidebar.title("🎙️ TABMON Dashboard")
+    st.sidebar.markdown("---")
+    
+    option = st.sidebar.selectbox(
+        "📊 Choose Dashboard", 
+        ["Map Visualization", "Audio Analysis", "Site Metadata"],
+        index=0,
+        help="Select which dashboard view to display"
+    )
+    
+    st.sidebar.markdown("---")
+    
+    # Add dashboard info
+    st.sidebar.markdown("""
+    ### 📋 Dashboard Overview
+    
+    **🗺️ Map Visualization**: Real-time device monitoring with interactive maps and status tracking
+    
+    **🎵 Audio Analysis**: In-depth audio recording analysis and visualization
+    
+    **📊 Site Metadata**: Site information and metadata management
+    """)
+    
+    # Data source configuration - update these URLs as needed
+    BASE_DIR = "http://rclone:8081/data/"  # Remote data source
+    site_csv_url = f"{BASE_DIR}site_info.csv"
+    parquet_file_url = f"{BASE_DIR}index.parquet"
+    
+    # Route to appropriate dashboard
+    if option == "Map Visualization":
+        map_app()
+    elif option == "Audio Analysis":
+        show_audio_dashboard(site_csv_url, parquet_file_url)
+    elif option == "Site Metadata":
+        show_site_dashboard(site_csv_url, parquet_file_url, BASE_DIR)
 
-st.sidebar.title("Dashboard Navigation")
-option = st.sidebar.selectbox(
-    "Choose Dashboard", ["Map Viz", "Site Metadata", "Audio Data"]
-)
 
-BASE_DIR = "http://rclone:8081/data/"  # os.environ.get("BASE_DATA_DIR")
-
-site_csv_url = urljoin(BASE_DIR, "site_info.csv")
-parquet_file_url = urljoin(BASE_DIR, "index.parquet")
-
-if option == "Map Viz":
-    show_map_dashboard(site_csv_url, parquet_file_url)
-elif option == "Audio Data":
-    show_audio_dashboard(site_csv_url, parquet_file_url)
-elif option == "Site Metadata":
-    show_site_dashboard(site_csv_url, parquet_file_url, BASE_DIR)
+if __name__ == "__main__":
+    main()
