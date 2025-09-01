@@ -20,6 +20,11 @@ def main():
         page_icon="🎙️"
     )
     
+    # Data source configuration
+    BASE_DIR = "http://rclone:8081/data/"  # Remote data source
+    site_csv_url = f"{BASE_DIR}site_info.csv"
+    parquet_file_url = f"{BASE_DIR}index.parquet"
+    
     # Navigation sidebar
     st.sidebar.title("🎙️ TABMON Dashboard")
     st.sidebar.markdown("---")
@@ -43,11 +48,6 @@ def main():
     
     **📊 Site Metadata**: Site information and metadata management
     """)
-    
-    # Data source configuration - update these URLs as needed
-    BASE_DIR = "http://rclone:8081/data/"  # Remote data source
-    site_csv_url = f"{BASE_DIR}site_info.csv"
-    parquet_file_url = f"{BASE_DIR}index.parquet"
     
     # Route to appropriate dashboard
     if option == "Map Visualization":

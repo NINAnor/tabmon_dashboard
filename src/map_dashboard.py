@@ -23,8 +23,12 @@ def app(site_csv: str = None, parquet_file: str = None):
     load_custom_css()
     render_page_header(APP_TITLE, "🗺️")
     
+    # Use provided URLs or fall back to defaults
+    site_csv_url = site_csv or ASSETS_SITE_CSV
+    parquet_file_url = parquet_file or ASSETS_PARQUET_FILE
+    
     # Initialize data service with provided URLs
-    data_service = DataService(site_csv, parquet_file)
+    data_service = DataService(site_csv_url, parquet_file_url)
     
     # Load all data
     with st.spinner("Loading device data..."):

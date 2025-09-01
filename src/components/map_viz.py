@@ -27,16 +27,24 @@ def render_device_map(site_info: pd.DataFrame, status_df: pd.DataFrame):
         tiles="OpenStreetMap"
     )
     
-    marker_cluster = MarkerCluster().add_to(m)
+    # Create marker cluster with optimal settings
+    marker_cluster = MarkerCluster(
+        maxClusterRadius=40,
+        showCoverageOnHover=False,
+        spiderfyOnMaxZoom=True,
+        removeOutsideVisibleBounds=False
+    ).add_to(m)
     
-    # Add markers with improved styling
+    marker_count = 0
+    
+    # Add markers for each device
     for _, row in status_df.iterrows():
         # Handle different possible column names
         site_name = row.get('site_name', row.get('Site', 'Unknown Site'))
         cluster_name = row.get('cluster_name', row.get('Cluster', ''))
         location_text = f"{cluster_name}: {site_name}" if cluster_name else site_name
         
-        # Ensure we have coordinates
+        # Skip if no coordinates
         if pd.isna(row.get('Latitude')) or pd.isna(row.get('Longitude')):
             continue
             
@@ -57,8 +65,9 @@ def render_device_map(site_info: pd.DataFrame, status_df: pd.DataFrame):
                 prefix="fa"
             ),
         ).add_to(marker_cluster)
+        marker_count += 1
     
-    return st_folium(m, width=MAP_WIDTH, height=MAP_HEIGHT)
+    return st_folium(m, width=MAP_WIDTH, height=MAP_HEIGHT, returned_objects=["last_object_clicked"])
 
 
 def _create_popup_html(row: pd.Series, location_text: str) -> str:
