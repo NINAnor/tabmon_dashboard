@@ -51,7 +51,7 @@ def main():
     
     # Route to appropriate dashboard
     if option == "Map Visualization":
-        map_app()
+        map_app(site_csv_url, parquet_file_url)
     elif option == "Audio Analysis":
         show_audio_dashboard(site_csv_url, parquet_file_url)
     elif option == "Site Metadata":

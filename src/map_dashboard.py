@@ -18,15 +18,13 @@ from components.sidebar import render_complete_sidebar
 from components.filters import render_complete_filters
 
 
-def app():
-    """Main application entry point for the TABMON Dashboard."""
-    
-    # Initialize styling and page configuration
+def app(site_csv: str = None, parquet_file: str = None):
+    """Main map dashboard application."""
     load_custom_css()
     render_page_header(APP_TITLE, "🗺️")
     
-    # Initialize data service
-    data_service = DataService()
+    # Initialize data service with provided URLs
+    data_service = DataService(site_csv, parquet_file)
     
     # Load all data
     with st.spinner("Loading device data..."):
