@@ -21,7 +21,6 @@ from components.filters import render_complete_filters
 def app(site_csv: str = None, parquet_file: str = None):
     """Main map dashboard application."""
     load_custom_css()
-    render_page_header(APP_TITLE, "🗺️")
     
     # Use provided URLs or fall back to defaults
     site_csv_url = site_csv or ASSETS_SITE_CSV
@@ -40,7 +39,7 @@ def app(site_csv: str = None, parquet_file: str = None):
     
     # Render sidebar with controls and metrics
     with st.sidebar:
-        time_granularity = render_complete_sidebar(
+        render_complete_sidebar(
             metrics=metrics,
             site_csv=ASSETS_SITE_CSV,
             parquet_file=ASSETS_PARQUET_FILE
@@ -60,7 +59,7 @@ def app(site_csv: str = None, parquet_file: str = None):
         render_status_tab(device_data, metrics, data_service)
     
     with tab3:
-        render_activity_tab(time_granularity, data_service)
+        render_activity_tab(data_service)
     
     # Footer
     st.markdown("---")
@@ -121,15 +120,8 @@ def render_status_tab(device_data: pd.DataFrame, metrics: dict, data_service: Da
     render_status_metrics(metrics)
     
     # Status visualizations
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("#### 🥧 Status Distribution")
-        render_status_pie_chart(metrics)
-    
-    with col2:
-        st.markdown("#### 🌍 Status by Country")
-        render_country_bar_chart(device_data)
+    st.markdown("#### 🌍 Status by Country")
+    render_country_bar_chart(device_data)
     
     # Detailed status table
     st.markdown("#### 📋 Detailed Device Status")
@@ -163,18 +155,18 @@ def render_status_tab(device_data: pd.DataFrame, metrics: dict, data_service: Da
         st.warning("⚠️ No devices match the current filter criteria.")
 
 
-def render_activity_tab(time_granularity: str, data_service: DataService):
+def render_activity_tab(data_service: DataService):
     """Render the recording activity analysis tab."""
     st.markdown("### 📈 Recording Activity Analysis")
     
-    # Load recording matrix data based on time granularity
-    with st.spinner(f"Loading {time_granularity.lower()} activity data..."):
-        recording_data = data_service.load_recording_matrix(time_granularity.lower())
+    # Load recording matrix data with day granularity
+    with st.spinner("Loading daily activity data..."):
+        recording_data = data_service.load_recording_matrix("Day")
     
     if not recording_data.empty:
         # Activity heatmap
-        st.markdown(f"#### 🔥 Recording Activity Heatmap ({time_granularity})")
-        render_activity_heatmap(recording_data, time_granularity)
+        st.markdown("#### 🔥 Recording Activity Heatmap")
+        render_activity_heatmap(recording_data, "Day")
         
         # Activity insights
         st.markdown("#### 💡 Activity Insights")
@@ -217,7 +209,7 @@ def render_activity_tab(time_granularity: str, data_service: DataService):
         st.download_button(
             label="📥 Download activity data as CSV",
             data=csv_data,
-            file_name=f"tabmon_activity_{time_granularity.lower()}_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
+            file_name=f"tabmon_activity_day_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
             mime="text/csv",
             help="Download the current activity data for further analysis"
         )

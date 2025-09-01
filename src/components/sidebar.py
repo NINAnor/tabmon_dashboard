@@ -59,6 +59,35 @@ def render_dashboard_sidebar(metrics: dict = None):
     return time_granularity
 
 
+def render_dashboard_sidebar_without_granularity(metrics: dict = None):
+    """Render the enhanced dashboard sidebar without time granularity control."""
+    
+    # Dashboard info
+    st.markdown("""
+    <div class='info-box'>
+        <h4 style='color: #2E86AB; margin-top: 0;'>📋 Dashboard Info</h4>
+        <p style='margin-bottom: 0; font-size: 0.9em;'>
+            This dashboard provides real-time monitoring of TABMON audio recording devices 
+            across multiple countries. Use the tabs above to explore different views of your data.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Status legend
+    st.markdown("""
+    <div class='legend-box'>
+        <h4 style='color: #2E86AB; margin-top: 0;'>🏷️ Status Legend</h4>
+        <p style='margin: 0.5rem 0;'><span style='color: green; font-weight: bold;'>🟢 Online:</span> Active within 3 days</p>
+        <p style='margin: 0.5rem 0;'><span style='color: red; font-weight: bold;'>🔴 Offline:</span> No activity > 3 days</p>
+        <p style='margin: 0.5rem 0; font-size: 0.8em; color: #666;'>
+            <em>Status is determined by the last recorded audio file timestamp.</em>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def render_data_source_info(site_csv: str, parquet_file: str):
     """Render information about data sources in the sidebar."""
     with st.expander("📁 Data Sources", expanded=False):
@@ -116,12 +145,10 @@ def render_about_section():
 
 def render_complete_sidebar(metrics: dict = None, site_csv: str = None, parquet_file: str = None):
     """Render the complete sidebar with all components."""
-    time_granularity = render_dashboard_sidebar(metrics)
+    render_dashboard_sidebar_without_granularity(metrics)
     
     if site_csv and parquet_file:
         render_data_source_info(site_csv, parquet_file)
     
     render_help_section()
     render_about_section()
-    
-    return time_granularity
