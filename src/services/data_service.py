@@ -1,6 +1,22 @@
 """
 Data service for TABMON dashboard.
-Handles all data loading, processing, and c        data = duckdb.execute(query, (_self.parquet_file, DATA_START_DATE)).df()
+Handles all data loading, processing, and c        data = duck        # Add country mapping - Country column should already exist from site_info
+        # If not, create it from device country codes if available
+        if 'Country' not in merged.columns:
+            merged['Country'] = 'Unknown'
+        
+        # Fill missing Country values
+        merged['Country'] = merged['Country'].fillna('Unknown')
+        
+        # Rename columns to match expected interface
+        merged = merged.rename(columns={
+            'Site': 'site_name',
+            'Cluster': 'cluster'
+        })
+        
+        # Ensure device_name is properly set
+        if 'device_name' not in merged.columns:
+            merged['device_name'] = merged['device'].fillna("RPiID-" + merged["DeviceID"])ry, (_self.parquet_file, DATA_START_DATE)).df()
         
         if data.empty:
             return pd.DataFrame()
@@ -50,7 +66,7 @@ class DataService:
         query = """
         SELECT 
             device,
-            REGEXP_EXTRACT(device, '10000000(.+)$', 1) AS short_device,
+            RIGHT(device, 8) AS short_device,
             MAX(COALESCE(
                 TRY_STRPTIME(Name, '%Y-%m-%dT%H_%M_%S.%fZ.mp3'),
                 TRY_STRPTIME(Name, '%Y-%m-%dT%H_%M_%SZ.mp3'),
@@ -81,16 +97,23 @@ class DataService:
         
         df_status["status"] = df_status["last_file"].apply(calculate_status)
         
-        # Load site information
+        # Load site information first
         site_info = load_site_info(_self.site_csv)
         site_info = site_info[site_info["Active"] == True].copy()
         
-        # Create mapping between device IDs
-        site_info["short_device"] = site_info["DeviceID"].str.strip()
+        # Create mapping between device IDs - use consistent 8-character suffix
+        site_info["short_device"] = site_info["DeviceID"].str.strip().str[-8:]
         df_status["short_device"] = df_status["short_device"].str.strip()
         
-        # Merge with site information
-        merged = pd.merge(df_status, site_info, on="short_device", how="left")
+        # Start with all active sites and merge recording data into them
+        # This ensures we get exactly 100 devices (all active sites)
+        merged = pd.merge(site_info, df_status, on="short_device", how="left")
+        
+        # Fill missing values for sites with no recordings
+        merged["device_name"] = merged["device"].fillna("RPiID-" + merged["DeviceID"])
+        merged["last_file"] = merged["last_file"].fillna(pd.NaT)
+        merged["total_recordings"] = merged["total_recordings"].fillna(0)
+        merged["status"] = merged["status"].fillna("Offline")  # Sites with no recordings are offline
         
         # Add country mapping - Country column should already exist from site_info
         # If not, create it from device country codes if available
@@ -117,10 +140,16 @@ class DataService:
             return dt
         
         merged["last_file"] = merged["last_file"].apply(make_timezone_aware)
-        merged["days_since_last"] = (
-            (now - merged["last_file"]).dt.total_seconds() / 86400
-        ).round(1)
         
+        # Calculate days since last recording, handling NaT values
+        def calculate_days_since(last_file_dt):
+            if pd.isna(last_file_dt):
+                return float('inf')  # Infinite days for devices with no recordings
+            return (now - last_file_dt).total_seconds() / 86400
+        
+        merged["days_since_last"] = merged["last_file"].apply(calculate_days_since).round(1)
+        
+        # We should now have exactly 100 devices (all active sites)
         return merged
 
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
