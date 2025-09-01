@@ -1,5 +1,7 @@
 from urllib.parse import unquote
 from datetime import datetime
+import base64
+import requests
 
 import duckdb
 import pandas as pd
@@ -20,11 +22,19 @@ class SiteMetadataService:
     def generate_pictures_mapping(self) -> pd.DataFrame:
         """Generate mapping of device pictures from parquet data."""
         try:
-            query = """
-            SELECT * FROM read_parquet(?)
-            WHERE MimeType IN ('image/jpeg', 'image/png')
-            """
-            data = duckdb.execute(query, (self.parquet_file,)).df()
+            # Check if we're dealing with a URL or local file
+            if self.parquet_file.startswith(('http://', 'https://')):
+                # For URLs, we need to load the data first then filter
+                data = pd.read_parquet(self.parquet_file)
+                # Filter for image files
+                data = data[data["MimeType"].isin(['image/jpeg', 'image/png'])]
+            else:
+                # For local files, use DuckDB for efficient filtering
+                query = """
+                SELECT * FROM read_parquet(?)
+                WHERE MimeType IN ('image/jpeg', 'image/png')
+                """
+                data = duckdb.execute(query, (self.parquet_file,)).df()
             
             if data.empty:
                 return pd.DataFrame()
@@ -173,6 +183,35 @@ def render_device_images(device_id: str, pictures_mapping: pd.DataFrame) -> None
         render_image_grid(device_images)
 
 
+def get_auth_credentials():
+    """Read authentication credentials from environment variables or Docker secret."""
+    import os
+    
+    # Priority 1: Environment variables (from .env file in production via Portainer)
+    username = os.getenv('AUTH_USERNAME')
+    password = os.getenv('AUTH_PASSWORD')
+    
+    if username and password:
+        return (username, password)
+    
+    # Priority 2: Try to read username from htpasswd secret if available
+    try:
+        with open('/run/secrets/htpasswd', 'r') as f:
+            htpasswd_content = f.read().strip()
+            lines = htpasswd_content.split('\n')
+            for line in lines:
+                if line.strip() and ':' in line:
+                    username = line.split(':')[0]
+                    # Note: Still need password from environment variables
+                    # as htpasswd contains hashed passwords only
+                    break
+    except (FileNotFoundError, IOError):
+        pass
+    
+    # No fallback - require explicit configuration
+    raise ValueError("Authentication credentials not found. Please set AUTH_USERNAME and AUTH_PASSWORD environment variables.")
+
+
 def render_image_grid(images_df: pd.DataFrame) -> None:
     """Render images in a responsive grid layout."""
     cols_per_row = 2
@@ -182,20 +221,39 @@ def render_image_grid(images_df: pd.DataFrame) -> None:
         
         for j, (_, row) in enumerate(images_df.iloc[i:i+cols_per_row].iterrows()):
             with cols[j]:
-                # Decode URL to handle double encoding
-                decoded_url = unquote(row["url"])
-                
-                # Use HTML img tag for direct image display like original
-                st.markdown(
-                    f"""
-                    <img style='height: 100%; width: 100%; object-fit: contain' 
-                         src='{decoded_url}' />
-                    <p style="text-align: center; font-size: 0.8em; color: #666; margin-top: 5px;">
-                        {row['picture_type'].title()}
-                    </p>
-                    """,
-                    unsafe_allow_html=True
-                )
+                try:
+                    # Get the original URL (already has /data/ prefix)
+                    image_url = row["url"]
+                    
+                    # Check if we're dealing with a local or remote URL
+                    if image_url.startswith('/data/'):
+                        # This is a remote URL that needs authentication
+                        # Use the reverse proxy service name from within Docker (port 80 internal)
+                        full_url = f"http://reverseproxy:80{image_url}"
+                        
+                        # Use Streamlit's image function with authentication
+                        auth = get_auth_credentials()
+                        response = requests.get(full_url, auth=auth, timeout=10)
+                        
+                        if response.status_code == 200:
+                            st.image(
+                                response.content,
+                                caption=row['picture_type'].title(),
+                                use_column_width=True
+                            )
+                        else:
+                            st.error(f"Failed to load image: {image_url}")
+                    else:
+                        # Local image or direct URL
+                        st.image(
+                            image_url,
+                            caption=row['picture_type'].title(),
+                            use_container_width=True
+                        )
+                except Exception as e:
+                    st.error(f"Error loading image: {str(e)}")
+                    # Fallback to broken link message
+                    st.markdown(f"**{row['picture_type'].title()}**: Image unavailable")
 
 
 def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None:
@@ -205,8 +263,8 @@ def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None
     st.title("🏞️ Site Metadata Dashboard")
     st.markdown("Explore detailed information about recording sites and device deployments.")
     
-    # Initialize services
-    data_service = DataService()
+    # Initialize services with correct URL parameters
+    data_service = DataService(site_csv, parquet_file)
     site_metadata_service = SiteMetadataService(parquet_file)
     
     # Load data

@@ -4,7 +4,11 @@ services:
   dashboard:
     build:
       context: .
-    #image: ghcr.io/ninanor/dashboard-dashboard:main
+    env_file:
+      - .env
+    secrets:
+      - htpasswd
+  #image: ghcr.io/ninanor/dashboard-dashboard:main
   reverseproxy:
     build: proxy
     image: ghcr.io/ninanor/dashboard-proxy:main
