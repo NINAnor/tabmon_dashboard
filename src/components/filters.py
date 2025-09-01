@@ -266,80 +266,200 @@ def render_advanced_filters(data: pd.DataFrame, key_prefix: str = "main") -> Dic
     }
 
 
-def render_complete_filters(data: pd.DataFrame, key_prefix: str = "main") -> Tuple[pd.DataFrame, Dict]:
-    """Render all filters and return filtered data with active filter info."""
-    st.markdown("### 🔍 Filters")
+def get_preset_filters(preset: str, data: pd.DataFrame) -> Dict:
+    """Get filter parameters for a given preset."""
+    from datetime import datetime, timedelta
     
-    # Add reset button
-    if st.button("🔄 Reset All Filters", key=f"reset_filters_{key_prefix}", help="Reset all filters to show all devices"):
-        # Clear all session state for this key prefix
-        keys_to_clear = [key for key in st.session_state.keys() if key.endswith(f"_{key_prefix}")]
-        for key in keys_to_clear:
-            del st.session_state[key]
-        st.rerun()
+    # Default values
+    all_countries = list(data["Country"].dropna().unique()) if "Country" in data.columns else []
+    all_sites = list(data["site_name"].dropna().unique()) if "site_name" in data.columns else []
+    all_statuses = ["Online", "Offline"]
     
-    col1, col2, col3 = st.columns(3)
+    current_date = datetime.now().date()
     
-    with col1:
-        countries = render_country_filter(data, key_prefix=key_prefix)
-    
-    with col2:
-        statuses = render_status_filter(key_prefix=key_prefix)
-    
-    with col3:
-        sites = render_site_filter(data, key_prefix=key_prefix)
-    
-    # Date range filter
-    start_date, end_date = render_date_range_filter(data, key_prefix=key_prefix)
-    
-    # Device type filter (if the column exists)
-    device_types = render_device_type_filter(data, key_prefix=key_prefix)
-    
-    # Apply filters
-    filtered_data = apply_filters(
-        data, countries, statuses, start_date, end_date, sites, device_types
-    )
-    
-    # Advanced filters
-    advanced_filters = render_advanced_filters(filtered_data, key_prefix=key_prefix)
-    
-    # Apply advanced filters
-    if advanced_filters["days_threshold"] is not None and "days_since_last" in filtered_data.columns:
-        # Handle infinity values in days_since_last
-        days_since_clean = filtered_data["days_since_last"].replace([float('inf'), float('-inf')], float('nan'))
-        filtered_data = filtered_data[
-            days_since_clean.isna() | (days_since_clean <= advanced_filters["days_threshold"])
-        ]
-    
-    if advanced_filters["min_recordings"] is not None and "total_recordings" in filtered_data.columns:
-        filtered_data = filtered_data[filtered_data["total_recordings"] >= advanced_filters["min_recordings"]]
-    
-    if advanced_filters["lat_range"] is not None and "latitude" in filtered_data.columns:
-        lat_min, lat_max = advanced_filters["lat_range"]
-        filtered_data = filtered_data[
-            (filtered_data["latitude"] >= lat_min) & 
-            (filtered_data["latitude"] <= lat_max)
-        ]
-    
-    if advanced_filters["lon_range"] is not None and "longitude" in filtered_data.columns:
-        lon_min, lon_max = advanced_filters["lon_range"]
-        filtered_data = filtered_data[
-            (filtered_data["longitude"] >= lon_min) & 
-            (filtered_data["longitude"] <= lon_max)
-        ]
-    
-    # Collect active filter information
-    active_filters = {
-        "countries": countries,
-        "statuses": statuses,
-        "start_date": start_date,
-        "end_date": end_date,
-        "sites": sites,
-        "device_types": device_types,
-        **advanced_filters
+    presets = {
+        "🌟 All Devices": {
+            "countries": all_countries,
+            "statuses": all_statuses,
+            "start_date": pd.Timestamp(date(2020, 1, 1), tz='UTC'),
+            "end_date": pd.Timestamp(current_date, tz='UTC'),
+            "sites": all_sites,
+            "description": "Show all devices without any filters"
+        },
+        "✅ Online Devices Only": {
+            "countries": all_countries,
+            "statuses": ["Online"],
+            "start_date": pd.Timestamp(date(2020, 1, 1), tz='UTC'),
+            "end_date": pd.Timestamp(current_date, tz='UTC'),
+            "sites": all_sites,
+            "description": "Show only devices that are currently online"
+        },
+        "❌ Offline Devices Only": {
+            "countries": all_countries,
+            "statuses": ["Offline"],
+            "start_date": pd.Timestamp(date(2020, 1, 1), tz='UTC'),
+            "end_date": pd.Timestamp(current_date, tz='UTC'),
+            "sites": all_sites,
+            "description": "Show only devices that are currently offline"
+        },
+        "📅 Recent Activity (Last 30 days)": {
+            "countries": all_countries,
+            "statuses": all_statuses,
+            "start_date": pd.Timestamp(current_date - timedelta(days=30), tz='UTC'),
+            "end_date": pd.Timestamp(current_date, tz='UTC'),
+            "sites": all_sites,
+            "description": "Show devices with activity in the last 30 days"
+        },
+        "🇳🇴 Norway Only": {
+            "countries": ["Norway"] if "Norway" in all_countries else all_countries,
+            "statuses": all_statuses,
+            "start_date": pd.Timestamp(date(2020, 1, 1), tz='UTC'),
+            "end_date": pd.Timestamp(current_date, tz='UTC'),
+            "sites": all_sites,
+            "description": "Show only devices deployed in Norway"
+        },
+        "🇳🇱 Netherlands Only": {
+            "countries": ["Netherlands"] if "Netherlands" in all_countries else all_countries,
+            "statuses": all_statuses,
+            "start_date": pd.Timestamp(date(2020, 1, 1), tz='UTC'),
+            "end_date": pd.Timestamp(current_date, tz='UTC'),
+            "sites": all_sites,
+            "description": "Show only devices deployed in the Netherlands"
+        },
+        "🇫🇷 France Only": {
+            "countries": ["France"] if "France" in all_countries else all_countries,
+            "statuses": all_statuses,
+            "start_date": pd.Timestamp(date(2020, 1, 1), tz='UTC'),
+            "end_date": pd.Timestamp(current_date, tz='UTC'),
+            "sites": all_sites,
+            "description": "Show only devices deployed in France"
+        },
+        "🇪🇸 Spain Only": {
+            "countries": ["Spain"] if "Spain" in all_countries else all_countries,
+            "statuses": all_statuses,
+            "start_date": pd.Timestamp(date(2020, 1, 1), tz='UTC'),
+            "end_date": pd.Timestamp(current_date, tz='UTC'),
+            "sites": all_sites,
+            "description": "Show only devices deployed in Spain"
+        }
     }
     
+    return presets.get(preset, presets["🌟 All Devices"])
+
+
+def render_smart_preset_filters(data: pd.DataFrame, key_prefix: str = "main") -> Tuple[pd.DataFrame, Dict]:
+    """Render smart preset filters with optional custom filtering."""
+    st.markdown("### 🔍 Quick Filters")
+    
+    # Preset selection
+    preset_options = [
+        "🌟 All Devices",
+        "✅ Online Devices Only", 
+        "❌ Offline Devices Only",
+        "📅 Recent Activity (Last 30 days)",
+        "🇳🇴 Norway Only",
+        "🇳🇱 Netherlands Only", 
+        "🇫🇷 France Only",
+        "🇪🇸 Spain Only",
+        "⚙️ Custom Filters"
+    ]
+    
+    preset = st.selectbox(
+        "Choose a filter preset:",
+        preset_options,
+        key=f"preset_filter_{key_prefix}",
+        help="Select a predefined filter or choose Custom to set your own filters"
+    )
+    
+    # Show preset description
+    if preset != "⚙️ Custom Filters":
+        preset_config = get_preset_filters(preset, data)
+        st.info(f"ℹ️ {preset_config['description']}")
+        
+        # Apply preset filters
+        filtered_data = apply_filters(
+            data,
+            countries=preset_config["countries"],
+            statuses=preset_config["statuses"],
+            start_date=preset_config["start_date"],
+            end_date=preset_config["end_date"],
+            sites=preset_config["sites"]
+        )
+        
+        active_filters = preset_config
+        
+    else:
+        # Custom filters section
+        st.markdown("**🛠️ Custom Filter Options:**")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            countries = render_country_filter(data, key_prefix=key_prefix)
+        
+        with col2:
+            statuses = render_status_filter(key_prefix=key_prefix)
+        
+        with col3:
+            sites = render_site_filter(data, key_prefix=key_prefix)
+        
+        # Date range filter for custom
+        start_date, end_date = render_date_range_filter(data, key_prefix=key_prefix)
+        
+        # Apply custom filters
+        filtered_data = apply_filters(
+            data, countries, statuses, start_date, end_date, sites
+        )
+        
+        active_filters = {
+            "countries": countries,
+            "statuses": statuses,
+            "start_date": start_date,
+            "end_date": end_date,
+            "sites": sites,
+            "description": "Custom filter configuration"
+        }
+        
+        # Optional advanced filters in expandable section
+        with st.expander("🔧 Advanced Options", expanded=False):
+            advanced_filters = render_advanced_filters(filtered_data, key_prefix=key_prefix)
+            
+            # Apply advanced filters
+            if advanced_filters["days_threshold"] is not None and "days_since_last" in filtered_data.columns:
+                days_since_clean = filtered_data["days_since_last"].replace([float('inf'), float('-inf')], float('nan'))
+                filtered_data = filtered_data[
+                    days_since_clean.isna() | (days_since_clean <= advanced_filters["days_threshold"])
+                ]
+            
+            if advanced_filters["min_recordings"] is not None and "total_recordings" in filtered_data.columns:
+                filtered_data = filtered_data[filtered_data["total_recordings"] >= advanced_filters["min_recordings"]]
+            
+            if advanced_filters["lat_range"] is not None and "latitude" in filtered_data.columns:
+                lat_min, lat_max = advanced_filters["lat_range"]
+                filtered_data = filtered_data[
+                    (filtered_data["latitude"] >= lat_min) & 
+                    (filtered_data["latitude"] <= lat_max)
+                ]
+            
+            if advanced_filters["lon_range"] is not None and "longitude" in filtered_data.columns:
+                lon_min, lon_max = advanced_filters["lon_range"]
+                filtered_data = filtered_data[
+                    (filtered_data["longitude"] >= lon_min) & 
+                    (filtered_data["longitude"] <= lon_max)
+                ]
+            
+            # Merge advanced filters into active filters
+            active_filters.update(advanced_filters)
+    
     # Display filter summary
-    st.markdown(f"**📊 Showing {len(filtered_data)} of {len(data)} devices**")
+    if len(filtered_data) != len(data):
+        st.success(f"📊 Showing **{len(filtered_data)}** of **{len(data)}** devices")
+    else:
+        st.info(f"📊 Showing all **{len(data)}** devices")
     
     return filtered_data, active_filters
+
+
+def render_complete_filters(data: pd.DataFrame, key_prefix: str = "main") -> Tuple[pd.DataFrame, Dict]:
+    """Render smart preset filters (new default filter interface)."""
+    return render_smart_preset_filters(data, key_prefix=key_prefix)

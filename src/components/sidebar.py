@@ -75,6 +75,46 @@ def render_dashboard_sidebar_without_granularity(metrics: dict = None):
     
     st.markdown("---")
     
+    # Status Summary
+    if metrics:
+        total_devices = metrics.get('total_devices', 0)
+        online_devices = metrics.get('online_devices', 0)
+        offline_devices = metrics.get('offline_devices', 0)
+        
+        if total_devices > 0:
+            online_percentage = (online_devices / total_devices) * 100
+            offline_percentage = (offline_devices / total_devices) * 100
+            
+            st.markdown("""
+            <div class='status-summary-box'>
+                <h4 style='color: #2E86AB; margin-top: 0;'>📊 Device Status Summary</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.metric(
+                    label="🟢 Online",
+                    value=f"{online_devices}",
+                    delta=f"{online_percentage:.1f}%"
+                )
+            
+            with col2:
+                st.metric(
+                    label="🔴 Offline", 
+                    value=f"{offline_devices}",
+                    delta=f"{offline_percentage:.1f}%"
+                )
+            
+            # Total devices
+            st.metric(
+                label="📱 Total Devices",
+                value=f"{total_devices}"
+            )
+    
+    st.markdown("---")
+    
     # Status legend
     st.markdown("""
     <div class='legend-box'>

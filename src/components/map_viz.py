@@ -72,20 +72,61 @@ def render_device_map(site_info: pd.DataFrame, status_df: pd.DataFrame):
 
 def _create_popup_html(row: pd.Series, location_text: str) -> str:
     """Create HTML content for map marker popups."""
-    # Handle different possible column names
+    # Handle different possible column names and ensure we get scalar values
     device_id = row.get('device_name', row.get('DeploymentID', row.get('device', 'Unknown Device')))
+    
+    # Ensure device_id is a string, not a pandas Series
+    if hasattr(device_id, 'iloc'):
+        device_id = device_id.iloc[0] if len(device_id) > 0 else 'Unknown Device'
+    elif pd.isna(device_id):
+        device_id = 'Unknown Device'
+    else:
+        device_id = str(device_id)
+    
     country = row.get('Country', 'Unknown')
+    if hasattr(country, 'iloc'):
+        country = country.iloc[0] if len(country) > 0 else 'Unknown'
+    elif pd.isna(country):
+        country = 'Unknown'
+    else:
+        country = str(country)
+    
     status = row.get('status', 'Unknown')
+    if hasattr(status, 'iloc'):
+        status = status.iloc[0] if len(status) > 0 else 'Unknown'
+    elif pd.isna(status):
+        status = 'Unknown'
+    else:
+        status = str(status)
     
     last_recorded = row.get('last_file', row.get('last_recorded', row.get('recorded_at', 'N/A')))
+    if hasattr(last_recorded, 'iloc'):
+        last_recorded = last_recorded.iloc[0] if len(last_recorded) > 0 else 'N/A'
+    
     if pd.notna(last_recorded) and hasattr(last_recorded, 'strftime'):
         last_recorded = last_recorded.strftime('%Y-%m-%d %H:%M')
+    elif pd.isna(last_recorded):
+        last_recorded = 'N/A'
     
     days_since = row.get('days_since_last', 'N/A')
-    if pd.notna(days_since):
-        days_since = f"{days_since:.1f} days"
+    if hasattr(days_since, 'iloc'):
+        days_since = days_since.iloc[0] if len(days_since) > 0 else 'N/A'
+    
+    if pd.notna(days_since) and days_since != 'N/A':
+        try:
+            days_since = f"{float(days_since):.1f} days"
+        except (ValueError, TypeError):
+            days_since = 'N/A'
     
     total_recordings = row.get('total_recordings', 'N/A')
+    if hasattr(total_recordings, 'iloc'):
+        total_recordings = total_recordings.iloc[0] if len(total_recordings) > 0 else 'N/A'
+    
+    if pd.notna(total_recordings) and total_recordings != 'N/A':
+        try:
+            total_recordings = int(total_recordings)
+        except (ValueError, TypeError):
+            total_recordings = 'N/A'
     
     return f"""
     <div style="font-family: Arial, sans-serif; min-width: 200px;">
