@@ -1,59 +1,30 @@
-from urllib.parse import unquote
-from datetime import datetime
-import base64
-import requests
+"""
+Site Dashboard for TABMON - Modernized Version
+Provides detailed site metadata exploration and device information.
+"""
 
-import duckdb
+import os
+import requests
+from datetime import datetime
+
 import pandas as pd
 import streamlit as st
 
-from config.settings import COUNTRY_MAP, ASSETS_SITE_CSV, ASSETS_PARQUET_FILE
+from config.settings import ASSETS_SITE_CSV, ASSETS_PARQUET_FILE
 from services.data_service import DataService
-from components.ui_styles import load_custom_css
+from services.site_service import SiteMetadataService
+from components.ui_styles import load_custom_css, render_info_section_header
 from components.sidebar import render_complete_sidebar
+from components.site import (
+    render_site_filters, render_site_details, render_device_images,
+    render_site_export_options
+)
 from utils.data_loader import load_site_info
-
-
-class SiteMetadataService:
-    """Service for handling site metadata and image operations."""
-    
-    def __init__(self, parquet_file: str):
-        self.parquet_file = parquet_file
-    
-    def generate_pictures_mapping(self) -> pd.DataFrame:
-        """Generate mapping of device pictures from parquet data."""
-        try:
-            # Check if we're dealing with a URL or local file
-            if self.parquet_file.startswith(('http://', 'https://')):
-                # For URLs, we need to load the data first then filter
-                data = pd.read_parquet(self.parquet_file)
-                # Filter for image files
-                data = data[data["MimeType"].isin(['image/jpeg', 'image/png'])]
-            else:
-                # For local files, use DuckDB for efficient filtering
-                query = """
-                SELECT * FROM read_parquet(?)
-                WHERE MimeType IN ('image/jpeg', 'image/png')
-                """
-                data = duckdb.execute(query, (self.parquet_file,)).df()
-            
-            if data.empty:
-                return pd.DataFrame()
-            
-            # Extract device ID and picture type from filename
-            data["deviceID"] = data["Name"].str.split("_").str[2]
-            data["picture_type"] = data["Name"].str.split("_").str[3].str.split(".").str[0]
-            data["url"] = "/data/" + data["Path"]
-            
-            return data
-        except Exception as e:
-            st.error(f"Failed to generate pictures mapping: {e}")
-            return pd.DataFrame()
 
 
 def render_site_filters(site_info: pd.DataFrame) -> tuple:
     """Render country and site selection filters."""
-    st.markdown("### 🌍 Site Selection")
+    st.markdown("#### 🌍 Site Selection")
     
     # Country filter
     countries = site_info["Country"].dropna().unique().tolist()
@@ -79,13 +50,11 @@ def render_site_filters(site_info: pd.DataFrame) -> tuple:
 
 def render_site_details(record: pd.Series) -> None:
     """Render detailed site information."""
-    st.markdown("### 📋 Site Details")
-    
     # Create two columns for better layout
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### 🌍 Location Information")
+        st.markdown('<p style="font-size: 1.1em; font-weight: 600; color: #16A085; margin-bottom: 0.5em;">🌍 Location Information</p>', unsafe_allow_html=True)
         st.markdown(f"**Country:** {record.get('Country', 'N/A')}")
         st.markdown(f"**Site:** {record.get('Site', 'N/A')}")
         st.markdown(f"**Cluster:** {record.get('Cluster', 'N/A')}")
@@ -104,7 +73,7 @@ def render_site_details(record: pd.Series) -> None:
         st.markdown(f"**GPS Device:** {gps_device}")
     
     with col2:
-        st.markdown("#### 🎙️ Device Information")
+        st.markdown('<p style="font-size: 1.1em; font-weight: 600; color: #8E44AD; margin-bottom: 0.5em;">🎙️ Device Information</p>', unsafe_allow_html=True)
         st.markdown(f"**Device ID:** {record.get('DeviceID', 'N/A')}")
         st.markdown(f"**Deployment ID:** {record.get('DeploymentID', 'N/A')}")
         
@@ -124,7 +93,7 @@ def render_site_details(record: pd.Series) -> None:
         st.markdown(f"**Quality Score:** {score}")
     
     # Deployment timeline
-    st.markdown("#### ⏰ Deployment Timeline")
+    st.markdown('<p style="font-size: 1.1em; font-weight: 600; color: #E67E22; margin-bottom: 0.5em; margin-top: 1em;">⏰ Deployment Timeline</p>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     
     with col1:
@@ -138,7 +107,7 @@ def render_site_details(record: pd.Series) -> None:
         st.markdown(f"**End:** {end_date} {end_time}")
     
     # Contact and comments
-    st.markdown("#### 📝 Additional Information")
+    st.markdown('<p style="font-size: 1.1em; font-weight: 600; color: #2980B9; margin-bottom: 0.5em; margin-top: 1em;">📝 Additional Information</p>', unsafe_allow_html=True)
     email = record.get("Adresse e-mail", "N/A")
     if email != "N/A":
         st.markdown(f"**Contact:** {email}")
@@ -166,7 +135,7 @@ def render_device_images(device_id: str, pictures_mapping: pd.DataFrame) -> None
         st.info(f"📷 No images found for device ID: {short_device_id}")
         return
     
-    st.markdown("### 📸 Device Images")
+    render_info_section_header("📸 Device Images", level="h4", style_class="device-images-header")
     
     # Group images by type
     image_types = device_images["picture_type"].unique()
@@ -291,6 +260,9 @@ def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None
         st.error("❌ No site information available.")
         return
     
+    # Main site information section
+    render_info_section_header("🏞️ Site Information", style_class="site-info-header")
+    
     # Site selection controls in main page
     selected_country, selected_site, filtered_site_info = render_site_filters(site_info)
     
@@ -309,7 +281,8 @@ def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None
     st.markdown(f"## 📍 {selected_site}")
     st.markdown(f"**Country:** {selected_country} • **Active:** {'✅ Yes' if record.get('Active', False) else '❌ No'}")
     
-    # Render main content
+    # Render site details as a subsection
+    render_info_section_header("📋 Site Details", level="h4", style_class="site-details-header")
     render_site_details(record)
     
     # Add spacing

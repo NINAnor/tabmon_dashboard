@@ -140,11 +140,6 @@ def render_help_section():
         - Devices are **Online** if they recorded audio within 3 days
         - **Offline** devices haven't recorded for more than 3 days
         - Click map markers for detailed device information
-        
-        **Time Analysis:**
-        - **Day**: Daily recording patterns (detailed view)
-        - **Week**: Weekly aggregation (medium view)  
-        - **Month**: Monthly trends (overview)
         """)
 
 

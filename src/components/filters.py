@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 from typing import List, Dict, Tuple
 from datetime import datetime, timedelta, date
+from components.ui_styles import render_info_section_header
 
 
 def render_country_filter(data: pd.DataFrame, column_name: str = "Country", key_prefix: str = "main") -> List[str]:
@@ -350,7 +351,7 @@ def get_preset_filters(preset: str, data: pd.DataFrame) -> Dict:
 
 def render_smart_preset_filters(data: pd.DataFrame, key_prefix: str = "main") -> Tuple[pd.DataFrame, Dict]:
     """Render smart preset filters with optional custom filtering."""
-    st.markdown("### 🔍 Quick Filters")
+    render_info_section_header("🔍 Quick Filters", style_class="quick-filters-header")
     
     # Preset selection
     preset_options = [

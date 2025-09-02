@@ -9,7 +9,7 @@ from config.settings import (
     TAB_ICONS, DEFAULT_MAP_ZOOM
 )
 from services.data_service import DataService
-from components.ui_styles import load_custom_css, render_page_header
+from components.ui_styles import load_custom_css, render_page_header, render_info_section_header
 from components.metrics import render_status_metrics
 from components.map_viz import render_device_map
 from components.tables import render_status_table, render_summary_table
@@ -87,7 +87,7 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
         render_device_map(site_info, filtered_data)
         
         # Map summary statistics
-        st.markdown("#### Map Summary")
+        render_info_section_header("🗺️ Map Summary", level="h4", style_class="map-summary-header")
         
         # Show filtering info if devices are being filtered out
         total_devices = len(device_data)
@@ -149,7 +149,7 @@ def render_status_tab(device_data: pd.DataFrame, metrics: dict, data_service: Da
         render_status_table(sorted_data)
         
         # Summary statistics
-        st.markdown("#### Summary Statistics")
+        render_info_section_header("📊 Summary Statistics", level="h4", style_class="map-summary-header")
         render_summary_table(filtered_data)
     else:
         st.warning("⚠️ No devices match the current filter criteria.")

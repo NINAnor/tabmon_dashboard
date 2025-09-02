@@ -112,6 +112,110 @@ def load_custom_css():
         border-left: 4px solid #11998e;
         margin: 1rem 0;
     }
+    
+    /* Subtle section headers for information display */
+    .section-info {
+        background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 0.8rem 1.2rem;
+        border-radius: 8px;
+        border-left: 4px solid #6c757d;
+        margin: 0.5rem 0;
+    }
+    
+    .section-info h3 {
+        color: #495057;
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .section-info h4 {
+        color: #6c757d;
+        margin: 0;
+        font-weight: 500;
+    }
+    
+    .audio-stats-header {
+        background: linear-gradient(90deg, #e3f2fd 0%, #f3e5f5 100%);
+        border-left: 4px solid #2196f3;
+    }
+    
+    .audio-stats-header h3 {
+        color: #1976d2;
+    }
+    
+    .dataset-contribution-header {
+        background: linear-gradient(90deg, #f3e5f5 0%, #fce4ec 100%);
+        border-left: 4px solid #9c27b0;
+    }
+    
+    .dataset-contribution-header h4 {
+        color: #7b1fa2;
+    }
+    
+    .map-summary-header {
+        background: linear-gradient(90deg, #e8f5e8 0%, #f1f8e9 100%);
+        border-left: 4px solid #4caf50;
+    }
+    
+    .map-summary-header h4 {
+        color: #388e3c;
+    }
+    
+    .site-details-header {
+        background: linear-gradient(90deg, #fff3e0 0%, #fce4ec 100%);
+        border-left: 4px solid #ff9800;
+    }
+    
+    .site-details-header h3 {
+        color: #f57c00;
+    }
+    
+    .site-images-header {
+        background: linear-gradient(90deg, #f3e5f5 0%, #e1f5fe 100%);
+        border-left: 4px solid #00bcd4;
+    }
+    
+    .site-images-header h3 {
+        color: #0097a7;
+    }
+    
+    .recording-header {
+        background: linear-gradient(90deg, #e8f5e8 0%, #e3f2fd 100%);
+        border-left: 4px solid #4caf50;
+    }
+    
+    .recording-header h3 {
+        color: #388e3c;
+    }
+    
+    .player-header {
+        background: linear-gradient(90deg, #fff3e0 0%, #fce4ec 100%);
+        border-left: 4px solid #ff5722;
+    }
+    
+    .player-header h3 {
+        color: #d84315;
+    }
+    
+    .quick-filters-header {
+        background: linear-gradient(90deg, #e8f5e8 0%, #e3f2fd 100%);
+        border-left: 4px solid #2196f3;
+    }
+    
+    .quick-filters-header h3 {
+        color: #1565c0;
+    }
+    
+    .site-name-header {
+        background: linear-gradient(90deg, #f3e5f5 0%, #e8f5e8 100%);
+        border-left: 4px solid #9c27b0;
+    }
+    
+    .site-name-header h2 {
+        color: #7b1fa2;
+        margin: 0;
+        font-weight: 600;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -141,5 +245,14 @@ def render_section_header(title: str, style_class: str):
     st.markdown(f"""
     <div class='section-header {style_class}'>
         <h3 style='color: white; margin: 0;'>{title}</h3>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_info_section_header(title: str, level: str = "h3", style_class: str = "section-info"):
+    """Render a subtle styled section header for information display."""
+    st.markdown(f"""
+    <div class='section-info {style_class}'>
+        <{level} style='margin: 0; font-weight: 600;'>{title}</{level}>
     </div>
     """, unsafe_allow_html=True)
