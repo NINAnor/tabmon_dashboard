@@ -86,33 +86,6 @@ def load_custom_css():
         border-radius: 10px;
     }
     
-    .section-header {
-        padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 1rem;
-        text-align: center;
-    }
-    
-    .map-header {
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    }
-    
-    .status-header {
-        background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
-    }
-    
-    .activity-header {
-        background: linear-gradient(90deg, #ff6b6b 0%, #feca57 100%);
-    }
-    
-    .detailed-status-header {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 10px;
-        border-left: 4px solid #11998e;
-        margin: 1rem 0;
-    }
-    
     /* Subtle section headers for information display */
     .section-info {
         background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
@@ -216,6 +189,15 @@ def load_custom_css():
         margin: 0;
         font-weight: 600;
     }
+    
+    .export-tools-header {
+        background: linear-gradient(90deg, #e3f2fd 0%, #f3e5f5 100%);
+        border-left: 4px solid #2196f3;
+    }
+    
+    .export-tools-header h4 {
+        color: #1976d2;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -238,15 +220,6 @@ def render_page_header(title: str, subtitle: str = None):
     header_html += "<hr style='margin-bottom: 30px;'>"
     
     st.markdown(header_html, unsafe_allow_html=True)
-
-
-def render_section_header(title: str, style_class: str):
-    """Render a styled section header."""
-    st.markdown(f"""
-    <div class='section-header {style_class}'>
-        <h3 style='color: white; margin: 0;'>{title}</h3>
-    </div>
-    """, unsafe_allow_html=True)
 
 
 def render_info_section_header(title: str, level: str = "h3", style_class: str = "section-info"):

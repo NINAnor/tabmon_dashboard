@@ -12,8 +12,6 @@ import streamlit as st
 
 from components.ui_styles import render_info_section_header
 
-from components.ui_styles import render_info_section_header
-
 
 def get_auth_credentials():
     """Read authentication credentials from environment variables or Docker secret."""
