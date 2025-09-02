@@ -58,7 +58,7 @@ def render_device_map(site_info: pd.DataFrame, status_df: pd.DataFrame):
         folium.Marker(
             location=[row["Latitude"], row["Longitude"]],
             popup=folium.Popup(popup_html, max_width=300),
-            tooltip=f"🎙️ {site_name} ({status})",
+            tooltip=f"{site_name} ({status})",
             icon=folium.Icon(
                 color=icon_color, 
                 icon=icon_symbol, 
@@ -130,17 +130,17 @@ def _create_popup_html(row: pd.Series, location_text: str) -> str:
     
     return f"""
     <div style="font-family: Arial, sans-serif; min-width: 200px;">
-        <h4 style="margin: 0; color: #2E86AB; text-align: center;">🎙️ {device_id}</h4>
+        <h4 style="margin: 0; color: #2E86AB; text-align: center;">{device_id}</h4>
         <hr style="margin: 10px 0;">
-        <p style="margin: 5px 0;"><b>📍 Site:</b> {location_text}</p>
-        <p style="margin: 5px 0;"><b>🌍 Country:</b> {country}</p>
-        <p style="margin: 5px 0;"><b>📶 Status:</b> 
+        <p style="margin: 5px 0;"><b>Site:</b> {location_text}</p>
+        <p style="margin: 5px 0;"><b>Country:</b> {country}</p>
+        <p style="margin: 5px 0;"><b>Status:</b> 
             <span style="color: {'green' if status == 'Online' else 'red'}; font-weight: bold;">
                 {status}
             </span>
         </p>
-        <p style="margin: 5px 0;"><b>🕒 Last Recorded:</b> {last_recorded}</p>
-        <p style="margin: 5px 0;"><b>⏱️ Days Since:</b> {days_since}</p>
-        <p style="margin: 5px 0;"><b>🎵 Total Recordings:</b> {total_recordings}</p>
+        <p style="margin: 5px 0;"><b>Last Recorded:</b> {last_recorded}</p>
+        <p style="margin: 5px 0;"><b>Days Since:</b> {days_since}</p>
+        <p style="margin: 5px 0;"><b>Total Recordings:</b> {total_recordings}</p>
     </div>
     """

@@ -74,7 +74,7 @@ def app(site_csv: str = None, parquet_file: str = None):
 
 def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
     """Render the interactive map tab."""
-    st.markdown("### 🗺️ Device Locations and Real-time Status")
+    st.markdown("### Device Locations and Status")
     
     # Filters for map view
     filtered_data, active_filters = render_complete_filters(device_data, key_prefix="map")
@@ -87,13 +87,13 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
         render_device_map(site_info, filtered_data)
         
         # Map summary statistics
-        st.markdown("#### 📊 Map Summary")
+        st.markdown("#### Map Summary")
         
         # Show filtering info if devices are being filtered out
         total_devices = len(device_data)
         shown_devices = len(filtered_data)
         if shown_devices < total_devices:
-            st.info(f"ℹ️ Showing {shown_devices} of {total_devices} total devices. {total_devices - shown_devices} devices are hidden by current filters.")
+            st.info(f"Showing {shown_devices} of {total_devices} total devices. {total_devices - shown_devices} devices are hidden by current filters.")
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -114,17 +114,17 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
 
 def render_status_tab(device_data: pd.DataFrame, metrics: dict, data_service: DataService):
     """Render the device status overview tab."""
-    st.markdown("### 📊 Device Status Overview")
+    st.markdown("### Device Status Overview")
     
     # Display status metrics cards
     render_status_metrics(metrics)
     
     # Status visualizations
-    st.markdown("#### 🌍 Status by Country")
+    st.markdown("#### Status by Country")
     render_country_bar_chart(device_data)
     
     # Detailed status table
-    st.markdown("#### 📋 Detailed Device Status")
+    st.markdown("#### Detailed Device Status")
     
     # Filters for status table
     filtered_data, _ = render_complete_filters(device_data, key_prefix="status")
@@ -149,7 +149,7 @@ def render_status_tab(device_data: pd.DataFrame, metrics: dict, data_service: Da
         render_status_table(sorted_data)
         
         # Summary statistics
-        st.markdown("#### 📈 Summary Statistics")
+        st.markdown("#### Summary Statistics")
         render_summary_table(filtered_data)
     else:
         st.warning("⚠️ No devices match the current filter criteria.")
@@ -157,7 +157,7 @@ def render_status_tab(device_data: pd.DataFrame, metrics: dict, data_service: Da
 
 def render_activity_tab(data_service: DataService):
     """Render the recording activity analysis tab."""
-    st.markdown("### 📈 Recording Activity Analysis")
+    st.markdown("### Recording Activity Analysis")
     
     # Load recording matrix data with day granularity
     with st.spinner("Loading daily activity data..."):
@@ -165,11 +165,11 @@ def render_activity_tab(data_service: DataService):
     
     if not recording_data.empty:
         # Activity heatmap
-        st.markdown("#### 🔥 Recording Activity Heatmap")
+        st.markdown("#### Recording Activity Heatmap")
         render_activity_heatmap(recording_data, "Day")
         
         # Activity insights
-        st.markdown("#### 💡 Activity Insights")
+        st.markdown("#### Activity Insights")
         
         col1, col2 = st.columns(2)
         
@@ -195,7 +195,7 @@ def render_activity_tab(data_service: DataService):
             avg_per_device = device_totals.mean()
             active_cells = (recording_data > 0).sum().sum()  # Count non-zero cells
             
-            st.markdown("**📊 Activity Statistics**")
+            st.markdown("**Activity Statistics**")
             st.write(f"• **Total recordings**: {total_recordings:,.0f}")
             st.write(f"• **Average per device**: {avg_per_device:.1f}")
             st.write(f"• **Active data points**: {active_cells:,}")

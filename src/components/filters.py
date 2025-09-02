@@ -193,71 +193,72 @@ def apply_filters(
 
 def render_advanced_filters(data: pd.DataFrame, key_prefix: str = "main") -> Dict:
     """Render advanced filtering options."""
-    with st.expander("🔧 Advanced Filters", expanded=False):
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Days since last recording filter
-            if "days_since_last" in data.columns:
-                max_days_value = data["days_since_last"].replace([float('inf'), float('-inf')], float('nan')).max()
-                max_days = int(max_days_value) if not pd.isna(max_days_value) else 30
-                
-                days_threshold = st.slider(
-                    "📅 Maximum days since last recording",
-                    min_value=0,
-                    max_value=max_days,
-                    value=max_days,
-                    key=f"days_threshold_filter_{key_prefix}",
-                    help="Filter devices by days since their last recording"
-                )
-            else:
-                days_threshold = None
-            
-            # Recording count filter
-            if "total_recordings" in data.columns:
-                min_recordings = st.number_input(
-                    "🎵 Minimum recordings",
-                    min_value=0,
-                    value=0,
-                    key=f"min_recordings_filter_{key_prefix}",
-                    help="Filter devices with at least this many recordings"
-                )
-            else:
-                min_recordings = None
-        
-        with col2:
-            # Coordinate filters
-            if "latitude" in data.columns and "longitude" in data.columns:
-                st.markdown("**📍 Geographic Bounds**")
-                
-                lat_range = st.slider(
-                    "Latitude range",
-                    min_value=float(data["latitude"].min()) if not data["latitude"].isna().all() else -90.0,
-                    max_value=float(data["latitude"].max()) if not data["latitude"].isna().all() else 90.0,
-                    value=(
-                        float(data["latitude"].min()) if not data["latitude"].isna().all() else -90.0,
-                        float(data["latitude"].max()) if not data["latitude"].isna().all() else 90.0
-                    ),
-                    key=f"lat_range_filter_{key_prefix}",
-                    help="Filter by latitude range"
-                )
-                
-                lon_range = st.slider(
-                    "Longitude range",
-                    min_value=float(data["longitude"].min()) if not data["longitude"].isna().all() else -180.0,
-                    max_value=float(data["longitude"].max()) if not data["longitude"].isna().all() else 180.0,
-                    value=(
-                        float(data["longitude"].min()) if not data["longitude"].isna().all() else -180.0,
-                        float(data["longitude"].max()) if not data["longitude"].isna().all() else 180.0
-                    ),
-                    key=f"lon_range_filter_{key_prefix}",
-                    help="Filter by longitude range"
-                )
-            else:
-                lat_range = None
-                lon_range = None
+    # Remove the expander to avoid nesting issues
+    st.markdown("**⚙️ Advanced Filters**")
     
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Days since last recording filter
+        if "days_since_last" in data.columns:
+            max_days_value = data["days_since_last"].replace([float('inf'), float('-inf')], float('nan')).max()
+            max_days = int(max_days_value) if not pd.isna(max_days_value) else 30
+            
+            days_threshold = st.slider(
+                "📅 Maximum days since last recording",
+                min_value=0,
+                max_value=max_days,
+                value=max_days,
+                key=f"days_threshold_filter_{key_prefix}",
+                help="Filter devices by days since their last recording"
+            )
+        else:
+            days_threshold = None
+        
+        # Recording count filter
+        if "total_recordings" in data.columns:
+            min_recordings = st.number_input(
+                "🎵 Minimum recordings",
+                min_value=0,
+                value=0,
+                key=f"min_recordings_filter_{key_prefix}",
+                help="Filter devices with at least this many recordings"
+            )
+        else:
+            min_recordings = None
+    
+    with col2:
+        # Coordinate filters
+        if "latitude" in data.columns and "longitude" in data.columns:
+            st.markdown("**📍 Geographic Bounds**")
+            
+            lat_range = st.slider(
+                "Latitude range",
+                min_value=float(data["latitude"].min()) if not data["latitude"].isna().all() else -90.0,
+                max_value=float(data["latitude"].max()) if not data["latitude"].isna().all() else 90.0,
+                value=(
+                    float(data["latitude"].min()) if not data["latitude"].isna().all() else -90.0,
+                    float(data["latitude"].max()) if not data["latitude"].isna().all() else 90.0
+                ),
+                key=f"lat_range_filter_{key_prefix}",
+                help="Filter by latitude range"
+            )
+            
+            lon_range = st.slider(
+                "Longitude range",
+                min_value=float(data["longitude"].min()) if not data["longitude"].isna().all() else -180.0,
+                max_value=float(data["longitude"].max()) if not data["longitude"].isna().all() else 180.0,
+                value=(
+                    float(data["longitude"].min()) if not data["longitude"].isna().all() else -180.0,
+                    float(data["longitude"].max()) if not data["longitude"].isna().all() else 180.0
+                ),
+                key=f"lon_range_filter_{key_prefix}",
+                help="Filter by longitude range"
+            )
+        else:
+            lat_range = None
+            lon_range = None
+
     return {
         "days_threshold": days_threshold,
         "min_recordings": min_recordings,
@@ -420,8 +421,8 @@ def render_smart_preset_filters(data: pd.DataFrame, key_prefix: str = "main") ->
             "description": "Custom filter configuration"
         }
         
-        # Optional advanced filters in expandable section
-        with st.expander("🔧 Advanced Options", expanded=False):
+        # Optional advanced filters (not in expandable section to avoid nesting)
+        if st.checkbox("Show Advanced Options", key=f"show_advanced_{key_prefix}"):
             advanced_filters = render_advanced_filters(filtered_data, key_prefix=key_prefix)
             
             # Apply advanced filters
@@ -450,6 +451,14 @@ def render_smart_preset_filters(data: pd.DataFrame, key_prefix: str = "main") ->
             
             # Merge advanced filters into active filters
             active_filters.update(advanced_filters)
+        else:
+            # No advanced filters applied
+            active_filters.update({
+                "days_threshold": None,
+                "min_recordings": None,
+                "lat_range": None,
+                "lon_range": None
+            })
     
     # Display filter summary
     if len(filtered_data) != len(data):

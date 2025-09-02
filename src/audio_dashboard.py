@@ -12,9 +12,10 @@ import duckdb
 import pandas as pd
 import streamlit as st
 
-from config.settings import COUNTRY_MAP
+from config.settings import COUNTRY_MAP, ASSETS_SITE_CSV, ASSETS_PARQUET_FILE
 from services.data_service import DataService
 from components.ui_styles import load_custom_css
+from components.sidebar import render_complete_sidebar
 from utils.data_loader import load_site_info, parse_file_datetime
 
 
@@ -88,8 +89,42 @@ class AudioService:
                 'earliest': audio_data['recorded_at'].min(),
                 'latest': audio_data['recorded_at'].max()
             },
-            'total_size_mb': audio_data['Size'].sum() / (1024 * 1024) if 'Size' in audio_data.columns else 0
+            'total_size_gb': audio_data['Size'].sum() / (1024 * 1024 * 1024) if 'Size' in audio_data.columns else 0
         }
+    
+    @st.cache_data(ttl=3600, show_spinner=False)
+    def get_total_dataset_stats(_self) -> dict:
+        """Get statistics for the entire audio dataset."""
+        try:
+            # Check if we're dealing with a URL or local file
+            if _self.parquet_file.startswith(('http://', 'https://')):
+                # For URLs, load all data then filter
+                data = pd.read_parquet(_self.parquet_file)
+                # Filter for audio files only
+                audio_data = data[data["MimeType"] == 'audio/mpeg']
+            else:
+                # For local files, use DuckDB for efficient filtering
+                query = """
+                SELECT COUNT(*) as total_recordings, SUM(Size) as total_size_bytes
+                FROM read_parquet(?)
+                WHERE MimeType = 'audio/mpeg'
+                """
+                result = duckdb.execute(query, (_self.parquet_file,)).df()
+                return {
+                    'total_recordings': int(result['total_recordings'].iloc[0]) if not result.empty else 0,
+                    'total_size_gb': float(result['total_size_bytes'].iloc[0]) / (1024 * 1024 * 1024) if not result.empty and pd.notna(result['total_size_bytes'].iloc[0]) else 0
+                }
+            
+            if audio_data.empty:
+                return {'total_recordings': 0, 'total_size_gb': 0}
+            
+            return {
+                'total_recordings': len(audio_data),
+                'total_size_gb': audio_data['Size'].sum() / (1024 * 1024 * 1024) if 'Size' in audio_data.columns else 0
+            }
+        except Exception as e:
+            st.error(f"Failed to load total dataset stats: {e}")
+            return {'total_recordings': 0, 'total_size_gb': 0}
 
 
 def get_auth_credentials():
@@ -106,11 +141,11 @@ def get_auth_credentials():
 
 def render_site_selection(site_info: pd.DataFrame) -> tuple:
     """Render country and site selection interface."""
-    st.sidebar.markdown("### 🌍 Site Selection")
+    st.markdown("### 🌍 Site Selection")
     
     # Country filter
     countries = site_info["Country"].dropna().unique().tolist()
-    selected_country = st.sidebar.selectbox(
+    selected_country = st.selectbox(
         "📍 Select Country", 
         sorted(countries),
         key="audio_country_filter"
@@ -121,7 +156,7 @@ def render_site_selection(site_info: pd.DataFrame) -> tuple:
     
     # Site filter
     sites = filtered_site_info["Site"].dropna().unique().tolist()
-    selected_site = st.sidebar.selectbox(
+    selected_site = st.selectbox(
         "🏞️ Select Site", 
         sorted(sites),
         key="audio_site_filter"
@@ -132,16 +167,16 @@ def render_site_selection(site_info: pd.DataFrame) -> tuple:
 
 def render_datetime_selector() -> datetime:
     """Render date and time selection interface."""
-    st.sidebar.markdown("### ⏰ Recording Time")
+    st.markdown("### ⏰ Recording Time")
     
     # Date and time inputs
-    selected_date = st.sidebar.date_input(
+    selected_date = st.date_input(
         "📅 Select Date", 
         value=datetime.now().date(),
         key="audio_date_filter"
     )
     
-    selected_time = st.sidebar.time_input(
+    selected_time = st.time_input(
         "🕐 Select Time", 
         value=datetime.now().time(),
         key="audio_time_filter"
@@ -171,27 +206,65 @@ def render_site_details(record: pd.Series) -> None:
         st.markdown(f"**Deployment ID:** {record.get('DeploymentID', 'N/A')}")
 
 
-def render_audio_stats(stats: dict) -> None:
-    """Render audio statistics."""
+def render_audio_stats(stats: dict, total_stats: dict = None) -> None:
+    """Render audio statistics with dataset contribution information."""
     if not stats:
         return
     
     st.markdown("### 📊 Audio Statistics")
     
+    # First row - site-specific stats
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("📼 Total Recordings", stats.get('total_recordings', 0))
+        st.metric("📼 Site Recordings", stats.get('total_recordings', 0))
     
     with col2:
-        size_mb = stats.get('total_size_mb', 0)
-        st.metric("💾 Total Size", f"{size_mb:.1f} MB")
+        size_gb = stats.get('total_size_gb', 0)
+        st.metric("💾 Site Size", f"{size_gb:.2f} GB")
     
     with col3:
         date_range = stats.get('date_range', {})
         if date_range.get('earliest') and date_range.get('latest'):
             days = (date_range['latest'] - date_range['earliest']).days
             st.metric("📅 Date Range", f"{days} days")
+    
+    # Second row - dataset contribution stats (if total stats available)
+    if total_stats:
+        st.markdown("#### 🌐 Dataset Contribution")
+        col4, col5, col6 = st.columns(3)
+        
+        with col4:
+            total_recordings = total_stats.get('total_recordings', 0)
+            site_recordings = stats.get('total_recordings', 0)
+            
+            if total_recordings > 0:
+                percentage = (site_recordings / total_recordings) * 100
+                st.metric(
+                    "📊 Recordings Share", 
+                    f"{percentage:.2f}%",
+                    delta=f"{site_recordings:,} of {total_recordings:,}"
+                )
+            else:
+                st.metric("📊 Recordings Share", "N/A")
+        
+        with col5:
+            total_size = total_stats.get('total_size_gb', 0)
+            site_size = stats.get('total_size_gb', 0)
+            
+            if total_size > 0:
+                size_percentage = (site_size / total_size) * 100
+                st.metric(
+                    "💾 Size Share", 
+                    f"{size_percentage:.2f}%",
+                    delta=f"{site_size:.2f} GB of {total_size:.2f} GB"
+                )
+            else:
+                st.metric("💾 Size Share", "N/A")
+        
+        with col6:
+            st.metric("🗂️ Total Dataset", f"{total_recordings:,} recordings")
+            st.caption(f"Total size: {total_size:.2f} GB")
 
 
 def render_recordings_table(recordings: pd.DataFrame, target_datetime: datetime) -> str:
@@ -302,16 +375,34 @@ def show_audio_dashboard(site_csv: str, parquet_file: str, base_dir: str = None)
     data_service = DataService(site_csv, parquet_file)
     audio_service = AudioService(parquet_file)
     
-    # Load site information
-    with st.spinner("🔄 Loading site information..."):
+    # Load site information and device data for metrics
+    with st.spinner("🔄 Loading site and device information..."):
         site_info = load_site_info(site_csv)
+        device_data = data_service.load_device_status()
+    
+    # Calculate metrics for the sidebar
+    metrics = data_service.calculate_metrics(device_data)
+    
+    # Render complete sidebar with status information only
+    with st.sidebar:
+        render_complete_sidebar(
+            metrics=metrics,
+            site_csv=ASSETS_SITE_CSV,
+            parquet_file=ASSETS_PARQUET_FILE
+        )
     
     if site_info.empty:
         st.error("❌ No site information available.")
         return
     
-    # Render site selection
-    selected_country, selected_site, filtered_site_info = render_site_selection(site_info)
+    # Site selection controls in main page
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        selected_country, selected_site, filtered_site_info = render_site_selection(site_info)
+    
+    with col2:
+        target_datetime = render_datetime_selector()
     
     # Get site data
     site_data = filtered_site_info[filtered_site_info["Site"] == selected_site]
@@ -324,8 +415,8 @@ def show_audio_dashboard(site_csv: str, parquet_file: str, base_dir: str = None)
     record = site_data.iloc[0]
     
     # Page header
+    st.markdown("---")
     st.markdown(f"## 📍 {selected_site}")
-    st.markdown(f"**Country:** {selected_country}")
     
     # Render site details
     render_site_details(record)
@@ -341,22 +432,23 @@ def show_audio_dashboard(site_csv: str, parquet_file: str, base_dir: str = None)
         st.error("❌ No device ID found for this site.")
         return
     
-    # Load audio data
-    with st.spinner("🔄 Loading audio recordings..."):
+    # Load audio data and total dataset stats
+    with st.spinner("🔄 Loading audio recordings and dataset statistics..."):
         audio_data = audio_service.get_audio_files_by_device(short_device_id)
+        total_stats = audio_service.get_total_dataset_stats()
     
     if audio_data.empty:
         st.warning(f"📂 No audio recordings found for device: {short_device_id}")
+        # Still show total dataset stats even if no recordings for this device
+        if total_stats and total_stats.get('total_recordings', 0) > 0:
+            st.info(f"💡 Total dataset contains {total_stats['total_recordings']:,} recordings ({total_stats['total_size_gb']:.2f} GB)")
         return
     
-    # Show audio statistics
+    # Show audio statistics with dataset contribution
     stats = audio_service.get_audio_stats(audio_data)
-    render_audio_stats(stats)
+    render_audio_stats(stats, total_stats)
     
     st.markdown("---")
-    
-    # DateTime selection
-    target_datetime = render_datetime_selector()
     
     # Find closest recordings
     closest_recordings = audio_service.find_closest_recordings(audio_data, target_datetime)

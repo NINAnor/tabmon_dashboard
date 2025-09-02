@@ -7,9 +7,10 @@ import duckdb
 import pandas as pd
 import streamlit as st
 
-from config.settings import COUNTRY_MAP
+from config.settings import COUNTRY_MAP, ASSETS_SITE_CSV, ASSETS_PARQUET_FILE
 from services.data_service import DataService
 from components.ui_styles import load_custom_css
+from components.sidebar import render_complete_sidebar
 from utils.data_loader import load_site_info
 
 
@@ -52,11 +53,11 @@ class SiteMetadataService:
 
 def render_site_filters(site_info: pd.DataFrame) -> tuple:
     """Render country and site selection filters."""
-    st.sidebar.markdown("### 🌍 Site Selection")
+    st.markdown("### 🌍 Site Selection")
     
     # Country filter
     countries = site_info["Country"].dropna().unique().tolist()
-    selected_country = st.sidebar.selectbox(
+    selected_country = st.selectbox(
         "📍 Select Country", 
         sorted(countries),
         key="site_country_filter"
@@ -67,7 +68,7 @@ def render_site_filters(site_info: pd.DataFrame) -> tuple:
     
     # Site filter
     sites = filtered_site_info["Site"].dropna().unique().tolist()
-    selected_site = st.sidebar.selectbox(
+    selected_site = st.selectbox(
         "🏞️ Select Site", 
         sorted(sites),
         key="site_site_filter"
@@ -239,7 +240,7 @@ def render_image_grid(images_df: pd.DataFrame) -> None:
                             st.image(
                                 response.content,
                                 caption=row['picture_type'].title(),
-                                use_column_width=True
+                                use_container_width=True
                             )
                         else:
                             st.error(f"Failed to load image: {image_url}")
@@ -268,17 +269,29 @@ def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None
     site_metadata_service = SiteMetadataService(parquet_file)
     
     # Load data
-    with st.spinner("🔄 Loading site information..."):
+    with st.spinner("🔄 Loading site and device information..."):
         site_info = load_site_info(site_csv)
+        device_data = data_service.load_device_status()
         
     with st.spinner("🔄 Loading device images..."):
         pictures_mapping = site_metadata_service.generate_pictures_mapping()
+    
+    # Calculate metrics for the sidebar
+    metrics = data_service.calculate_metrics(device_data)
+    
+    # Render complete sidebar with status information only
+    with st.sidebar:
+        render_complete_sidebar(
+            metrics=metrics,
+            site_csv=ASSETS_SITE_CSV,
+            parquet_file=ASSETS_PARQUET_FILE
+        )
     
     if site_info.empty:
         st.error("❌ No site information available.")
         return
     
-    # Render filters
+    # Site selection controls in main page
     selected_country, selected_site, filtered_site_info = render_site_filters(site_info)
     
     # Get site data
@@ -292,6 +305,7 @@ def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None
     record = site_data.iloc[0]
     
     # Page header with site name
+    st.markdown("---")
     st.markdown(f"## 📍 {selected_site}")
     st.markdown(f"**Country:** {selected_country} • **Active:** {'✅ Yes' if record.get('Active', False) else '❌ No'}")
     
