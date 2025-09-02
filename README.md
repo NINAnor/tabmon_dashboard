@@ -59,7 +59,7 @@ AUTH_PASSWORD=your_password_here
 docker compose up
 ```
 
-4. **Access the dashboard**: 
+4. **Access the dashboard**:
    - Open your browser to `http://localhost:8085`
    - Login with the credentials from your `.env` file
 
@@ -79,7 +79,7 @@ The dashboard connects to remote S3 storage via rclone. Configure your data path
 - Monitor device status and connectivity
 - Filter by country, region, and deployment status
 
-### Audio Dashboard  
+### Audio Dashboard
 - Browse audio recordings by device and time
 - Play audio files with secure authentication
 - Export recording lists and metadata

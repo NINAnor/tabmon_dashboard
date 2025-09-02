@@ -9,14 +9,14 @@ LAYOUT = "wide"
 
 # Data settings
 OFFLINE_THRESHOLD_DAYS = 3
-DATA_START_DATE = '2025-01-01'
+DATA_START_DATE = "2025-01-01"
 
 # Country mapping
 COUNTRY_MAP = {
-    'proj_tabmon_NINA': 'Norway',
-    'proj_tabmon_NINA_ES': 'Spain',
-    'proj_tabmon_NINA_NL': 'Netherlands',
-    'proj_tabmon_NINA_FR': 'France',
+    "proj_tabmon_NINA": "Norway",
+    "proj_tabmon_NINA_ES": "Spain",
+    "proj_tabmon_NINA_NL": "Netherlands",
+    "proj_tabmon_NINA_FR": "France",
 }
 
 # Map settings
@@ -34,14 +34,14 @@ CACHE_TTL = 3600  # 1 hour
 
 # UI Colors
 COLORS = {
-    'primary': '#2E86AB',
-    'secondary': '#667eea',
-    'success': '#11998e',
-    'warning': '#feca57',
-    'danger': '#ff6b6b',
-    'info': '#764ba2',
-    'light': '#f8f9fa',
-    'dark': '#343a40'
+    "primary": "#2E86AB",
+    "secondary": "#667eea",
+    "success": "#11998e",
+    "warning": "#feca57",
+    "danger": "#ff6b6b",
+    "info": "#764ba2",
+    "light": "#f8f9fa",
+    "dark": "#343a40",
 }
 
 # Data source URLs
@@ -50,11 +50,7 @@ ASSETS_SITE_CSV = "assets/site_info.csv"
 ASSETS_PARQUET_FILE = "assets/index.parquet"
 
 # Tab icons
-TAB_ICONS = {
-    'map': '🗺️',
-    'status': '📊', 
-    'activity': '📈'
-}
+TAB_ICONS = {"map": "🗺️", "status": "📊", "activity": "📈"}
 
 # Map settings
 DEFAULT_MAP_ZOOM = 6
