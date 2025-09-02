@@ -172,7 +172,8 @@ def apply_filters(
     if start_date and end_date and "last_file" in filtered_data.columns:
         last_file_dates = pd.to_datetime(filtered_data["last_file"], errors="coerce")
 
-        # Convert start_date and end_date to same timezone as data (or make timezone-naive)
+        # Convert start_date and end_date to same timezone as data
+        # (or make timezone-naive)
         start_date_naive = (
             start_date.tz_localize(None) if start_date.tzinfo else start_date
         )

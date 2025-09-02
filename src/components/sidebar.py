@@ -41,8 +41,9 @@ def render_dashboard_sidebar(metrics: dict = None):
     <div class='info-box'>
         <h4 style='color: #2E86AB; margin-top: 0;'>📋 Dashboard Info</h4>
         <p style='margin-bottom: 0; font-size: 0.9em;'>
-            This dashboard provides real-time monitoring of TABMON audio recording devices
-            across multiple countries. Use the tabs above to explore different views of your data.
+            This dashboard provides real-time monitoring of TABMON audio recording
+            devices across multiple countries. Use the tabs above to explore
+            different views of your data.
         </p>
     </div>
     """,
@@ -56,8 +57,14 @@ def render_dashboard_sidebar(metrics: dict = None):
         """
     <div class='legend-box'>
         <h4 style='color: #2E86AB; margin-top: 0;'>🏷️ Status Legend</h4>
-        <p style='margin: 0.5rem 0;'><span style='color: green; font-weight: bold;'>🟢 Online:</span> Active within 3 days</p>
-        <p style='margin: 0.5rem 0;'><span style='color: red; font-weight: bold;'>🔴 Offline:</span> No activity > 3 days</p>
+        <p style='margin: 0.5rem 0;'>
+            <span style='color: green; font-weight: bold;'>🟢 Online:</span>
+            Active within 3 days
+        </p>
+        <p style='margin: 0.5rem 0;'>
+            <span style='color: red; font-weight: bold;'>🔴 Offline:</span>
+            No activity > 3 days
+        </p>
         <p style='margin: 0.5rem 0; font-size: 0.8em; color: #666;'>
             <em>Status is determined by the last recorded audio file timestamp.</em>
         </p>
@@ -79,7 +86,8 @@ def render_dashboard_sidebar_without_granularity(metrics: dict = None):
         <h4 style='color: #2E86AB; margin-top: 0;'>📋 Dashboard Info</h4>
         <p style='margin-bottom: 0; font-size: 0.9em;'>
             Real-time monitoring of TABMON audio recording devices
-            across multiple countries. Navigate using the tabs above to explore different data views.
+            across multiple countries. Navigate using the tabs above to explore
+            different data views.
         </p>
     </div>
     """,
@@ -133,8 +141,14 @@ def render_dashboard_sidebar_without_granularity(metrics: dict = None):
         """
     <div class='legend-box'>
         <h4 style='color: #2E86AB; margin-top: 0;'>🏷️ Status Legend</h4>
-        <p style='margin: 0.5rem 0;'><span style='color: green; font-weight: bold;'>🟢 Online:</span> Active within 3 days</p>
-        <p style='margin: 0.5rem 0;'><span style='color: red; font-weight: bold;'>🔴 Offline:</span> No activity > 3 days</p>
+        <p style='margin: 0.5rem 0;'>
+            <span style='color: green; font-weight: bold;'>🟢 Online:</span>
+            Active within 3 days
+        </p>
+        <p style='margin: 0.5rem 0;'>
+            <span style='color: red; font-weight: bold;'>🔴 Offline:</span>
+            No activity > 3 days
+        </p>
         <p style='margin: 0.5rem 0; font-size: 0.8em; color: #666;'>
             <em>Status is determined by the last recorded audio file timestamp.</em>
         </p>
@@ -164,14 +178,19 @@ def render_about_section():
     """Render about information in the sidebar."""
     with st.expander("ℹ️ About TABMON", expanded=False):
         st.markdown("""
-        **TABMON** develops transnational biodiversity monitoring using autonomous acoustic sensors across Europe's latitudinal range, demonstrating how acoustic sensing complements existing monitoring to address EU directive gaps and Biodiversity Strategy targets.
+        **TABMON** develops transnational biodiversity monitoring using autonomous
+        acoustic sensors across Europe's latitudinal range, demonstrating how acoustic
+        sensing complements existing monitoring to address EU directive gaps and
+        Biodiversity Strategy targets.
 
         **Three Work Packages:**
         1. **Transnational Network** - Deploying acoustic monitoring infrastructure
-        2. **AI Analytics** - Deriving Essential Biodiversity Variables (EBV) to assess ecosystem and species health
+        2. **AI Analytics** - Deriving Essential Biodiversity Variables (EBV) to
+           assess ecosystem and species health
         3. **Policy Impact** - Showcasing results to inform decision makers
 
-        This dashboard monitors operational status of deployed audio recording devices across multiple countries and research sites.
+        This dashboard monitors operational status of deployed audio recording devices
+        across multiple countries and research sites.
 
         For technical support, contact the TABMON team.
         """)

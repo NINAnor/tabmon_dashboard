@@ -23,7 +23,8 @@ def get_auth_credentials():
 
     # No fallback - require explicit configuration
     raise ValueError(
-        "Authentication credentials not found. Please set AUTH_USERNAME and AUTH_PASSWORD environment variables."
+        "Authentication credentials not found. Please set AUTH_USERNAME and "
+        "AUTH_PASSWORD environment variables."
     )
 
 
@@ -240,7 +241,8 @@ def render_audio_player(file_path: str) -> None:
                 st.error(f"❌ Authentication error: {str(e)}")
                 # Fallback to HTML audio tag (may not work without auth)
                 st.markdown(
-                    f'<audio controls style="width: 100%"><source src="{audio_url}" type="audio/mpeg"></audio>',
+                    f'<audio controls style="width: 100%">'
+                    f'<source src="{audio_url}" type="audio/mpeg"></audio>',
                     unsafe_allow_html=True,
                 )
         else:

@@ -6,7 +6,7 @@ Provides detailed site metadata exploration and device information.
 import streamlit as st
 
 from components.sidebar import render_complete_sidebar
-from components.site import (
+from components.site_components import (
     render_device_images,
     render_site_details,
     render_site_export_options,
@@ -75,21 +75,23 @@ def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None
         f"📍 {selected_site}", level="h2", style_class="site-name-header"
     )
     st.markdown(
-        f"**Country:** {selected_country} • **Active:** {'✅ Yes' if record.get('Active', False) else '❌ No'}"
+        f"**Country:** {selected_country} • **Active:** "
+        f"{'✅ Yes' if record.get('Active', False) else '❌ No'}"
     )
 
     # Render site details as a subsection
     render_info_section_header(
         "📋 Site Details", level="h4", style_class="site-details-header"
     )
-    render_site_details(record)
+    render_site_details(filtered_site_info, selected_site)
 
     # Add spacing
     st.markdown("---")
 
     # Render device images
-    device_id = record.get("DeviceID", "")
-    render_device_images(device_id, pictures_mapping)
+    # Extract short device ID for image matching
+    short_device_id = site_metadata_service.extract_device_id(record)
+    render_device_images(short_device_id, pictures_mapping)
 
     # Additional features and export options
     st.markdown("---")

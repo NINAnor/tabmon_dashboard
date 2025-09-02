@@ -215,7 +215,8 @@ def render_page_header(title: str, subtitle: str = None):
 
     if subtitle:
         header_html += f"""
-        <p style='text-align: center; color: #666; font-size: 1.2em; margin-bottom: 30px;'>
+        <p style='text-align: center; color: #666; font-size: 1.2em;
+                  margin-bottom: 30px;'>
             {subtitle}
         </p>
         """

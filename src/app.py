@@ -43,7 +43,8 @@ def main():
     st.sidebar.markdown("""
     ### 📋 Dashboard Overview
 
-    **🗺️ Map Visualization**: Real-time device monitoring with interactive maps and status tracking
+    **🗺️ Map Visualization**: Real-time device monitoring with interactive maps
+    and status tracking
 
     **🎵 Audio Analysis**: In-depth audio recording analysis and visualization
 

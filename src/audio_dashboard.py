@@ -105,8 +105,11 @@ def show_audio_dashboard(
         st.warning(f"📂 No audio recordings found for device: {short_device_id}")
         # Still show total dataset stats even if no recordings for this device
         if total_stats and total_stats.get("total_recordings", 0) > 0:
+            total_recordings = total_stats["total_recordings"]
+            total_size_gb = total_stats["total_size_gb"]
             st.info(
-                f"💡 Total dataset contains {total_stats['total_recordings']:,} recordings ({total_stats['total_size_gb']:.2f} GB)"
+                f"💡 Total dataset contains {total_recordings:,} recordings "
+                f"({total_size_gb:.2f} GB)"
             )
         return
 

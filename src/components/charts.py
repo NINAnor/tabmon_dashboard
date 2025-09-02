@@ -78,7 +78,8 @@ def render_status_pie_chart(metrics: dict):
                 marker_colors=["#11998e", "#ff6b6b"],
                 textinfo="label+percent",
                 textfont_size=14,
-                hovertemplate="<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>",
+                hovertemplate="<b>%{label}</b><br>Count: %{value}<br>"
+                "Percentage: %{percent}<extra></extra>",
             )
         ]
     )

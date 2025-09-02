@@ -1,8 +1,3 @@
-"""
-Site Dashboard Components
-Provides reusable components for site metadata exploration and device information.
-"""
-
 import os
 from datetime import datetime
 
@@ -22,23 +17,10 @@ def get_auth_credentials():
     if username and password:
         return (username, password)
 
-    # Priority 2: Try to read username from htpasswd secret if available
-    try:
-        with open("/run/secrets/htpasswd") as f:
-            htpasswd_content = f.read().strip()
-            lines = htpasswd_content.split("\n")
-            for line in lines:
-                if line.strip() and ":" in line:
-                    username = line.split(":")[0]
-                    # Note: Still need password from environment variables
-                    # as htpasswd contains hashed passwords only
-                    break
-    except (OSError, FileNotFoundError):
-        pass
-
     # No fallback - require explicit configuration
     raise ValueError(
-        "Authentication credentials not found. Please set AUTH_USERNAME and AUTH_PASSWORD environment variables."
+        "Authentication credentials not found.",
+        "Please set AUTH_USERNAME and AUTH_PASSWORD environment variables.",
     )
 
 
@@ -72,7 +54,7 @@ def render_site_details(filtered_data: pd.DataFrame, selected_site: str) -> None
 
     record = site_data.iloc[0]
 
-    render_info_section_header("📋 Site Details", style_class="site-details-header")
+    # render_info_section_header("📋 Site Details", style_class="site-details-header")
 
     # Create two columns for better layout
     col1, col2 = st.columns(2)
@@ -157,7 +139,7 @@ def render_image_grid(images_df: pd.DataFrame) -> None:
                     # Check if we're dealing with a local or remote URL
                     if image_url.startswith("/data/"):
                         # This is a remote URL that needs authentication
-                        # Use the reverse proxy service name from within Docker (port 80 internal)
+                        # Use the reverse proxy service name from within Docker
                         full_url = f"http://reverseproxy:80{image_url}"
 
                         # Use Streamlit's image function with authentication
@@ -185,14 +167,28 @@ def render_image_grid(images_df: pd.DataFrame) -> None:
                     st.markdown(f"**{row['picture_type'].title()}**: Image unavailable")
 
 
-def render_device_images(filtered_data: pd.DataFrame, selected_site: str) -> None:
+def render_device_images(device_id: str, pictures_mapping: pd.DataFrame) -> None:
     """Render device images if available."""
-    site_data = filtered_data[filtered_data["Site"] == selected_site]
-
-    if site_data.empty:
+    if pictures_mapping.empty:
+        st.info("📸 No device images available for this site.")
         return
 
-    render_info_section_header("� Device Images", style_class="site-images-header")
+    render_info_section_header("📸 Device Images", style_class="site-images-header")
+
+    # Filter images for this device
+    # Check if deviceID column exists and filter accordingly
+    if "deviceID" in pictures_mapping.columns:
+        device_images = pictures_mapping[pictures_mapping["deviceID"] == device_id]
+    else:
+        st.info("📸 Device image mapping not available.")
+        return
+
+    if device_images.empty:
+        st.info(f"📸 No images found for device {device_id}")
+        return
+
+    # Render images in a grid
+    render_image_grid(device_images)
 
 
 def render_site_export_options(

@@ -41,7 +41,6 @@ def app(site_csv: str = None, parquet_file: str = None):
     # Load all data
     with st.spinner("Loading device data..."):
         device_data = data_service.load_device_status()
-        site_info = data_service.load_site_info()
 
     # Calculate metrics
     metrics = data_service.calculate_metrics(device_data)
@@ -106,8 +105,10 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
         total_devices = len(device_data)
         shown_devices = len(filtered_data)
         if shown_devices < total_devices:
+            hidden_devices = total_devices - shown_devices
             st.info(
-                f"Showing {shown_devices} of {total_devices} total devices. {total_devices - shown_devices} devices are hidden by current filters."
+                f"Showing {shown_devices} of {total_devices} total devices. "
+                f"{hidden_devices} devices are hidden by current filters."
             )
 
         col1, col2, col3, col4 = st.columns(4)
@@ -133,7 +134,8 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
             st.metric("Sites", site_count)
     else:
         st.warning(
-            "⚠️ No devices match the current filter criteria. Please adjust your filters."
+            "⚠️ No devices match the current filter criteria. "
+            "Please adjust your filters."
         )
 
 
@@ -160,8 +162,6 @@ def render_status_tab(
         # Display options
         col1, col2, col3 = st.columns(3)
 
-        with col1:
-            per_page = st.selectbox("Devices per page", [10, 25, 50, 100], index=1)
         with col2:
             sort_by = st.selectbox(
                 "Sort by",
@@ -251,7 +251,8 @@ def render_activity_tab(data_service: DataService):
             "⚠️ No recording activity data available for the selected time granularity."
         )
         st.info(
-            "💡 This might be due to missing data or no recordings in the specified time period."
+            "💡 This might be due to missing data or no recordings in the "
+            "specified time period."
         )
 
 

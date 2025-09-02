@@ -6,6 +6,7 @@ Handles all data loading, processing, and caching operations.
 import os
 import tempfile
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import duckdb
 import pandas as pd
@@ -37,8 +38,15 @@ class DataService:
 
     def _get_auth(self):
         """Get authentication for HTTP requests from environment."""
-        username = os.getenv("AUTH_USERNAME", "guest")
-        password = os.getenv("AUTH_PASSWORD", "ninaguest")
+        username = os.getenv("AUTH_USERNAME")
+        password = os.getenv("AUTH_PASSWORD")
+
+        if not username or not password:
+            raise ValueError(
+                "Authentication credentials not found. Please set AUTH_USERNAME and "
+                "AUTH_PASSWORD environment variables."
+            )
+
         return HTTPBasicAuth(username, password)
 
     def _get_file_path(self, url_or_path: str, file_type: str = "csv") -> str:
@@ -49,7 +57,7 @@ class DataService:
 
             if cache_key not in self._temp_files:
                 auth = self._get_auth()
-                response = requests.get(url_or_path, auth=auth)
+                response = requests.get(url_or_path, auth=auth, timeout=30)
 
                 if response.status_code != 200:
                     raise Exception(
@@ -73,7 +81,7 @@ class DataService:
     def load_device_status(
         _self, offline_threshold_days: int = OFFLINE_THRESHOLD_DAYS
     ) -> pd.DataFrame:
-        """Load and calculate comprehensive device status from parquet file with site info."""
+        """Load and calculate comprehensive device status from parquet with site."""
         # Get local file paths (download if URLs)
         parquet_path = _self._get_file_path(_self.parquet_file, "parquet")
         site_csv_path = _self._get_file_path(_self.site_csv, "csv")
@@ -116,7 +124,7 @@ class DataService:
         # Load site information first
         site_info = load_site_info(site_csv_path)
 
-        site_info = site_info[site_info["Active"] == True].copy()
+        site_info = site_info[site_info["Active"]].copy()
 
         # Create mapping between device IDs - use consistent 8-character suffix
         site_info["short_device"] = site_info["DeviceID"].str.strip().str[-8:]
@@ -215,7 +223,7 @@ class DataService:
 
         # Load site info
         site_info = load_site_info(site_csv_path)
-        site_info = site_info[site_info["Active"] == True].copy()
+        site_info = site_info[site_info["Active"]].copy()
         site_info["clean_id"] = site_info["DeploymentID"].str.strip()
         data["clean_id"] = data["short_device_id"].str.strip()
 
@@ -275,8 +283,10 @@ class DataService:
         """Clean up temporary files."""
         for temp_file in self._temp_files.values():
             try:
-                if os.path.exists(temp_file):
-                    os.unlink(temp_file)
-            except Exception:
-                pass  # Ignore errors during cleanup
+                temp_path = Path(temp_file)
+                if temp_path.exists():
+                    temp_path.unlink()
+            except Exception as e:
+                # Log cleanup errors but don't raise
+                print(f"Warning: Failed to cleanup temporary file {temp_path}: {e}")
         self._temp_files.clear()
