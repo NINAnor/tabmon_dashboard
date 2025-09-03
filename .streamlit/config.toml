@@ -1,6 +1,13 @@
+[global]
+email = ""
+
+[server]
+enableCORS = false
+enableXsrfProtection = false
+
 [theme]
-backgroundColor = "#FCF6F5"  # background of the whole app
+backgroundColor = "#FFFFFF"  # background of the whole app
 font = "sans serif"
-primaryColor = "#990011"
-secondaryBackgroundColor = "#e0e0ef"  # side dashboard
+primaryColor = "#2E86AB"
+secondaryBackgroundColor = "#F0F2F6"  # side dashboard
 textColor = "#262730"

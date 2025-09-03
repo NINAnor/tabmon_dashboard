@@ -1,99 +1,142 @@
-from datetime import datetime, timezone
+"""
+Audio Dashboard for TABMON - Modernized Version
+Provides audio file browsing, filtering, and playback functionality.
+"""
 
-import duckdb
 import streamlit as st
 
-from utils.data_loader import load_site_info, parse_file_datetime
+from components.audio import (
+    render_audio_export_options,
+    render_audio_player,
+    render_audio_stats,
+    render_datetime_selector,
+    render_recordings_table,
+    render_site_details,
+    render_site_selection,
+)
+from components.sidebar import render_complete_sidebar
+from components.ui_styles import load_custom_css, render_info_section_header
+from config.settings import ASSETS_PARQUET_FILE, ASSETS_SITE_CSV
+from services.audio_service import AudioService
+from services.data_service import DataService
+from utils.data_loader import load_site_info
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def get_filtered_audio_data_by_device(parquet_file, short_device_id):
-    query = """
-        SELECT *
-        FROM read_parquet(?)
-        WHERE RIGHT(device, 8) = ?
+def show_audio_dashboard(
+    site_csv: str, parquet_file: str, base_dir: str = None
+) -> None:
+    """Main audio dashboard function.
+
+    Args:
+        site_csv: Path or URL to the site CSV file
+        parquet_file: Path or URL to the parquet data file
+        base_dir: Base directory for data files (optional, for backward compatibility)
     """
-    df = duckdb.execute(query, (parquet_file, short_device_id)).df()
-    return df
+    load_custom_css()
 
+    st.title("🎵 Audio Analysis Dashboard")
+    st.markdown("Browse and play audio recordings from monitoring devices.")
 
-def show_audio_dashboard(site_csv, parquet_file):
-    site_info = load_site_info(site_csv)
+    # Initialize services
+    data_service = DataService(site_csv, parquet_file)
+    audio_service = AudioService(parquet_file)
 
-    #######################
-    # SELECTION DASHBOARD #
-    #######################
+    # Load site information and device data for metrics
+    with st.spinner("🔄 Loading site and device information..."):
+        site_info = load_site_info(site_csv)
+        device_data = data_service.load_device_status()
 
-    # Select per country and per site
-    countries = site_info["country"].unique().tolist()
-    selected_country = st.sidebar.selectbox("Select Country", sorted(countries))
+    # Calculate metrics for the sidebar
+    metrics = data_service.calculate_metrics(device_data)
 
-    filtered_sites = site_info[site_info["country"] == selected_country]
-    sites = filtered_sites["site"].unique().tolist()
-    selected_site = st.sidebar.selectbox("Select Site", sorted(sites))
+    # Render complete sidebar with status information only
+    with st.sidebar:
+        render_complete_sidebar(
+            metrics=metrics, site_csv=ASSETS_SITE_CSV, parquet_file=ASSETS_PARQUET_FILE
+        )
 
-    site_data = filtered_sites[filtered_sites["site"] == selected_site]
-    if site_data.empty:
-        st.error("No site data found for the selected site.")
+    if site_info.empty:
+        st.error("❌ No site information available.")
         return
+
+    # Site selection controls in main page
+    col1, col2 = st.columns(2)
+
+    with col1:
+        selected_country, selected_site, filtered_site_info = render_site_selection(
+            site_info
+        )
+
+    with col2:
+        target_datetime = render_datetime_selector()
+
+    # Get site data
+    site_data = filtered_site_info[filtered_site_info["Site"] == selected_site]
+
+    if site_data.empty:
+        st.error(f"❌ No data found for site: {selected_site}")
+        return
+
+    # Get the first record for the site
     record = site_data.iloc[0]
 
-    st.title(f"Site: {selected_site}")
-    st.write("### Site Details")
-    st.markdown(f"**Country:** {record.get('country', 'N/A')}")
-    st.markdown(f"**Site:** {record.get('site', 'N/A')}")
-    st.markdown(f"**Device ID:** {record.get('deviceID', 'N/A')}")
+    # Page header
+    st.markdown("---")
+    render_info_section_header(
+        f"📍 {selected_site}", level="h2", style_class="site-name-header"
+    )
 
-    ########
-    full_device_id = record.get("deviceID", "")
-    if "_" in full_device_id:
-        short_device_id = full_device_id.split("_")[-1].strip()
-    else:
-        short_device_id = full_device_id[-8:]
-    st.write(f"**Short Device ID:** {short_device_id}")
+    # Render site details
+    render_site_details(record)
 
-    # Query audio data for the selected site's device.
-    df = get_filtered_audio_data_by_device(parquet_file, short_device_id)
-    if df.empty:
-        st.write("No audio files found for this site/device.")
+    # Extract device ID
+    short_device_id = audio_service.extract_device_id(record)
+
+    if not short_device_id:
+        st.error("❌ No device ID found for this site.")
         return
 
-    # Let the user select a recording date and time using separate inputs.
-    selected_date = st.sidebar.date_input(
-        "Select Recording Date", value=datetime.utcnow().date()
-    )
-    selected_time = st.sidebar.time_input(
-        "Select Recording Time", value=datetime.utcnow().time()
-    )
-    selected_datetime = datetime.combine(selected_date, selected_time).replace(
-        tzinfo=timezone.utc
-    )
+    # Load audio data and total dataset stats
+    with st.spinner("🔄 Loading audio recordings and dataset statistics..."):
+        audio_data = audio_service.get_audio_files_by_device(short_device_id)
+        total_stats = audio_service.get_total_dataset_stats()
 
-    # Parse the recording time from the file name.
-    df["recorded_at"] = df["Name"].apply(parse_file_datetime)
-    df = df.dropna(subset=["recorded_at"])
-    if df.empty:
-        st.write("No valid recording timestamps could be determined.")
+    if audio_data.empty:
+        st.warning(f"📂 No audio recordings found for device: {short_device_id}")
+        # Still show total dataset stats even if no recordings for this device
+        if total_stats and total_stats.get("total_recordings", 0) > 0:
+            total_recordings = total_stats["total_recordings"]
+            total_size_gb = total_stats["total_size_gb"]
+            st.info(
+                f"💡 Total dataset contains {total_recordings:,} recordings "
+                f"({total_size_gb:.2f} GB)"
+            )
         return
 
-    # Compute the absolute time difference between each file's recorded time
-    # and the selected datetime.
-    df["time_diff"] = (df["recorded_at"] - selected_datetime).abs()
+    # Show audio statistics with dataset contribution
+    stats = audio_service.get_audio_stats(audio_data)
+    render_audio_stats(stats, total_stats)
 
-    # Sort the dataframe by time difference and take the top 10 closest files.
-    closest_df = df.sort_values(by="time_diff").head(10)
+    st.markdown("---")
 
-    st.write(f"**Selected Time:** {selected_datetime}")
-    st.write("### 10 Closest Files to Specified Date")
-    st.dataframe(closest_df[["Name", "recorded_at", "time_diff", "Path"]])
+    # Find closest recordings
+    closest_recordings = audio_service.find_closest_recordings(
+        audio_data, target_datetime
+    )
 
-    # Let the user select a file to play from the 10 closest files.
-    selected_file = st.selectbox("Select a File to Play", closest_df["Path"].tolist())
-    if selected_file:
-        file_url = f"/data/{selected_file}"
-        # audio = f"http://rclone:8081/{file_url}"
-        # st.audio(audio)
-        st.html(
-            f"<audio style='height: 100%; width: 100%; object-fit: contain' "
-            f"src='{file_url}' controls />"
-        )
+    # Show target time info
+    st.markdown(
+        f"**🎯 Target Time:** {target_datetime.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+    )
+
+    # Render recordings table and get selection
+    selected_file_path = render_recordings_table(closest_recordings, target_datetime)
+
+    # Render audio player
+    if selected_file_path:
+        st.markdown("---")
+        render_audio_player(selected_file_path)
+
+    # Additional features
+    st.markdown("---")
+    render_audio_export_options(closest_recordings, selected_site, audio_data)

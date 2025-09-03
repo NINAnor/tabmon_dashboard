@@ -1,275 +1,266 @@
-from datetime import datetime, timedelta, timezone
+"""
+Enhanced TABMON Dashboard with modular architecture.
+"""
 
-import duckdb
-import folium
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
-from folium.plugins import MarkerCluster
-from streamlit_folium import st_folium
 
-from utils.data_loader import load_site_info, parse_file_datetime
-
-
-def get_device_status_by_recorded_at(parquet_file, offline_threshold_days=16):
-    df = duckdb.execute("SELECT * FROM read_parquet(?)", (parquet_file,)).df()
-    df["recorded_at"] = df["Name"].apply(parse_file_datetime)
-    df = df.dropna(subset=["recorded_at"])
-    if df.empty:
-        return pd.DataFrame()
-
-    # extract the device ID (last 8 characters, lower-case, stripped).
-    df["short_device"] = df["device"].apply(lambda x: x[-8:].strip().lower())
-
-    df_latest = df.groupby("short_device")["recorded_at"].max().reset_index()
-
-    now = datetime.now(timezone.utc)
-    threshold = timedelta(days=offline_threshold_days)
-
-    df_latest["status"] = df_latest["recorded_at"].apply(
-        lambda t: "Offline" if now - t > threshold else "Online"
-    )
-    return df_latest
+from components.charts import (
+    render_activity_heatmap,
+    render_country_bar_chart,
+)
+from components.filters import render_complete_filters
+from components.map_viz import render_device_map
+from components.metrics import render_status_metrics
+from components.sidebar import render_complete_sidebar
+from components.tables import render_status_table, render_summary_table
+from components.ui_styles import (
+    load_custom_css,
+    render_info_section_header,
+)
+from config.settings import (
+    APP_TITLE,
+    ASSETS_PARQUET_FILE,
+    ASSETS_SITE_CSV,
+    TAB_ICONS,
+)
+from services.data_service import DataService
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def get_parquet_site_merged(index_parquet, site, time_granularity="Day"):
-    index_parquet = duckdb.read_parquet(index_parquet)
+def app(site_csv: str = None, parquet_file: str = None):
+    """Main map dashboard application."""
+    load_custom_css()
 
-    query = """
-    SELECT *,
-        COALESCE(
-            TRY_STRPTIME(Name, '%Y-%m-%dT%H_%M_%S.%fZ.mp3'),
-            TRY_STRPTIME(Name, '%Y-%m-%dT%H_%M_%SZ.mp3'),
-            STRPTIME(Name, '%Y-%m-%dT%H_%MZ.mp3'),
-        ) AS datetime,
-    FROM index_parquet
-    WHERE MimeType = 'audio/mpeg'
-    """
+    # Use provided URLs or fall back to defaults
+    site_csv_url = site_csv or ASSETS_SITE_CSV
+    parquet_file_url = parquet_file or ASSETS_PARQUET_FILE
 
-    data_q = duckdb.sql(query)
-    data = data_q.fetchdf()
+    # Initialize data service with provided URLs
+    data_service = DataService(site_csv_url, parquet_file_url)
 
-    # Parse the device ID
-    data["short_device_id"] = (
-        data["Path"]
-            .str.split("/")         
-            .str[-3]              
-            .str.split("-")        
-            .str[-1]                 
-            .str[-8:]               
-    )
+    # Load all data
+    with st.spinner("Loading device data..."):
+        device_data = data_service.load_device_status()
 
-    ####################################
-    ##### CLEAN UP THE WHITE SPACES ####
-    ####################################
-    data['clean_id'] = data['short_device_id'].str.strip()
-    site['clean_id'] = site['DeviceID'].str.strip()
+    # Calculate metrics
+    metrics = data_service.calculate_metrics(device_data)
 
-    df_merged = pd.merge(
-        data, site, left_on="clean_id", right_on="clean_id", how="left"
+    # Render sidebar with controls and metrics
+    with st.sidebar:
+        render_complete_sidebar(
+            metrics=metrics, site_csv=ASSETS_SITE_CSV, parquet_file=ASSETS_PARQUET_FILE
+        )
+
+    # Main dashboard tabs
+    tab1, tab2, tab3 = st.tabs(
+        [
+            f"{TAB_ICONS['map']} Map View",
+            f"{TAB_ICONS['status']} Device Status",
+            f"{TAB_ICONS['activity']} Recording Activity",
+        ]
     )
 
-    # Create a time dimension - choose one based on your data density
-    df_merged["week"] = df_merged["datetime"].dt.isocalendar().week
-    df_merged["month"] = df_merged["datetime"].dt.month
-    df_merged["year_month"] = df_merged["datetime"].dt.strftime("%Y-%m")
+    with tab1:
+        render_map_tab(device_data, data_service)
+
+    with tab2:
+        render_status_tab(device_data, metrics, data_service)
+
+    with tab3:
+        render_activity_tab(data_service)
+
+    # Footer
+    st.markdown("---")
+    st.markdown(
+        "<div style='text-align: center; color: #666; font-size: 0.9em;'>"
+        f"{APP_TITLE} | Real-time Audio Device Monitoring | "
+        f"Last updated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
 
-    #########################################################################
-    ##### MAKE SURE EACH COUNTRY IS REPRESENTED IN THE SHORT_DEVICE_ID ######
-    #########################################################################
-    country_map = {
-    'proj_tabmon_NINA': 'Norway',
-    'proj_tabmon_NINA_ES': 'Spain',
-    'proj_tabmon_NINA_NL': 'Netherlands',
-    'proj_tabmon_NINA_FR': 'France',
-    }
+def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
+    """Render the interactive map tab."""
+    st.markdown("### Device Locations and Status")
 
-    for code, country_name in country_map.items():
-        df_merged.loc[df_merged['country'] == code, 'Country'] = country_name
+    # Filters for map view
+    filtered_data, active_filters = render_complete_filters(
+        device_data, key_prefix="map"
+    )
 
+    if not filtered_data.empty:
+        # Get site info for the map
+        site_info = data_service.load_site_info()
 
-    #####################
-    # SOME MORE CLEANUP #
-    #####################
-    # keep everything *from* 1 Jan 2025 (inclusive)
-    start = pd.Timestamp('2025-01-01', tz=df_merged["datetime"].dt.tz)
-    df_merged = df_merged[df_merged["datetime"] >= start].copy()
+        # Render the interactive map
+        render_device_map(site_info, filtered_data)
 
-    ##########################################################
-    ##### ADD TIME GRANULARITY FOR SUMMARIZING THE DATA ######
-    ##########################################################
-    if time_granularity == "Day":
-        df_merged["time_period"] = df_merged["datetime"].dt.to_period("D").astype(str)
-        period_title = "Day"
-    elif time_granularity == "Week":
-        df_merged["time_period"] = df_merged["datetime"].dt.to_period("W").astype(str)
-        period_title = "Week"
+        # Map summary statistics
+        render_info_section_header(
+            "🗺️ Map Summary", level="h4", style_class="map-summary-header"
+        )
+
+        # Show filtering info if devices are being filtered out
+        total_devices = len(device_data)
+        shown_devices = len(filtered_data)
+        if shown_devices < total_devices:
+            hidden_devices = total_devices - shown_devices
+            st.info(
+                f"Showing {shown_devices} of {total_devices} total devices. "
+                f"{hidden_devices} devices are hidden by current filters."
+            )
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric("Devices Shown", len(filtered_data))
+        with col2:
+            online_count = len(filtered_data[filtered_data["status"] == "Online"])
+            st.metric(
+                "Online",
+                online_count,
+                delta=f"{online_count / len(filtered_data) * 100:.1f}%",
+            )
+        with col3:
+            country_count = filtered_data["Country"].nunique()
+            st.metric("Countries", country_count)
+        with col4:
+            site_count = (
+                filtered_data["site_name"].nunique()
+                if "site_name" in filtered_data.columns
+                else 0
+            )
+            st.metric("Sites", site_count)
     else:
-        df_merged["time_period"] = df_merged["datetime"].dt.to_period("M").astype(str)
-        period_title = "Month"
-
-
-    ###############################
-    ##### DATA IN MATRIX FORM #####
-    ###############################
-    matrix_data = pd.crosstab(
-        index=[df_merged["Country"], df_merged["device"]],
-        columns=df_merged["time_period"],
-        values=df_merged["datetime"],
-        aggfunc="count",
-    ).fillna(0)
-
-    matrix_data = matrix_data.sort_index()
-
-    return matrix_data, period_title
-
-
-@st.cache_data(ttl=3600, show_spinner=False)
-def get_status_table(parquet_file, site_info, offline_threshold_days=3):
-    df_status = get_device_status_by_recorded_at(parquet_file, offline_threshold_days)
-    if df_status.empty:
-        return pd.DataFrame()
-
-    site_info["short_device"] = site_info["DeploymentID"].apply(
-        lambda x: x.split("_")[-1].strip().lower())
-
-    merged = pd.merge(site_info, df_status, on="short_device", how="left")
-    merged["status"] = merged["status"].fillna("Offline")
-    merged["last_recorded"] = merged["recorded_at"]
-
-    now = datetime.now(timezone.utc)
-    merged["time_diff"] = (merged["last_recorded"] - now).abs()
-
-    return merged
-
-
-def show_map_dashboard(site_csv, parquet_file):
-    site_info = load_site_info(site_csv)
-    site_info = site_info[site_info["Active"] == True]
-    df_status = get_status_table(parquet_file, site_info, offline_threshold_days=3)
-
-    ################################################
-    ###### PLOT THE MAP WITH DEVICE LOCATIONS ######
-    ################################################
-    st.title("Interactive Device Locations Map")
-
-    m = folium.Map(
-        location=[site_info["Latitude"].mean(), site_info["Longitude"].mean()],
-        zoom_start=6,
-    )
-    marker_cluster = MarkerCluster().add_to(m)
-
-    for _idx, row in df_status.iterrows():
-        loc_txt = row['Cluster'] + ": " + row['Site']
-        popup_text = (
-            f"<b>DeviceID:</b> {row['DeviceID']}<br>"
-            f"<b>Site:</b> {loc_txt}<br>"
-            f"<b>Country:</b> {row['Country']}<br>"
+        st.warning(
+            "⚠️ No devices match the current filter criteria. "
+            "Please adjust your filters."
         )
-        # Choose icon color based on status.
-        if row["status"] == "Online":
-            marker_icon = folium.Icon(color="green", icon="microphone", prefix="fa")
-        else:
-            marker_icon = folium.Icon(color="red", icon="microphone", prefix="fa")
 
-        folium.Marker(
-            location=[row["Latitude"], row["Longitude"]],
-            popup=popup_text,
-            tooltip=row["Site"],
-            icon=marker_icon,
-        ).add_to(marker_cluster)
 
-    st_folium(m, width=1200, height=800)
+def render_status_tab(
+    device_data: pd.DataFrame, metrics: dict, data_service: DataService
+):
+    """Render the device status overview tab."""
+    st.markdown("### Device Status Overview")
 
-    #################################################
-    ###### PLOT THE STATUS TABLE OF DEVICES #########
-    #################################################
+    # Display status metrics cards
+    render_status_metrics(metrics)
 
-    # Select and format columns for better readability
-    if not df_status.empty:
-        display_cols = ["Cluster", "Site", "DeploymentID", "Country", "status", "last_recorded"]
-        
-        # Create a copy to avoid modifying the original dataframe
-        status_display = df_status[display_cols].copy()
-        
-        # Format the last_recorded date
-        status_display["last_recorded"] = status_display["last_recorded"].dt.strftime("%Y-%m-%d %H:%M")
-        
-        # Add a column showing days since last recording
-        status_display["days_since_last"] = round((datetime.now(timezone.utc) - df_status["last_recorded"]).dt.days, 0)
-        
-        # Color-code the status
-        def highlight_status(row):
-            if row.status == 'Online':
-                return ['background-color: #c6efcd'] * len(row)
-            else:
-                return ['background-color: #ffc7ce'] * len(row)
-        
-        # Display the styled table
-        st.dataframe(
-            status_display.style.apply(highlight_status, axis=1),
-            use_container_width=True,
-            height=400
+    # Status visualizations
+    st.markdown("#### Status by Country")
+    render_country_bar_chart(device_data)
+
+    # Detailed status table
+    st.markdown("#### Detailed Device Status")
+
+    # Filters for status table
+    filtered_data, _ = render_complete_filters(device_data, key_prefix="status")
+
+    if not filtered_data.empty:
+        # Display options
+        col1, col2, col3 = st.columns(3)
+
+        with col2:
+            sort_by = st.selectbox(
+                "Sort by",
+                ["device_name", "Country", "status", "last_file", "total_recordings"],
+                index=2,  # Default to status
+            )
+        with col3:
+            ascending = st.checkbox("Ascending order", value=False)
+
+        # Sort and display table
+        sorted_data = filtered_data.sort_values(by=sort_by, ascending=ascending)
+        render_status_table(sorted_data)
+
+        # Summary statistics
+        render_info_section_header(
+            "📊 Summary Statistics", level="h4", style_class="map-summary-header"
+        )
+        render_summary_table(filtered_data)
+    else:
+        st.warning("⚠️ No devices match the current filter criteria.")
+
+
+def render_activity_tab(data_service: DataService):
+    """Render the recording activity analysis tab."""
+    st.markdown("### Recording Activity Analysis")
+
+    # Load recording matrix data with day granularity
+    with st.spinner("Loading daily activity data..."):
+        recording_data = data_service.load_recording_matrix("Day")
+
+    if not recording_data.empty:
+        # Activity heatmap
+        st.markdown("#### Recording Activity Heatmap")
+        render_activity_heatmap(recording_data, "Day")
+
+        # Activity insights
+        st.markdown("#### Activity Insights")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            # Most active devices - recording_data is a crosstab with MultiIndex
+            # Sum across all time periods for each device
+            device_totals = recording_data.sum(axis=1).sort_values(ascending=False)
+
+            st.markdown("**🏆 Most Active Devices**")
+            top_devices = device_totals.head(10)
+            for device_info, count in top_devices.items():
+                # device_info is a tuple (Country, device) due to MultiIndex
+                if isinstance(device_info, tuple):
+                    country, device = device_info
+                    st.write(f"• **{device}** ({country}): {count:,} recordings")
+                else:
+                    st.write(f"• **{device_info}**: {count:,} recordings")
+
+        with col2:
+            # Activity statistics - recording_data is a crosstab matrix
+            total_recordings = (
+                recording_data.sum().sum()
+            )  # Sum all values in the matrix
+            device_totals = recording_data.sum(
+                axis=1
+            )  # Sum across time periods for each device
+            avg_per_device = device_totals.mean()
+            active_cells = (recording_data > 0).sum().sum()  # Count non-zero cells
+
+            st.markdown("**Activity Statistics**")
+            st.write(f"• **Total recordings**: {total_recordings:,.0f}")
+            st.write(f"• **Average per device**: {avg_per_device:.1f}")
+            st.write(f"• **Active data points**: {active_cells:,}")
+            st.write(f"• **Coverage**: {len(recording_data.index)} devices")
+
+        # Downloadable data
+        st.markdown("#### 💾 Export Data")
+
+        # Convert crosstab to CSV format
+        csv_data = recording_data.to_csv()
+        st.download_button(
+            label="📥 Download activity data as CSV",
+            data=csv_data,
+            file_name=f"tabmon_activity_day_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+            help="Download the current activity data for further analysis",
         )
     else:
-        st.info("No device status data available")
-
-    #################################################
-    #### PLOT THE MATRIX FOR FILE AVAILABILITY ######
-    #################################################
-
-    time_granularity = st.sidebar.radio(
-        "Time Granularity", ["Day", "Week", "Month"], horizontal=True
-    )
-
-    matrix_data, period_title = get_parquet_site_merged(parquet_file, 
-                                                        site_info, 
-                                                        time_granularity)
-
-    # Create custom y-tick labels
-    ytick_labels = []
-    prev_country = None
-
-    for country, device in matrix_data.index:
-        if country != prev_country:
-            ytick_labels.append(f"{country} - {device}")
-            prev_country = country
-        else:
-            ytick_labels.append(f"     {device}")  # indent to be more visual
-
-    # Reverse the order so countries start from the top
-    ytick_labels = ytick_labels[::-1]
-    z_data = matrix_data.values[::-1]  # Also reverse the data to match labels
-    x_labels = matrix_data.columns.tolist()
-
-    fig = go.Figure(
-        data=go.Heatmap(
-            z=z_data,
-            x=x_labels,
-            y=ytick_labels,
-            colorbar=dict(title="Number of recordings"),
-            hoverongaps=False,
-            hovertemplate=f"{period_title}: %{{x}}<br>Device: %{{y}}<br>Recordings: %{{z}}<extra></extra>",
+        st.warning(
+            "⚠️ No recording activity data available for the selected time granularity."
         )
-    )
-
-    # Update layout
-    fig.update_layout(
-        title=" ",
-        xaxis_title=period_title,  # Use the period_title variable here
-        yaxis_title="Country - Device",
-        height=max(500, len(matrix_data) * 20),
-        width=1000,
-        yaxis={"side": "left", "automargin": True},
-        xaxis={"side": "bottom", "automargin": True},
-        margin=dict(l=150),
-    )
-
-    st.write(
-        f"### Number of audio recordings per device per {period_title}"
-    )
-    st.plotly_chart(fig)
+        st.info(
+            "💡 This might be due to missing data or no recordings in the "
+            "specified time period."
+        )
 
 
+# Legacy function for backward compatibility
+def show_map_dashboard(site_csv: str, parquet_file: str) -> None:
+    """Legacy function for backward compatibility."""
+    app()
+
+
+if __name__ == "__main__":
+    app()

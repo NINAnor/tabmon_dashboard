@@ -1,112 +1,98 @@
-from urllib.parse import quote, unquote
+"""
+Site Dashboard for TABMON - Modernized Version
+Provides detailed site metadata exploration and device information.
+"""
 
-import duckdb
-import pandas as pd
 import streamlit as st
 
+from components.sidebar import render_complete_sidebar
+from components.site_components import (
+    render_device_images,
+    render_site_details,
+    render_site_export_options,
+    render_site_filters,
+)
+from components.ui_styles import load_custom_css, render_info_section_header
+from config.settings import ASSETS_PARQUET_FILE, ASSETS_SITE_CSV
+from services.data_service import DataService
+from services.site_service import SiteMetadataService
 from utils.data_loader import load_site_info
 
 
-def get_encoded_title(title):
-    if " " in title:
-        return quote(title, safe="/")
-    elif "%25" in title:
-        return unquote(title)
-    else:
-        return title
+def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None:
+    """Main site metadata dashboard function."""
+    load_custom_css()
 
-
-def generate_pictures_mapping(parquet_file, BASE_DIR):
-    index_parquet = duckdb.read_parquet(parquet_file)  # noqa
-    query = (
-        "SELECT * FROM 'index_parquet' WHERE MimeType IN ('image/jpeg', 'image/png')"
+    st.title("🏞️ Site Metadata Dashboard")
+    st.markdown(
+        "Explore detailed information about recording sites and device deployments."
     )
-    data_q = duckdb.sql(query)
-    data = data_q.fetchdf()
 
-    data["deviceID"] = data["Name"].str.split("_").str[2]
-    data["picture_type"] = data["Name"].str.split("_").str[3].str.split(".").str[0]
-    data["url"] = "/data/" + data["Path"]
+    # Initialize services with correct URL parameters
+    data_service = DataService(site_csv, parquet_file)
+    site_metadata_service = SiteMetadataService(parquet_file)
 
-    return data
+    # Load data
+    with st.spinner("🔄 Loading site and device information..."):
+        site_info = load_site_info(site_csv)
+        device_data = data_service.load_device_status()
 
+    with st.spinner("🔄 Loading device images..."):
+        pictures_mapping = site_metadata_service.generate_pictures_mapping()
 
-def show_site_dashboard(site_csv, parquet_file, BASE_DIR):
-    site_info = load_site_info(site_csv)
+    # Calculate metrics for the sidebar
+    metrics = data_service.calculate_metrics(device_data)
 
-    try:
-        pictures_mapping = generate_pictures_mapping(parquet_file, BASE_DIR)
-    except Exception as e:
-        st.error(f"Failed to generate pictures mapping: {e}")
-        pictures_mapping = pd.DataFrame()
+    # Render complete sidebar with status information only
+    with st.sidebar:
+        render_complete_sidebar(
+            metrics=metrics, site_csv=ASSETS_SITE_CSV, parquet_file=ASSETS_PARQUET_FILE
+        )
 
-    countries = site_info["country"].dropna().unique().tolist()
-    selected_country = st.sidebar.selectbox("Select Country", sorted(countries))
-
-    filtered_site_info = site_info[site_info["country"] == selected_country]
-
-    sites = filtered_site_info["site"].dropna().unique().tolist()
-    selected_site = st.sidebar.selectbox("Select Site", sorted(sites))
-
-    site_data = filtered_site_info[filtered_site_info["site"] == selected_site]
-    if site_data.empty:
-        st.error("No site data found for the selected site.")
+    if site_info.empty:
+        st.error("❌ No site information available.")
         return
+
+    # Main site information section
+    render_info_section_header("🏞️ Site Information", style_class="site-info-header")
+
+    # Site selection controls in main page
+    selected_country, selected_site, filtered_site_info = render_site_filters(site_info)
+
+    # Get site data
+    site_data = filtered_site_info[filtered_site_info["Site"] == selected_site]
+
+    if site_data.empty:
+        st.error(f"❌ No data found for site: {selected_site}")
+        return
+
+    # Get the first (and typically only) record for the site
     record = site_data.iloc[0]
 
-    st.title(f"Site: {selected_site}")
-
-    st.write("### Site Details")
-    st.markdown(f"**Country:** {record.get('country', 'N/A')}")
-    st.markdown(f"**Site:** {record.get('site', 'N/A')}")
-    st.markdown(f"**Device ID:** {record.get('deviceID', 'N/A')}")
-    latitude, longitude = record.get("latitude", "N/A"), record.get("longitude", "N/A")
-    st.markdown(f"**Coordinates:** Latitude: {latitude}, Longitude: {longitude}")
-    st.markdown(f"**Date:** {record.get('2. Date', 'N/A')}")
-    time_utc = record.get(
-        "3. Time (UTC!!! Check here  https://www.utctime.net/)", "N/A"
+    # Page header with site name
+    st.markdown("---")
+    render_info_section_header(
+        f"📍 {selected_site}", level="h2", style_class="site-name-header"
     )
-    st.markdown(f"**Time (UTC):** {time_utc}")
-    uncertainty = record.get("6. Coordinates uncertainty (meters)", "N/A")
-    st.markdown(f"**Coordinates Uncertainty (meters):** {uncertainty}")
-    device = record.get(
-        "7. GPS device (e.g. Garmin 63r, samsung galaxy S24 with google maps)", "N/A"
+    st.markdown(
+        f"**Country:** {selected_country} • **Active:** "
+        f"{'✅ Yes' if record.get('Active', False) else '❌ No'}"
     )
-    st.markdown(f"**GPS Device:** {device}")
-    deployment = record.get(
-        "9. DeploymentID: countryCode_deploymentNumber_DeviceID (ex: NO_1_ 7ft35sm)",
-        "N/A",
+
+    # Render site details as a subsection
+    render_info_section_header(
+        "📋 Site Details", level="h4", style_class="site-details-header"
     )
-    st.markdown(f"**Deployment ID:** {deployment}")
-    height = record.get("10. Microphone height (in cm)", "N/A")
-    st.markdown(f"**Microphone Height (cm):** {height}")
-    direction = record.get("11. Microphone direction", "N/A")
-    st.markdown(f"**Microphone Direction:** {direction}")
-    st.markdown(f"**Habitat:** {record.get('12. Habitat', 'N/A')}")
-    st.markdown(f"**Email:** {record.get('Adresse e-mail', 'N/A')}")
-    st.markdown(f"**Comment/Remark:** {record.get('Comment/remark', 'N/A')}")
-    st.markdown(f"**Score:** {record.get('Score', 'N/A')}")
+    render_site_details(filtered_site_info, selected_site)
 
-    full_device_id = record.get("deviceID", "")
-    if "_" in full_device_id:
-        short_device_id = full_device_id.split("_")[-1].strip()
-    else:
-        short_device_id = full_device_id[-8:]
-    st.write(f"**Short Device ID:** {short_device_id}")
+    # Add spacing
+    st.markdown("---")
 
-    device_images = pictures_mapping[pictures_mapping["deviceID"] == short_device_id]
+    # Render device images
+    # Extract short device ID for image matching
+    short_device_id = site_metadata_service.extract_device_id(record)
+    render_device_images(short_device_id, pictures_mapping)
 
-    if not device_images.empty:
-        st.write("### Device Images")
-        for _idx, row in device_images.iterrows():
-            # Use unquote to decode the URL so that double encoding is removed.
-            decoded_url = unquote(row["url"])
-            # image = decoded_url
-            # st.image(image=image)
-            st.html(
-                f"<img style='height: 100%; width: 100%; object-fit: contain' "
-                f"src='{decoded_url}' controls />"
-            )
-
-    else:
-        st.write("No images found for this device.")
+    # Additional features and export options
+    st.markdown("---")
+    render_site_export_options(site_data, selected_site, record)
