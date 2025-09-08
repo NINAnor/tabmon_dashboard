@@ -83,6 +83,9 @@ def app(site_csv: str = None, parquet_file: str = None):
 def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
     """Render the interactive map tab."""
     st.markdown("### Device Locations and Status")
+    
+    # Privacy notice
+    st.info("🔒 **Privacy Protection**: Map zoom is limited to protect sensitive device location details.")
 
     # Filters for map view
     filtered_data, active_filters = render_complete_filters(
@@ -93,7 +96,7 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
         # Get site info for the map
         site_info = data_service.load_site_info()
 
-        # Render the interactive map
+        # Render the interactive map with hardcoded zoom limits for privacy
         render_device_map(site_info, filtered_data)
 
         # Map summary statistics

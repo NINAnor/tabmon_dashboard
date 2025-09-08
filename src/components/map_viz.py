@@ -8,14 +8,27 @@ import streamlit as st
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 
-from config.settings import DEFAULT_ZOOM, MAP_HEIGHT, MAP_WIDTH
+from config.settings import (
+    DEFAULT_ZOOM, 
+    MAP_HEIGHT, 
+    MAP_WIDTH,
+    MAX_ZOOM_LEVEL,
+    MIN_ZOOM_LEVEL
+)
 
 
-def render_device_map(site_info: pd.DataFrame, status_df: pd.DataFrame):
+def render_device_map(
+    site_info: pd.DataFrame, 
+    status_df: pd.DataFrame,
+    max_zoom: int = None
+):
     """Render the interactive map with device locations."""
     if site_info.empty:
         st.warning("⚠️ No site information available")
         return None
+
+    # Use provided settings or fall back to config defaults
+    use_max_zoom = max_zoom if max_zoom is not None else MAX_ZOOM_LEVEL
 
     # Create map centered on device locations
     center_lat = site_info["Latitude"].mean()
@@ -25,6 +38,8 @@ def render_device_map(site_info: pd.DataFrame, status_df: pd.DataFrame):
         location=[center_lat, center_lon],
         zoom_start=DEFAULT_ZOOM,
         tiles="OpenStreetMap",
+        max_zoom=use_max_zoom,
+        min_zoom=MIN_ZOOM_LEVEL,
     )
 
     # Create marker cluster with optimal settings

@@ -24,6 +24,10 @@ DEFAULT_ZOOM = 6
 MAP_HEIGHT = 600
 MAP_WIDTH = 1200
 
+# Privacy protection settings
+MAX_ZOOM_LEVEL = 7              # Maximum zoom level (prevents very detailed viewing) - hardcoded for privacy
+MIN_ZOOM_LEVEL = 3              # Minimum zoom level
+
 # Chart settings
 HEATMAP_COLORSCALE = "Viridis"
 MIN_HEATMAP_HEIGHT = 400
