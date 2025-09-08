@@ -14,6 +14,7 @@ from components.map_viz import render_device_map
 from components.metrics import render_status_metrics
 from components.sidebar import render_complete_sidebar
 from components.tables import render_status_table, render_summary_table
+from components.auth import render_detailed_map_auth, get_map_access_status
 from components.ui_styles import (
     load_custom_css,
     render_info_section_header,
@@ -84,8 +85,22 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
     """Render the interactive map tab."""
     st.markdown("### Device Locations and Status")
     
-    # Privacy notice
-    st.info("🔒 **Privacy Protection**: Map zoom is limited to protect sensitive device location details.")
+    # Authentication interface for detailed map access
+    is_authorized = render_detailed_map_auth()
+    
+    # Show current access status
+    access_status = get_map_access_status()
+    
+    if is_authorized:
+        st.success(
+            f"🔓 **{access_status['access_level']}** - "
+            f"Zoom {access_status['zoom_description']} available"
+        )
+    else:
+        st.info(
+            f"🔒 **{access_status['access_level']}** - "
+            f"Zoom {access_status['zoom_description']} for privacy protection"
+        )
 
     # Filters for map view
     filtered_data, active_filters = render_complete_filters(
