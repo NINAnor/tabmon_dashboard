@@ -4,11 +4,12 @@ services:
   dashboard:
     build:
       context: .
-    env_file:
-      - .env
-    secrets:
-      - htpasswd
-  #image: ghcr.io/ninanor/dashboard-dashboard:main
+    env_file: .env
+    #image: ghcr.io/ninanor/dashboard-dashboard:main@sha-9a71d5a
+    environment:
+      - AUTH_USERNAME=${AUTH_USERNAME}
+      - AUTH_PASSWORD=${AUTH_PASSWORD}
+      - BASE_DATA_DIR=${BASE_DATA_DIR}
   reverseproxy:
     build: proxy
     image: ghcr.io/ninanor/dashboard-proxy:main

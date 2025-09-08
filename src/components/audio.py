@@ -7,7 +7,6 @@ import os
 from datetime import datetime, timezone
 
 import pandas as pd
-import requests
 import streamlit as st
 
 from components.ui_styles import render_info_section_header
@@ -152,8 +151,16 @@ def render_audio_stats(stats: dict, total_stats: dict = None) -> None:
             st.caption(f"Total size: {total_size:.2f} GB")
 
 
-def render_recordings_table(recordings: pd.DataFrame, target_datetime: datetime) -> str:
-    """Render recordings table and return selected file path."""
+def render_recordings_table(
+    recordings: pd.DataFrame, target_datetime: datetime, show_selection: bool = True
+) -> str:
+    """Render recordings table for metadata viewing.
+
+    Args:
+        recordings: DataFrame with recording metadata
+        target_datetime: Target datetime for comparison
+        show_selection: Whether to show file selection (deprecated for privacy)
+    """
     if recordings.empty:
         st.info("📂 No recordings found for the selected criteria.")
         return None
@@ -174,83 +181,14 @@ def render_recordings_table(recordings: pd.DataFrame, target_datetime: datetime)
         lambda x: f"{x / (1024 * 1024):.1f} MB" if pd.notna(x) else "Unknown"
     )
 
-    # Show table
+    # Show table with metadata only
     st.dataframe(
         display_data[["Name", "Recording Time", "Time Difference", "File Size"]],
         use_container_width=True,
         hide_index=True,
     )
 
-    # File selection
-    st.markdown("### 🎧 Select Audio File")
-    file_options = [
-        (f"{row['Name']} ({row['Recording Time']})", row["Path"])
-        for _, row in display_data.iterrows()
-    ]
-
-    selected_option = st.selectbox(
-        "Choose a recording to play:",
-        options=[option[0] for option in file_options],
-        key="audio_file_selector",
-    )
-
-    if selected_option:
-        # Find the corresponding path
-        selected_path = next(
-            path for label, path in file_options if label == selected_option
-        )
-        return selected_path
-
     return None
-
-
-def render_audio_player(file_path: str) -> None:
-    """Render audio player with authentication."""
-    if not file_path:
-        return
-
-    render_info_section_header("🎵 Audio Player", style_class="player-header")
-
-    try:
-        # Construct the full URL
-        audio_url = f"/data/{file_path}"
-
-        # For Docker environment, we need to use authenticated requests
-        if audio_url.startswith("/data/"):
-            full_url = f"http://reverseproxy:80{audio_url}"
-
-            try:
-                # Get authentication credentials
-                auth = get_auth_credentials()
-
-                # Fetch the audio file with authentication
-                response = requests.get(full_url, auth=auth, timeout=30)
-
-                if response.status_code == 200:
-                    # Display the audio player using Streamlit's native audio component
-                    st.audio(response.content, format="audio/mp3")
-
-                    # Show file info
-                    file_size = len(response.content) / (1024 * 1024)
-                    st.success(f"✅ Audio loaded successfully ({file_size:.1f} MB)")
-                else:
-                    st.error(
-                        f"❌ Failed to load audio file: HTTP {response.status_code}"
-                    )
-            except Exception as e:
-                st.error(f"❌ Authentication error: {str(e)}")
-                # Fallback to HTML audio tag (may not work without auth)
-                st.markdown(
-                    f'<audio controls style="width: 100%">'
-                    f'<source src="{audio_url}" type="audio/mpeg"></audio>',
-                    unsafe_allow_html=True,
-                )
-        else:
-            # For local files, use direct URL
-            st.audio(audio_url, format="audio/mp3")
-
-    except Exception as e:
-        st.error(f"❌ Error loading audio: {str(e)}")
 
 
 def render_audio_export_options(

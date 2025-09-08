@@ -7,7 +7,6 @@ import streamlit as st
 
 from components.audio import (
     render_audio_export_options,
-    render_audio_player,
     render_audio_stats,
     render_datetime_selector,
     render_recordings_table,
@@ -35,7 +34,7 @@ def show_audio_dashboard(
     load_custom_css()
 
     st.title("🎵 Audio Analysis Dashboard")
-    st.markdown("Browse and play audio recordings from monitoring devices.")
+    st.markdown("Browse and analyze audio recordings metadata from monitoring devices.")
 
     # Initialize services
     data_service = DataService(site_csv, parquet_file)
@@ -117,8 +116,6 @@ def show_audio_dashboard(
     stats = audio_service.get_audio_stats(audio_data)
     render_audio_stats(stats, total_stats)
 
-    st.markdown("---")
-
     # Find closest recordings
     closest_recordings = audio_service.find_closest_recordings(
         audio_data, target_datetime
@@ -129,13 +126,8 @@ def show_audio_dashboard(
         f"**🎯 Target Time:** {target_datetime.strftime('%Y-%m-%d %H:%M:%S UTC')}"
     )
 
-    # Render recordings table and get selection
-    selected_file_path = render_recordings_table(closest_recordings, target_datetime)
-
-    # Render audio player
-    if selected_file_path:
-        st.markdown("---")
-        render_audio_player(selected_file_path)
+    # Render recordings table for metadata viewing only
+    render_recordings_table(closest_recordings, target_datetime, show_selection=False)
 
     # Additional features
     st.markdown("---")

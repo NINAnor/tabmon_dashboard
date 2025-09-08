@@ -46,7 +46,8 @@ def main():
     **🗺️ Map Visualization**: Real-time device monitoring with interactive maps
     and status tracking
 
-    **🎵 Audio Analysis**: In-depth audio recording analysis and visualization
+    **🎵 Audio Analysis**: Audio recording metadata analysis and visualization
+    (playback disabled for privacy protection)
 
     **📊 Site Metadata**: Site information and metadata management
     """)
