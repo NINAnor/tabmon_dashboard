@@ -25,14 +25,14 @@ MAP_HEIGHT = 600
 MAP_WIDTH = 1200
 
 # Privacy protection settings
-MAX_ZOOM_LEVEL = 7              # Maximum zoom level for public access (prevents very detailed viewing)
-MIN_ZOOM_LEVEL = 3              # Minimum zoom level
-DETAILED_MAP_MAX_ZOOM = 18      # Maximum zoom level for authorized users (full detail)
+MAX_ZOOM_LEVEL = 7  # Maximum zoom level for public access
+MIN_ZOOM_LEVEL = 3  # Minimum zoom level
+DETAILED_MAP_MAX_ZOOM = 18  # Maximum zoom level for authorized users (full detail)
 
 # Detailed map access configuration
-# Password can be set via AUTH_PASSWORD environment variable (recommended for production)
+# Password can be set via AUTH_PASSWORD environment variable (recommended)
 # This same variable is used for basic authentication in the reverse proxy
-DETAILED_MAP_PASSWORD = "tabmon2025"  # Fallback password for detailed map access
+DETAILED_MAP_PASSWORD = "tabmon2025"  # pragma: allowlist secret  # noqa: S105
 
 # Chart settings
 HEATMAP_COLORSCALE = "Viridis"

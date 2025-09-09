@@ -8,19 +8,12 @@ import streamlit as st
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 
-from config.settings import (
-    DEFAULT_ZOOM, 
-    MAP_HEIGHT, 
-    MAP_WIDTH,
-    MIN_ZOOM_LEVEL
-)
 from components.auth import get_map_zoom_level
+from config.settings import DEFAULT_ZOOM, MAP_HEIGHT, MAP_WIDTH, MIN_ZOOM_LEVEL
 
 
 def render_device_map(
-    site_info: pd.DataFrame, 
-    status_df: pd.DataFrame,
-    max_zoom: int = None
+    site_info: pd.DataFrame, status_df: pd.DataFrame, max_zoom: int = None
 ):
     """Render the interactive map with device locations."""
     if site_info.empty:
