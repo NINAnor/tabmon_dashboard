@@ -151,9 +151,8 @@ class DataService:
         merged["Country"] = merged["Country"].fillna("Unknown")
 
         # Rename columns to match expected interface
-        merged = merged.rename(
-            columns={"device": "device_name", "Site": "site_name", "Cluster": "cluster"}
-        )
+        # (excluding device since we already created device_name)
+        merged = merged.rename(columns={"Site": "site_name", "Cluster": "cluster"})
 
         # Calculate days since last recording
         # Ensure timezone consistency

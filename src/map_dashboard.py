@@ -5,6 +5,7 @@ Enhanced TABMON Dashboard with modular architecture.
 import pandas as pd
 import streamlit as st
 
+from components.auth import get_map_access_status, render_detailed_map_auth
 from components.charts import (
     render_activity_heatmap,
     render_country_bar_chart,
@@ -84,6 +85,23 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
     """Render the interactive map tab."""
     st.markdown("### Device Locations and Status")
 
+    # Authentication interface for detailed map access
+    is_authorized = render_detailed_map_auth()
+
+    # Show current access status
+    access_status = get_map_access_status()
+
+    if is_authorized:
+        st.success(
+            f"🔓 **{access_status['access_level']}** - "
+            f"Zoom {access_status['zoom_description']} available"
+        )
+    else:
+        st.info(
+            f"🔒 **{access_status['access_level']}** - "
+            f"Zoom {access_status['zoom_description']} for privacy protection"
+        )
+
     # Filters for map view
     filtered_data, active_filters = render_complete_filters(
         device_data, key_prefix="map"
@@ -93,7 +111,7 @@ def render_map_tab(device_data: pd.DataFrame, data_service: DataService):
         # Get site info for the map
         site_info = data_service.load_site_info()
 
-        # Render the interactive map
+        # Render the interactive map with hardcoded zoom limits for privacy
         render_device_map(site_info, filtered_data)
 
         # Map summary statistics
