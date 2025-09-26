@@ -1,9 +1,22 @@
+[browser]
+# Reduce potential race conditions
+gatherUsageStats = false
+
+[client]
+# Improve connection handling
+caching = true
+displayEnabled = true
+
 [global]
 email = ""
 
 [server]
 enableCORS = false
 enableXsrfProtection = false
+maxMessageSize = 50
+# Improve concurrent user handling
+maxUploadSize = 50
+runOnSave = false
 
 [theme]
 backgroundColor = "#FFFFFF"  # background of the whole app

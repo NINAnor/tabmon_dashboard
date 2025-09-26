@@ -21,6 +21,7 @@ class AudioService:
     @st.cache_data(ttl=3600, show_spinner=False)
     def get_audio_files_by_device(_self, short_device_id: str) -> pd.DataFrame:
         """Get all audio files for a specific device."""
+
         try:
             # Check if we're dealing with a URL or local file
             if _self.parquet_file.startswith(("http://", "https://")):
@@ -94,6 +95,7 @@ class AudioService:
     @st.cache_data(ttl=3600, show_spinner=False)
     def get_total_dataset_stats(_self) -> dict:
         """Get statistics for the entire audio dataset."""
+
         try:
             # Check if we're dealing with a URL or local file
             if _self.parquet_file.startswith(("http://", "https://")):

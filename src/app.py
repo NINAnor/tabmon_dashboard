@@ -13,6 +13,12 @@ from site_dashboard import show_site_dashboard
 def main():
     """Main application entry point."""
 
+    # Initialize session isolation
+    if "session_id" not in st.session_state:
+        import uuid
+
+        st.session_state.session_id = str(uuid.uuid4())[:8]  # Short unique ID
+
     # Page configuration
     st.set_page_config(
         page_title=APP_TITLE,
