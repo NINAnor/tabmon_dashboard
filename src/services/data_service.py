@@ -53,7 +53,9 @@ class DataService:
         """Get local file path from URL or return existing path."""
         if url_or_path.startswith(("http://", "https://")):
             # It's a URL, download to temporary file
-            cache_key = f"{file_type}_{hash(url_or_path)}"
+            # Use session ID for better isolation if available
+            session_id = getattr(st.session_state, "session_id", "default")
+            cache_key = f"{file_type}_{session_id}_{hash(url_or_path)}"
 
             if cache_key not in self._temp_files:
                 auth = self._get_auth()
@@ -64,9 +66,12 @@ class DataService:
                         f"Failed to download {url_or_path}: HTTP {response.status_code}"
                     )
 
-                # Create temporary file
+                # Create temporary file with session-specific prefix
                 suffix = f".{file_type}"
-                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+                prefix = f"tabmon_{session_id}_"
+                temp_file = tempfile.NamedTemporaryFile(
+                    delete=False, suffix=suffix, prefix=prefix
+                )
                 temp_file.write(response.content)
                 temp_file.close()
 
@@ -187,6 +192,7 @@ class DataService:
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
     def load_recording_matrix(_self, time_granularity: str = "day") -> pd.DataFrame:
         """Load and process recording matrix data."""
+
         # Get local file paths (download if URLs)
         parquet_path = _self._get_file_path(_self.parquet_file, "parquet")
         site_csv_path = _self._get_file_path(_self.site_csv, "csv")
