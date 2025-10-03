@@ -214,8 +214,5 @@ def render_site_export_options(
             )
 
     with col2:
-        # Link to map view
-        if record.get("Latitude") and record.get("Longitude"):
-            lat, lon = record["Latitude"], record["Longitude"]
-            maps_url = f"https://www.google.com/maps?q={lat},{lon}"
-            st.markdown(f"[🗺️ View on Google Maps]({maps_url})")
+        # Additional export or view options could be added here
+        st.write("")  # Placeholder for future functionality

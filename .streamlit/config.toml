@@ -2,14 +2,6 @@
 # Reduce potential race conditions
 gatherUsageStats = false
 
-[client]
-# Improve connection handling
-caching = true
-displayEnabled = true
-
-[global]
-email = ""
-
 [server]
 enableCORS = false
 enableXsrfProtection = false

@@ -3,49 +3,42 @@ Site Metadata Service
 Handles site metadata and image operations for the TABMON dashboard.
 """
 
-import duckdb
 import pandas as pd
 import streamlit as st
 
+from .base_service import BaseService
 
-class SiteMetadataService:
+
+class SiteMetadataService(BaseService):
     """Service for handling site metadata and image operations."""
 
     def __init__(self, parquet_file: str):
-        self.parquet_file = parquet_file
+        super().__init__(parquet_file)
 
     @st.cache_data(ttl=3600, show_spinner=False)
     def generate_pictures_mapping(_self) -> pd.DataFrame:
         """Generate mapping of device pictures from parquet data."""
-
         try:
-            # Check if we're dealing with a URL or local file
-            if _self.parquet_file.startswith(("http://", "https://")):
-                # For URLs, we need to load the data first then filter
-                data = pd.read_parquet(_self.parquet_file)
-                # Filter for image files
-                data = data[data["MimeType"].isin(["image/jpeg", "image/png"])]
-            else:
-                # For local files, use DuckDB for efficient filtering
-                query = """
-                SELECT * FROM read_parquet(?)
-                WHERE MimeType IN ('image/jpeg', 'image/png')
-                """
-                data = duckdb.execute(query, (_self.parquet_file,)).df()
-
+            data = _self._download_data(_self.data_source)
             if data.empty:
                 return pd.DataFrame()
 
-            # Extract device ID and picture type from filename
-            data["deviceID"] = data["Name"].str.split("_").str[2]
-            data["picture_type"] = (
-                data["Name"].str.split("_").str[3].str.split(".").str[0]
-            )
-            data["url"] = "/data/" + data["Path"]
+            # Filter for image files
+            image_data = data[data["MimeType"].isin(["image/jpeg", "image/png"])]
+            if image_data.empty:
+                return pd.DataFrame()
 
-            return data
+            # Extract device ID and picture type from filename
+            image_data["deviceID"] = image_data["Name"].str.split("_").str[2]
+            image_data["picture_type"] = (
+                image_data["Name"].str.split("_").str[3].str.split(".").str[0]
+            )
+            image_data["url"] = "/data/" + image_data["Path"]
+
+            return image_data
+
         except Exception as e:
-            st.error(f"Failed to generate pictures mapping: {e}")
+            st.error(f"💥 Error generating pictures mapping: {str(e)}")
             return pd.DataFrame()
 
     def extract_device_id(self, record: pd.Series) -> str:

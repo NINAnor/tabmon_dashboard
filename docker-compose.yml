@@ -10,6 +10,10 @@ services:
       - AUTH_USERNAME=${AUTH_USERNAME}
       - AUTH_PASSWORD=${AUTH_PASSWORD}  # Also used for detailed map access
       - BASE_DATA_DIR=${BASE_DATA_DIR}
+    depends_on:
+      rclone:
+        condition: service_healthy
+    restart: unless-stopped
   reverseproxy:
     build: proxy
     image: ghcr.io/ninanor/dashboard-proxy:main
@@ -17,6 +21,9 @@ services:
       - htpasswd
     ports:
       - 8085:80
+    depends_on:
+      - dashboard
+    restart: unless-stopped
   rclone:
     image: rclone/rclone:1.69
     command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/
@@ -24,6 +31,13 @@ services:
       RCLONE_CONFIG: /run/secrets/tabmon_rclone
     secrets:
       - tabmon_rclone
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/data/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
 
 secrets:
   tabmon_rclone:
