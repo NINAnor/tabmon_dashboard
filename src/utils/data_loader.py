@@ -51,16 +51,19 @@ def aggregate_file_counts(audio_df):
 
 def parse_file_datetime(file_str):
     """
-    Parse the datetime from a file name like:
-    "2024-05-24T15_24_05.762Z.mp3"
+    Parse the datetime from a file name in multiple formats:
+    - "2024-05-24T15_24_05.762Z.mp3" (ISO format with mp3)
+    - "SMA07722_20250506_131402.wav" (device prefix with wav)
+    - "20250506_131402.wav" (simple format)
     and return a tz-aware datetime object in UTC.
     """
-    pattern = re.compile(
+    # First try ISO format (mp3 files)
+    iso_pattern = re.compile(
         r"(?P<date>\d{4}-\d{2}-\d{2}T)"
         r"(?P<hour>\d{2})_(?P<minute>\d{2})_(?P<second>\d{2}\.\d+)"
         r"Z"
     )
-    m = pattern.search(file_str)
+    m = iso_pattern.search(file_str)
     if m:
         iso_str = (
             m.group("date")
@@ -73,4 +76,41 @@ def parse_file_datetime(file_str):
         )
         dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
         return dt
+    
+    # Try wav format with device prefix
+    wav_pattern = re.compile(
+        r"[A-Z0-9]+_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})\.wav"
+    )
+    m = wav_pattern.search(file_str)
+    if m:
+        dt = datetime(
+            int(m.group("year")),
+            int(m.group("month")),
+            int(m.group("day")),
+            int(m.group("hour")),
+            int(m.group("minute")),
+            int(m.group("second"))
+        )
+        # Convert to UTC timezone
+        from datetime import timezone
+        return dt.replace(tzinfo=timezone.utc)
+    
+    # Try simple wav format without prefix
+    simple_wav_pattern = re.compile(
+        r"(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})\.wav"
+    )
+    m = simple_wav_pattern.search(file_str)
+    if m:
+        dt = datetime(
+            int(m.group("year")),
+            int(m.group("month")),
+            int(m.group("day")),
+            int(m.group("hour")),
+            int(m.group("minute")),
+            int(m.group("second"))
+        )
+        # Convert to UTC timezone
+        from datetime import timezone
+        return dt.replace(tzinfo=timezone.utc)
+    
     return None

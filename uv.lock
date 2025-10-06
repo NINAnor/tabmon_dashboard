@@ -33,6 +33,15 @@ wheels = [
 ]
 
 [[package]]
+name = "backoff"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/d7/5bbeb12c44d7c4f2fb5b56abce497eb5ed9f34d85701de869acedd602619/backoff-2.2.1.tar.gz", hash = "sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba", size = 17001 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/73/b6e24bd22e6720ca8ee9a85a0c4a2971af8497d8f3193fa05390cbd46e09/backoff-2.2.1-py3-none-any.whl", hash = "sha256:63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8", size = 15148 },
+]
+
+[[package]]
 name = "blinker"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -962,6 +971,19 @@ wheels = [
 ]
 
 [[package]]
+name = "sentry-sdk"
+version = "2.39.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4c/72/43294fa4bdd75c51610b5104a3ff834459ba653abb415150aa7826a249dd/sentry_sdk-2.39.0.tar.gz", hash = "sha256:8c185854d111f47f329ab6bc35993f28f7a6b7114db64aa426b326998cfa14e9", size = 348556 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/44/4356cc64246ba7b2b920f7c97a85c3c52748e213e250b512ee8152eb559d/sentry_sdk-2.39.0-py2.py3-none-any.whl", hash = "sha256:ba655ca5e57b41569b18e2a5552cb3375209760a5d332cdd87c6c3f28f729602", size = 370851 },
+]
+
+[[package]]
 name = "setuptools"
 version = "75.8.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1038,6 +1060,7 @@ name = "tabmon-dashboard"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "backoff" },
     { name = "django-environ" },
     { name = "duckdb" },
     { name = "folium" },
@@ -1045,6 +1068,7 @@ dependencies = [
     { name = "plotly" },
     { name = "pyyaml" },
     { name = "requests" },
+    { name = "sentry-sdk" },
     { name = "streamlit" },
     { name = "streamlit-folium" },
 ]
@@ -1057,6 +1081,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "backoff", specifier = ">=2.2.1" },
     { name = "django-environ", specifier = ">=0.12.0" },
     { name = "duckdb", specifier = ">=1.2.0" },
     { name = "folium", specifier = ">=0.19.5" },
@@ -1064,6 +1089,7 @@ requires-dist = [
     { name = "plotly", specifier = ">=6.0.1" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests", specifier = ">=2.32.3" },
+    { name = "sentry-sdk", specifier = ">=2.39.0" },
     { name = "streamlit", specifier = ">=1.42.2" },
     { name = "streamlit-folium", specifier = ">=0.24.0" },
 ]

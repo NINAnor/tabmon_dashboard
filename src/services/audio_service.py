@@ -29,8 +29,9 @@ class AudioService(BaseService):
 
             # Filter for audio files and specific device
             audio_data = data[
-                (data["MimeType"] == "audio/mpeg")
+                (data["MimeType"].isin(["audio/mpeg", "audio/wav", "audio/x-wav"]))
                 & (data["device"].str.endswith(short_device_id))
+                & (~data["device"].str.contains("t-active", case=False, na=False))
             ]
 
             if audio_data.empty:
@@ -55,7 +56,10 @@ class AudioService(BaseService):
                 return {"total_recordings": 0, "total_size_gb": 0}
 
             # Filter for audio files
-            audio_data = data[data["MimeType"] == "audio/mpeg"]
+            audio_data = data[
+                (data["MimeType"].isin(["audio/mpeg", "audio/wav", "audio/x-wav"]))
+                & (~data["device"].str.contains("t-active", case=False, na=False))
+            ]
             if audio_data.empty:
                 return {"total_recordings": 0, "total_size_gb": 0}
 

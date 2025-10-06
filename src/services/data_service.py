@@ -51,15 +51,23 @@ class DataService(BaseService):
                 MAX(COALESCE(
                     TRY_STRPTIME(Name, '%Y-%m-%dT%H_%M_%S.%fZ.mp3'),
                     TRY_STRPTIME(Name, '%Y-%m-%dT%H_%M_%SZ.mp3'),
-                    STRPTIME(Name, '%Y-%m-%dT%H_%MZ.mp3')
+                    TRY_STRPTIME(Name, '%Y-%m-%dT%H_%MZ.mp3'),
+                    TRY_STRPTIME(Name, '%Y%m%d_%H%M%S.wav'),
+                    TRY_STRPTIME(REGEXP_REPLACE(Name, '^[A-Z0-9]+_', ''), '%Y%m%d_%H%M%S.wav')
                 )) AS last_file,
                 COUNT(*) as total_recordings
             FROM parquet_data
-            WHERE MimeType = 'audio/mpeg'
+            WHERE (MimeType = 'audio/mpeg' OR MimeType = 'audio/wav' OR MimeType = 'audio/x-wav')
             GROUP BY device, short_device
             """
             df_status = duckdb.execute(query).df()
 
+            if df_status.empty:
+                return pd.DataFrame()
+
+            # Filter out t-active devices to keep consistent with recording matrix
+            df_status = df_status[~df_status["device"].str.contains("t-active", case=False, na=False)]
+            
             if df_status.empty:
                 return pd.DataFrame()
 
@@ -78,7 +86,7 @@ class DataService(BaseService):
 
             # Load and merge site info
             if _self.site_csv.startswith(("http://", "https://")):
-                site_data = _self._download_data(_self.site_csv)
+                site_data = _self._download_csv_data(_self.site_csv)
             else:
                 site_data = load_site_info(_self.site_csv)
 
@@ -116,7 +124,7 @@ class DataService(BaseService):
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
     def load_site_info(_self) -> pd.DataFrame:
         """Load site information."""
-        return _self._download_data(_self.site_csv)
+        return _self._download_csv_data(_self.site_csv)
 
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
     def load_recording_matrix(_self, time_granularity: str = "day") -> pd.DataFrame:
@@ -132,13 +140,61 @@ class DataService(BaseService):
                 COALESCE(
                     TRY_STRPTIME(Name, '%Y-%m-%dT%H_%M_%S.%fZ.mp3'),
                     TRY_STRPTIME(Name, '%Y-%m-%dT%H_%M_%SZ.mp3'),
-                    STRPTIME(Name, '%Y-%m-%dT%H_%MZ.mp3')
+                    TRY_STRPTIME(Name, '%Y-%m-%dT%H_%MZ.mp3'),
+                    TRY_STRPTIME(Name, '%Y%m%d_%H%M%S.wav'),
+                    TRY_STRPTIME(REGEXP_REPLACE(Name, '^[A-Z0-9]+_', ''), '%Y%m%d_%H%M%S.wav')
                 ) AS datetime
             FROM parquet_data
-            WHERE MimeType = 'audio/mpeg'
+            WHERE (MimeType = 'audio/mpeg' OR MimeType = 'audio/wav' OR MimeType = 'audio/x-wav')
             AND datetime >= '2024-01-01'
+            AND datetime IS NOT NULL
             """
-            return duckdb.execute(query).df()
+            df_recordings = duckdb.execute(query).df()
+            
+            if df_recordings.empty:
+                return pd.DataFrame()
+
+            # Filter out t-active devices to avoid skewing the heatmap colors
+            df_recordings = df_recordings[~df_recordings["device"].str.contains("t-active", case=False, na=False)]
+            
+            if df_recordings.empty:
+                return pd.DataFrame()
+
+            # Load site info to get country mapping
+            if _self.site_csv.startswith(("http://", "https://")):
+                site_data = _self._download_csv_data(_self.site_csv)
+            else:
+                from utils.data_loader import load_site_info
+                site_data = load_site_info(_self.site_csv)
+
+            site_data = site_data[site_data["Active"]].copy()
+            site_data["short_device"] = site_data["DeviceID"].str.strip().str[-8:]
+            
+            # Add short device ID and merge with site info
+            df_recordings["short_device"] = df_recordings["device"].str[-8:]
+            df_recordings = pd.merge(
+                df_recordings, 
+                site_data[["short_device", "Country"]], 
+                on="short_device", 
+                how="left"
+            )
+            df_recordings["Country"] = df_recordings["Country"].fillna("Unknown")
+            
+            # Create time period column based on granularity
+            if time_granularity.lower() == "day":
+                df_recordings["period"] = df_recordings["datetime"].dt.strftime("%Y-%m-%d")
+            elif time_granularity.lower() == "hour":
+                df_recordings["period"] = df_recordings["datetime"].dt.strftime("%Y-%m-%d %H:00")
+            else:  # Default to day
+                df_recordings["period"] = df_recordings["datetime"].dt.strftime("%Y-%m-%d")
+            
+            # Create crosstab matrix with MultiIndex (Country, Device)
+            recording_matrix = pd.crosstab(
+                [df_recordings["Country"], df_recordings["short_device"]], 
+                df_recordings["period"]
+            ).fillna(0).astype(int)
+            
+            return recording_matrix
 
         except Exception as e:
             st.error(f"💥 Error loading recording matrix: {str(e)}")
@@ -151,6 +207,8 @@ class DataService(BaseService):
                 "total_devices": 0,
                 "online_devices": 0,
                 "offline_devices": 0,
+                "online_percentage": 0.0,
+                "offline_percentage": 0.0,
                 "countries": 0,
             }
 
@@ -159,9 +217,15 @@ class DataService(BaseService):
         offline_devices = total_devices - online_devices
         countries = device_data["Country"].nunique()
 
+        # Calculate percentages
+        online_percentage = (online_devices / total_devices * 100) if total_devices > 0 else 0
+        offline_percentage = (offline_devices / total_devices * 100) if total_devices > 0 else 0
+
         return {
             "total_devices": total_devices,
             "online_devices": online_devices,
             "offline_devices": offline_devices,
+            "online_percentage": online_percentage,
+            "offline_percentage": offline_percentage,
             "countries": countries,
         }
