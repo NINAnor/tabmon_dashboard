@@ -20,8 +20,6 @@ services:
     env_file: .env
     #image: ghcr.io/ninanor/dashboard-dashboard:main@sha-9a71d5a
     environment:
-      # - AUTH_USERNAME=${AUTH_USERNAME}
-      # - AUTH_PASSWORD=${AUTH_PASSWORD}  # Also used for detailed map access
       - BASE_DATA_DIR=${BASE_DATA_DIR}
     depends_on:
       rclone:
@@ -32,16 +30,9 @@ services:
       - "traefik.http.routers.tabmon__dashboard.entrypoints=web"
       - "traefik.http.routers.tabmon__dashboard.priority=1"
       - "traefik.http.services.tabmon__dashboard.loadbalancer.server.port=8501"
-  # reverseproxy:
-  #   build: proxy
-  #   image: ghcr.io/ninanor/dashboard-proxy:main
-  #   secrets:
-  #     - htpasswd
-  #   ports:
-  #     - 8085:80
-  #   depends_on:
-  #     - dashboard
-  #   restart: unless-stopped
+    networks:
+      - default
+      - traefik-proxy
   rclone:
     image: rclone/rclone:1.69
     command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/
@@ -63,9 +54,15 @@ services:
       - "traefik.http.services.tabmon__dashboard_rclone.loadbalancer.server.port=8081"
       - "traefik.http.routers.tabmon__dashboard_rclone.middlewares=tabmon__dashboard_rclone_auth"
       - "traefik.http.middlewares.tabmon__dashboard_rclone_auth.basicauth.users=test:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/"
+    networks:
+      - default
+      - traefik-proxy
 
 secrets:
   tabmon_rclone:
     file: ~/.config/rclone/rclone.conf
-  htpasswd:
-    file: ~/htpasswd.txt
+
+networks:
+  default:
+  traefik-proxy:
+    external: true
