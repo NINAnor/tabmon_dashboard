@@ -8,22 +8,6 @@ import streamlit as st
 from components.ui_styles import render_info_section_header
 
 
-def get_auth_credentials():
-    """Read authentication credentials from environment variables or Docker secret."""
-    # Priority 1: Environment variables (from .env file in production via Portainer)
-    username = os.getenv("AUTH_USERNAME")
-    password = os.getenv("AUTH_PASSWORD")
-
-    if username and password:
-        return (username, password)
-
-    # No fallback - require explicit configuration
-    raise ValueError(
-        "Authentication credentials not found.",
-        "Please set AUTH_USERNAME and AUTH_PASSWORD environment variables.",
-    )
-
-
 def render_site_filters(site_info: pd.DataFrame) -> tuple:
     """Render country and site selection filters."""
     st.markdown("### 🌍 Site Selection")
@@ -138,13 +122,12 @@ def render_image_grid(images_df: pd.DataFrame) -> None:
 
                     # Check if we're dealing with a local or remote URL
                     if image_url.startswith("/data/"):
-                        # This is a remote URL that needs authentication
+                        # This is a remote URL, using Traefik for authentication
                         # Use the reverse proxy service name from within Docker
                         full_url = f"http://reverseproxy:80{image_url}"
 
-                        # Use Streamlit's image function with authentication
-                        auth = get_auth_credentials()
-                        response = requests.get(full_url, auth=auth, timeout=10)
+                        # Use Streamlit's image function without authentication (Traefik handles it)
+                        response = requests.get(full_url, timeout=10)
 
                         if response.status_code == 200:
                             st.image(

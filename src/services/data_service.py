@@ -12,7 +12,6 @@ import duckdb
 import pandas as pd
 import requests
 import streamlit as st
-from requests.auth import HTTPBasicAuth
 
 from config.settings import (
     ASSETS_PARQUET_FILE,
@@ -36,19 +35,6 @@ class DataService:
         self.parquet_file = parquet_file
         self._temp_files = {}  # Track temporary files for cleanup
 
-    def _get_auth(self):
-        """Get authentication for HTTP requests from environment."""
-        username = os.getenv("AUTH_USERNAME")
-        password = os.getenv("AUTH_PASSWORD")
-
-        if not username or not password:
-            raise ValueError(
-                "Authentication credentials not found. Please set AUTH_USERNAME and "
-                "AUTH_PASSWORD environment variables."
-            )
-
-        return HTTPBasicAuth(username, password)
-
     def _get_file_path(self, url_or_path: str, file_type: str = "csv") -> str:
         """Get local file path from URL or return existing path."""
         if url_or_path.startswith(("http://", "https://")):
@@ -58,8 +44,8 @@ class DataService:
             cache_key = f"{file_type}_{session_id}_{hash(url_or_path)}"
 
             if cache_key not in self._temp_files:
-                auth = self._get_auth()
-                response = requests.get(url_or_path, auth=auth, timeout=30)
+                # Traefik handles authentication, no auth needed
+                response = requests.get(url_or_path, timeout=30)
 
                 if response.status_code != 200:
                     raise Exception(

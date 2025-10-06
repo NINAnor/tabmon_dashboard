@@ -1,30 +1,14 @@
 """
 Audio Dashboard Components
-Provides reusable components for audio file browsing and playback functionality.
+Provides reusable components for audio file browsing and playbook functionality.
 """
 
-import os
 from datetime import datetime, timezone
 
 import pandas as pd
 import streamlit as st
 
 from components.ui_styles import render_info_section_header
-
-
-def get_auth_credentials():
-    """Read authentication credentials from environment variables."""
-    username = os.getenv("AUTH_USERNAME")
-    password = os.getenv("AUTH_PASSWORD")
-
-    if username and password:
-        return (username, password)
-
-    # No fallback - require explicit configuration
-    raise ValueError(
-        "Authentication credentials not found. Please set AUTH_USERNAME and "
-        "AUTH_PASSWORD environment variables."
-    )
 
 
 def render_site_selection(site_info: pd.DataFrame) -> tuple:

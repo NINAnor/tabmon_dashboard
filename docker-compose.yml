@@ -1,22 +1,40 @@
 version: '3.8'
 
 services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - 8080:8080  # Traefik dashboard
+      - 8050:80      # HTTP
+    volumes:
+      - /run/user/210015162/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    networks:
+      - default
+      - traefik-proxy
+
   dashboard:
     build:
       context: .
-    env_file: .env
     #image: ghcr.io/ninanor/dashboard-dashboard:main@sha-9a71d5a
     environment:
-      - AUTH_USERNAME=${AUTH_USERNAME}
-      - AUTH_PASSWORD=${AUTH_PASSWORD}  # Also used for detailed map access
-      - BASE_DATA_DIR=${BASE_DATA_DIR}
-  reverseproxy:
-    build: proxy
-    image: ghcr.io/ninanor/dashboard-proxy:main
-    secrets:
-      - htpasswd
-    ports:
-      - 8085:80
+      - BASE_DATA_DIR="http://rclone:8081/data/"
+    depends_on:
+      rclone:
+        condition: service_healthy
+    restart: unless-stopped
+    labels:
+      - "traefik.http.routers.tabmon__dashboard.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.tabmon__dashboard.entrypoints=web"
+      - "traefik.http.routers.tabmon__dashboard.priority=1"
+      - "traefik.http.services.tabmon__dashboard.loadbalancer.server.port=8501"
+    networks:
+      - default
+      - traefik-proxy
   rclone:
     image: rclone/rclone:1.69
     command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/
@@ -24,9 +42,29 @@ services:
       RCLONE_CONFIG: /run/secrets/tabmon_rclone
     secrets:
       - tabmon_rclone
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/data/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    labels:
+      - "traefik.http.routers.tabmon__dashboard_rclone.rule=PathPrefix(`/data/`)"
+      - "traefik.http.routers.tabmon__dashboard_rclone.entrypoints=web"
+      - "traefik.http.routers.tabmon__dashboard_rclone.priority=10"
+      - "traefik.http.services.tabmon__dashboard_rclone.loadbalancer.server.port=8081"
+      - "traefik.http.routers.tabmon__dashboard_rclone.middlewares=tabmon__dashboard_rclone_auth"
+      - "traefik.http.middlewares.tabmon__dashboard_rclone_auth.basicauth.users=test:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/"
+    networks:
+      - default
+      - traefik-proxy
 
 secrets:
   tabmon_rclone:
     file: ~/.config/rclone/rclone.conf
-  htpasswd:
-    file: ~/htpasswd.txt
+
+networks:
+  default:
+  traefik-proxy:
+    external: false
