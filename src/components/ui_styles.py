@@ -205,27 +205,6 @@ def load_custom_css():
     )
 
 
-def render_page_header(title: str, subtitle: str = None):
-    """Render the main page header with styling."""
-    header_html = f"""
-    <h1 style='text-align: center; color: #2E86AB; margin-bottom: 30px;'>
-        {title}
-    </h1>
-    """
-
-    if subtitle:
-        header_html += f"""
-        <p style='text-align: center; color: #666; font-size: 1.2em;
-                  margin-bottom: 30px;'>
-            {subtitle}
-        </p>
-        """
-
-    header_html += "<hr style='margin-bottom: 30px;'>"
-
-    st.markdown(header_html, unsafe_allow_html=True)
-
-
 def render_info_section_header(
     title: str, level: str = "h3", style_class: str = "section-info"
 ):

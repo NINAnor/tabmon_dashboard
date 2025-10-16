@@ -64,41 +64,6 @@ def render_activity_heatmap(matrix_data: pd.DataFrame, period_title: str):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def render_status_pie_chart(metrics: dict):
-    """Render a pie chart showing online/offline distribution."""
-    if not metrics or metrics["total_devices"] == 0:
-        return
-
-    fig = go.Figure(
-        data=[
-            go.Pie(
-                labels=["Online", "Offline"],
-                values=[metrics["online_devices"], metrics["offline_devices"]],
-                hole=0.4,
-                marker_colors=["#11998e", "#ff6b6b"],
-                textinfo="label+percent",
-                textfont_size=14,
-                hovertemplate="<b>%{label}</b><br>Count: %{value}<br>"
-                "Percentage: %{percent}<extra></extra>",
-            )
-        ]
-    )
-
-    fig.update_layout(
-        title=dict(
-            text="📊 Device Status Distribution",
-            x=0.5,
-            font=dict(size=16, color="#2E86AB"),
-        ),
-        height=400,
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(t=80, b=20, l=20, r=20),
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-
 def render_country_bar_chart(status_df: pd.DataFrame):
     """Render a bar chart showing device counts by country."""
     if status_df.empty or "Country" not in status_df.columns:

@@ -269,15 +269,3 @@ class DataService:
             "online_percentage": online_percentage,
             "offline_percentage": 100 - online_percentage,
         }
-
-    def cleanup_temp_files(self):
-        """Clean up temporary files."""
-        for temp_file in self._temp_files.values():
-            try:
-                temp_path = Path(temp_file)
-                if temp_path.exists():
-                    temp_path.unlink()
-            except Exception as e:
-                # Log cleanup errors but don't raise
-                print(f"Warning: Failed to cleanup temporary file {temp_path}: {e}")
-        self._temp_files.clear()

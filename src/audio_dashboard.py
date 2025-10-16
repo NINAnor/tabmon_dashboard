@@ -38,7 +38,7 @@ def show_audio_dashboard(
 
     # Initialize services
     data_service = DataService(site_csv, parquet_file)
-    audio_service = AudioService(parquet_file)
+    audio_service = AudioService(base_dir)
 
     # Load site information and device data for metrics
     with st.spinner("🔄 Loading site and device information..."):
@@ -97,38 +97,17 @@ def show_audio_dashboard(
 
     # Load audio data and total dataset stats
     with st.spinner("🔄 Loading audio recordings and dataset statistics..."):
-        audio_data = audio_service.get_audio_files_by_device(short_device_id)
         total_stats = audio_service.get_total_dataset_stats()
+        device_stats = audio_service.get_device_stats(short_device_id)
 
-    if audio_data.empty:
-        st.warning(f"📂 No audio recordings found for device: {short_device_id}")
-        # Still show total dataset stats even if no recordings for this device
-        if total_stats and total_stats.get("total_recordings", 0) > 0:
-            total_recordings = total_stats["total_recordings"]
-            total_size_gb = total_stats["total_size_gb"]
+        # Show device stats if available from preprocessed data
+        if device_stats:
             st.info(
-                f"💡 Total dataset contains {total_recordings:,} recordings "
-                f"({total_size_gb:.2f} GB)"
+                f"📊 Device {short_device_id} has {device_stats['total_recordings']:,} recordings "
+                f"({device_stats['total_size_gb']:.2f} GB) in total"
             )
         return
 
     # Show audio statistics with dataset contribution
     stats = audio_service.get_audio_stats(audio_data)
     render_audio_stats(stats, total_stats)
-
-    # Find closest recordings
-    closest_recordings = audio_service.find_closest_recordings(
-        audio_data, target_datetime
-    )
-
-    # Show target time info
-    st.markdown(
-        f"**🎯 Target Time:** {target_datetime.strftime('%Y-%m-%d %H:%M:%S UTC')}"
-    )
-
-    # Render recordings table for metadata viewing only
-    render_recordings_table(closest_recordings, target_datetime, show_selection=False)
-
-    # Additional features
-    st.markdown("---")
-    render_audio_export_options(closest_recordings, selected_site, audio_data)
