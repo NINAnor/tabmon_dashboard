@@ -100,14 +100,16 @@ def show_audio_dashboard(
         total_stats = audio_service.get_total_dataset_stats()
         device_stats = audio_service.get_device_stats(short_device_id)
 
-        # Show device stats if available from preprocessed data
-        if device_stats:
+    # Always show audio statistics with dataset contribution using preprocessed stats
+    if device_stats:
+        render_audio_stats(device_stats, total_stats)
+    else:
+        st.warning(f"📂 No statistics found for device: {short_device_id}")
+        if total_stats and total_stats.get("total_recordings", 0) > 0:
+            total_recordings = total_stats["total_recordings"]
+            total_size_gb = total_stats["total_size_gb"]
             st.info(
-                f"📊 Device {short_device_id} has {device_stats['total_recordings']:,} recordings "
-                f"({device_stats['total_size_gb']:.2f} GB) in total"
+                f"💡 Total dataset contains {total_recordings:,} recordings "
+                f"({total_size_gb:.2f} GB)"
             )
         return
-
-    # Show audio statistics with dataset contribution
-    stats = audio_service.get_audio_stats(audio_data)
-    render_audio_stats(stats, total_stats)
