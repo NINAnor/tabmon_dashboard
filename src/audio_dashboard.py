@@ -6,10 +6,7 @@ Provides audio file browsing, filtering, and playback functionality.
 import streamlit as st
 
 from components.audio import (
-    render_audio_export_options,
     render_audio_stats,
-    render_datetime_selector,
-    render_recordings_table,
     render_site_details,
     render_site_selection,
 )
@@ -19,6 +16,7 @@ from config.settings import ASSETS_PARQUET_FILE, ASSETS_SITE_CSV
 from services.audio_service import AudioService
 from services.data_service import DataService
 from utils.data_loader import load_site_info
+from utils.utils import extract_device_id
 
 
 def show_audio_dashboard(
@@ -66,9 +64,6 @@ def show_audio_dashboard(
             site_info
         )
 
-    with col2:
-        target_datetime = render_datetime_selector()
-
     # Get site data
     site_data = filtered_site_info[filtered_site_info["Site"] == selected_site]
 
@@ -89,7 +84,7 @@ def show_audio_dashboard(
     render_site_details(record)
 
     # Extract device ID
-    short_device_id = audio_service.extract_device_id(record)
+    short_device_id = extract_device_id(record)
 
     if not short_device_id:
         st.error("❌ No device ID found for this site.")

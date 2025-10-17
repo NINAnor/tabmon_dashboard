@@ -17,7 +17,6 @@ class AudioService:
     @st.cache_data(ttl=3600, show_spinner=False)
     def get_device_stats(_self, short_device_id: str) -> dict:
         """Get preprocessed statistics for a specific device."""
-        # Read from the remote preprocessed file or local fallback
         device_stats_url = f"{_self.BASE_DIR}/data/preprocessed/all_device_stats.csv"
         device_stats = pd.read_csv(device_stats_url)
         
@@ -49,7 +48,6 @@ class AudioService:
         dataset_stats_url = f"{_self.BASE_DIR}/data/preprocessed/dataset_stats.csv"
         result = pd.read_csv(dataset_stats_url)
 
-
         return {
             "total_recordings": int(result["total_recordings"].iloc[0])
             if not result.empty
@@ -59,11 +57,3 @@ class AudioService:
             if not result.empty and pd.notna(result["total_size_bytes"].iloc[0])
             else 0,
         }
-
-    def extract_device_id(self, record: pd.Series) -> str:
-        """Extract short device ID from a site record."""
-        full_device_id = record.get("DeviceID", "")
-        if "_" in full_device_id:
-            return full_device_id.split("_")[-1].strip()
-        else:
-            return full_device_id[-8:] if len(full_device_id) >= 8 else full_device_id

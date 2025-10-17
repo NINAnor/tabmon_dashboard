@@ -33,27 +33,6 @@ def render_site_selection(site_info: pd.DataFrame) -> tuple:
     return selected_country, selected_site, filtered_site_info
 
 
-def render_datetime_selector() -> datetime:
-    """Render date and time selection interface."""
-    st.markdown("### ⏰ Recording Time")
-
-    # Date and time inputs
-    selected_date = st.date_input(
-        "📅 Select Date", value=datetime.now().date(), key="audio_date_filter"
-    )
-
-    selected_time = st.time_input(
-        "🕐 Select Time", value=datetime.now().time(), key="audio_time_filter"
-    )
-
-    # Combine date and time
-    selected_datetime = datetime.combine(selected_date, selected_time).replace(
-        tzinfo=timezone.utc
-    )
-
-    return selected_datetime
-
-
 def render_site_details(record: pd.Series) -> None:
     """Render site information details."""
     col1, col2 = st.columns(2)
@@ -173,36 +152,3 @@ def render_recordings_table(
     )
 
     return None
-
-
-def render_audio_export_options(
-    recordings: pd.DataFrame, site_name: str, audio_data: pd.DataFrame
-) -> None:
-    """Render audio export and additional options."""
-    st.markdown("### 🔧 Additional Options")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("📥 Export Recording List", key="export_recordings"):
-            csv_data = recordings[["Name", "recorded_at", "Path", "Size"]].to_csv(
-                index=False
-            )
-            st.download_button(
-                label="💾 Download as CSV",
-                data=csv_data,
-                file_name=f"recordings_{site_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-                key="download_recordings_csv",
-            )
-
-    with col2:
-        # Show recording frequency
-        if len(audio_data) > 1:
-            time_diffs = (
-                audio_data.sort_values("recorded_at")["recorded_at"].diff().dropna()
-            )
-            avg_interval = time_diffs.mean()
-            if pd.notna(avg_interval):
-                interval_hours = avg_interval.total_seconds() / 3600
-                st.info(f"📊 Average recording interval: {interval_hours:.1f} hours")
