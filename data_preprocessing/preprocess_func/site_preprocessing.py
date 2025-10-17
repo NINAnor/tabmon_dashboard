@@ -4,7 +4,6 @@ import requests
 import tempfile
 import os
 
-
 def preprocess_sites(parquet_file, username=None, password=None, base_dir = None):
 
     response = requests.get(parquet_file, auth=(username, password))

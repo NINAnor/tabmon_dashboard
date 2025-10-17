@@ -9,7 +9,7 @@ import streamlit as st
 from config.settings import HEATMAP_COLORSCALE, HEATMAP_ROW_HEIGHT, MIN_HEATMAP_HEIGHT
 
 
-def render_activity_heatmap(matrix_data: pd.DataFrame, period_title: str):
+def render_activity_heatmap(matrix_data: pd.DataFrame):
     """Render improved activity heatmap with better styling."""
     if matrix_data.empty:
         st.info("ℹ️ No recording data available for the selected period")
@@ -33,7 +33,6 @@ def render_activity_heatmap(matrix_data: pd.DataFrame, period_title: str):
             colorbar=dict(title="📊 Recordings", thickness=15, len=0.8),
             hoverongaps=False,
             hovertemplate=(
-                f"<b>{period_title}:</b> %{{x}}<br>"
                 f"<b>Device:</b> %{{y}}<br>"
                 f"<b>Recordings:</b> %{{z}}<extra></extra>"
             ),
@@ -45,12 +44,12 @@ def render_activity_heatmap(matrix_data: pd.DataFrame, period_title: str):
 
     fig.update_layout(
         title=dict(
-            text=f"🎵 Recording Activity by {period_title}",
+            text=f"🎵 Recording Activity by day",
             x=0.5,
             font=dict(size=18, color="#2E86AB"),
         ),
         xaxis=dict(
-            title=dict(text=f"📅 {period_title}", font=dict(size=14)),
+            title=dict(text="📅 Day", font=dict(size=14)),
             tickangle=45 if len(x_labels) > 10 else 0,
         ),
         yaxis=dict(title=dict(text="🎙️ Device (by Country)", font=dict(size=14))),
