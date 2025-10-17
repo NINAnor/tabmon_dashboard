@@ -166,7 +166,6 @@ class DataService:
             merged["last_file"].apply(calculate_days_since).round(1)
         )
 
-        # We should now have exactly 100 devices (all active sites)
         return merged
 
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)

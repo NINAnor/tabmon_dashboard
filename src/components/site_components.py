@@ -1,10 +1,11 @@
-import os
+import io
 from datetime import datetime
 
 import pandas as pd
 import requests
 import streamlit as st
 
+from PIL import Image
 from components.ui_styles import render_info_section_header
 
 
@@ -37,8 +38,6 @@ def render_site_details(filtered_data: pd.DataFrame, selected_site: str) -> None
         return
 
     record = site_data.iloc[0]
-
-    # render_info_section_header("📋 Site Details", style_class="site-details-header")
 
     # Create two columns for better layout
     col1, col2 = st.columns(2)
@@ -106,6 +105,17 @@ def render_site_details(filtered_data: pd.DataFrame, selected_site: str) -> None
     if comments != "N/A":
         st.markdown(f"**Comments:** {comments}")
 
+@st.cache_data
+def download_image(url):
+    #TODO: create a thumbnail for faster loading
+    response = requests.get(url)
+    response.raise_for_status()
+
+    image = Image.open(io.BytesIO(response.content))
+
+    image_without_exif = Image.new(image.mode, image.size)
+    image_without_exif.putdata(image.getdata())
+    return image_without_exif
 
 def render_image_grid(images_df: pd.DataFrame) -> None:
     """Render images in a responsive grid layout."""
@@ -118,32 +128,13 @@ def render_image_grid(images_df: pd.DataFrame) -> None:
             with cols[j]:
                 try:
                     # Get the original URL (already has /data/ prefix)
-                    image_url = row["url"]
 
-                    # Check if we're dealing with a local or remote URL
-                    if image_url.startswith("/data/"):
-                        # This is a remote URL, using Traefik for authentication
-                        # Use the reverse proxy service name from within Docker
-                        full_url = f"http://reverseproxy:80{image_url}"
+                    st.image(
+                        download_image(row["url"]),
+                        caption=row["picture_type"].title(),
+                        use_container_width=True,
+                    )
 
-                        # Use Streamlit's image function without authentication (Traefik handles it)
-                        response = requests.get(full_url, timeout=10)
-
-                        if response.status_code == 200:
-                            st.image(
-                                response.content,
-                                caption=row["picture_type"].title(),
-                                use_container_width=True,
-                            )
-                        else:
-                            st.error(f"Failed to load image: {image_url}")
-                    else:
-                        # Local image or direct URL
-                        st.image(
-                            image_url,
-                            caption=row["picture_type"].title(),
-                            use_container_width=True,
-                        )
                 except Exception as e:
                     st.error(f"Error loading image: {str(e)}")
                     # Fallback to broken link message
@@ -172,33 +163,3 @@ def render_device_images(device_id: str, pictures_mapping: pd.DataFrame) -> None
 
     # Render images in a grid
     render_image_grid(device_images)
-
-
-def render_site_export_options(
-    site_data: pd.DataFrame, selected_site: str, record: pd.Series
-) -> None:
-    """Render site export and additional options."""
-    render_info_section_header(
-        "🔧 Export & Tools", level="h4", style_class="export-tools-header"
-    )
-
-    # Export functionality
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("📥 Export Site Data", key="export_site_data"):
-            site_csv_data = site_data.to_csv(index=False)
-            st.download_button(
-                label="💾 Download as CSV",
-                data=site_csv_data,
-                file_name=f"site_data_{selected_site}_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime="text/csv",
-                key="download_site_csv",
-            )
-
-    with col2:
-        # Link to map view
-        if record.get("Latitude") and record.get("Longitude"):
-            lat, lon = record["Latitude"], record["Longitude"]
-            maps_url = f"https://www.google.com/maps?q={lat},{lon}"
-            st.markdown(f"[🗺️ View on Google Maps]({maps_url})")
