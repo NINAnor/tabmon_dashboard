@@ -196,9 +196,7 @@ def render_about_section():
         """)
 
 
-def render_complete_sidebar(
-    metrics: dict = None, site_csv: str = None, parquet_file: str = None
-):
+def render_complete_sidebar(metrics: dict = None):
     """Render the complete sidebar with all components."""
     render_dashboard_sidebar_without_granularity(metrics)
     render_help_section()

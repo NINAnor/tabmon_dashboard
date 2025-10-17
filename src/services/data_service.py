@@ -3,23 +3,13 @@ Data service for TABMON dashboard.
 Handles all data loading, processing, and caching operations.
 """
 
-import os
-import tempfile
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-
-import duckdb
 import pandas as pd
-import requests
 import streamlit as st
 
 from config.settings import (
-    ASSETS_PARQUET_FILE,
-    ASSETS_SITE_CSV,
+    SITE_CSV_URL,
+    PARQUET_FILE_URL,
     CACHE_TTL,
-    COUNTRY_MAP,
-    DATA_START_DATE,
-    OFFLINE_THRESHOLD_DAYS,
     BASE_DATA_URL
 )
 from utils.data_loader import load_site_info
@@ -28,14 +18,12 @@ from utils.data_loader import load_site_info
 class DataService:
     """Service class for handling all data operations."""
 
-    def __init__(
-        self, site_csv: str = ASSETS_SITE_CSV, parquet_file: str = ASSETS_PARQUET_FILE, base_dir: str = BASE_DATA_URL
-    ):
-        """Initialize DataService with data source paths or URLs."""
-        self.site_csv = site_csv
-        self.parquet_file = parquet_file
+    def __init__(self):
+        """Initialize DataService with centralized configuration."""
+        self.site_csv = SITE_CSV_URL
+        self.parquet_file = PARQUET_FILE_URL
         self._temp_files = {} 
-        self.base_dir = base_dir
+        self.base_dir = BASE_DATA_URL
 
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
     def load_device_status(_self) -> pd.DataFrame:

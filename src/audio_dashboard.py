@@ -12,35 +12,26 @@ from components.audio import (
 )
 from components.sidebar import render_complete_sidebar
 from components.ui_styles import load_custom_css, render_info_section_header
-from config.settings import ASSETS_PARQUET_FILE, ASSETS_SITE_CSV
+from config.settings import SITE_CSV_URL, PARQUET_FILE_URL, BASE_DATA_URL
 from services.audio_service import AudioService
 from services.data_service import DataService
-from utils.data_loader import load_site_info
 from utils.utils import extract_device_id
 
 
-def show_audio_dashboard(
-    site_csv: str, parquet_file: str, base_dir: str = None
-) -> None:
-    """Main audio dashboard function.
-
-    Args:
-        site_csv: Path or URL to the site CSV file
-        parquet_file: Path or URL to the parquet data file
-        base_dir: Base directory for data files (optional, for backward compatibility)
-    """
+def show_audio_dashboard() -> None:
+    """Main audio dashboard function."""
     load_custom_css()
 
     st.title("🎵 Audio Analysis Dashboard")
     st.markdown("Browse and analyze audio recordings metadata from monitoring devices.")
 
     # Initialize services
-    data_service = DataService(site_csv, parquet_file)
-    audio_service = AudioService(base_dir)
+    data_service = DataService()
+    audio_service = AudioService()
 
     # Load site information and device data for metrics
     with st.spinner("🔄 Loading site and device information..."):
-        site_info = load_site_info(site_csv)
+        site_info = data_service.load_site_info()
         device_data = data_service.load_device_status()
 
     # Calculate metrics for the sidebar
@@ -48,9 +39,7 @@ def show_audio_dashboard(
 
     # Render complete sidebar with status information only
     with st.sidebar:
-        render_complete_sidebar(
-            metrics=metrics, site_csv=ASSETS_SITE_CSV, parquet_file=ASSETS_PARQUET_FILE
-        )
+        render_complete_sidebar(metrics=metrics)
 
     if site_info.empty:
         st.error("❌ No site information available.")

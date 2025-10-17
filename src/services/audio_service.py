@@ -5,16 +5,19 @@ Handles audio file operations and data processing for the TABMON dashboard.
 
 import pandas as pd
 import streamlit as st
-import pathlib
 
+from config.settings import (
+    CACHE_TTL,
+    BASE_DATA_URL
+)
 
 class AudioService:
     """Service for handling audio file operations and data processing."""
 
-    def __init__(self, BASE_DIR: str):
-        self.BASE_DIR = BASE_DIR
+    def __init__(self):
+        self.BASE_DIR = BASE_DATA_URL
 
-    @st.cache_data(ttl=3600, show_spinner=False)
+    @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
     def get_device_stats(_self, short_device_id: str) -> dict:
         """Get preprocessed statistics for a specific device."""
         device_stats_url = f"{_self.BASE_DIR}/data/preprocessed/all_device_stats.csv"
@@ -42,7 +45,7 @@ class AudioService:
             }
         }
 
-    @st.cache_data(ttl=3600, show_spinner=False)
+    @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
     def get_total_dataset_stats(_self) -> dict:
         """Get statistics for the entire audio dataset."""
         dataset_stats_url = f"{_self.BASE_DIR}/data/preprocessed/dataset_stats.csv"

@@ -13,13 +13,13 @@ from components.site_components import (
     render_site_filters,
 )
 from components.ui_styles import load_custom_css, render_info_section_header
-from config.settings import ASSETS_PARQUET_FILE, ASSETS_SITE_CSV
+from config.settings import SITE_CSV_URL, PARQUET_FILE_URL, BASE_DATA_URL
 from services.data_service import DataService
-from utils.data_loader import load_site_info
+from services.site_service import SiteService
 from utils.utils import extract_device_id
 
 
-def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None:
+def show_site_dashboard() -> None:
     """Main site metadata dashboard function."""
     load_custom_css()
 
@@ -28,25 +28,24 @@ def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None
         "Explore detailed information about recording sites and device deployments."
     )
 
-    # Initialize services with correct URL parameters
-    data_service = DataService(site_csv, parquet_file)
+    # Initialize services
+    data_service = DataService()
+    site_service = SiteService()
 
     # Load data
     with st.spinner("🔄 Loading site and device information..."):
-        site_info = load_site_info(site_csv)
+        site_info = data_service.load_site_info()
         device_data = data_service.load_device_status()
 
     with st.spinner("🔄 Loading device images..."):
-        pictures_mapping = pd.read_csv(f"{base_dir}/data/preprocessed/image_mapping.csv")
+        pictures_mapping = site_service.get_image_mapping()
 
     # Calculate metrics for the sidebar
     metrics = data_service.calculate_metrics(device_data)
 
     # Render complete sidebar with status information only
     with st.sidebar:
-        render_complete_sidebar(
-            metrics=metrics, site_csv=ASSETS_SITE_CSV, parquet_file=ASSETS_PARQUET_FILE
-        )
+        render_complete_sidebar(metrics=metrics)
 
     if site_info.empty:
         st.error("❌ No site information available.")

@@ -27,11 +27,6 @@ def main():
         page_icon="🎙️",
     )
 
-    # Data source configuration
-    BASE_DIR = "http://rclone:8081/data"  # Remote data source
-    site_csv_url = f"{BASE_DIR}/site_info.csv"
-    parquet_file_url = f"{BASE_DIR}/index.parquet"
-
     # Navigation sidebar
     st.sidebar.title("🎙️ TABMON Dashboard")
     st.sidebar.markdown("---")
@@ -60,11 +55,11 @@ def main():
 
     # Route to appropriate dashboard
     if option == "Map Visualization":
-        map_app(site_csv_url, parquet_file_url)
+        map_app()
     elif option == "Audio Analysis":
-        show_audio_dashboard(site_csv_url, parquet_file_url, BASE_DIR)
+        show_audio_dashboard()
     elif option == "Site Metadata":
-        show_site_dashboard(site_csv_url, parquet_file_url, BASE_DIR)
+        show_site_dashboard()
 
 
 if __name__ == "__main__":

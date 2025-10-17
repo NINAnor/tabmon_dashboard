@@ -55,7 +55,11 @@ COLORS = {
 }
 
 # Data source URLs
-BASE_DATA_URL = "http://rclone:8081/data/"
+BASE_DATA_URL = "http://rclone:8081/data"
+SITE_CSV_URL = f"{BASE_DATA_URL}/site_info.csv"
+PARQUET_FILE_URL = f"{BASE_DATA_URL}/index.parquet"
+
+# Legacy asset paths (for backward compatibility)
 ASSETS_SITE_CSV = "assets/site_info.csv"
 ASSETS_PARQUET_FILE = "assets/index.parquet"
 

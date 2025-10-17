@@ -21,22 +21,18 @@ from components.ui_styles import (
 )
 from config.settings import (
     APP_TITLE,
-    ASSETS_PARQUET_FILE,
-    ASSETS_SITE_CSV,
+    SITE_CSV_URL,
+    PARQUET_FILE_URL,
     TAB_ICONS,
 )
 from services.data_service import DataService
 
-def app(site_csv: str = None, parquet_file: str = None):
+def app():
     """Main map dashboard application."""
     load_custom_css()
 
-    # Use provided URLs or fall back to defaults
-    site_csv_url = site_csv or ASSETS_SITE_CSV
-    parquet_file_url = parquet_file or ASSETS_PARQUET_FILE
-
-    # Initialize data service with provided URLs
-    data_service = DataService(site_csv_url, parquet_file_url)
+    # Initialize data service
+    data_service = DataService()
 
     # Load all data
     with st.spinner("Loading device data..."):
@@ -47,9 +43,7 @@ def app(site_csv: str = None, parquet_file: str = None):
 
     # Render sidebar with controls and metrics
     with st.sidebar:
-        render_complete_sidebar(
-            metrics=metrics, site_csv=ASSETS_SITE_CSV, parquet_file=ASSETS_PARQUET_FILE
-        )
+        render_complete_sidebar(metrics=metrics)
 
     # Main dashboard tabs
     tab1, tab2, tab3 = st.tabs(
