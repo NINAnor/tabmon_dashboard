@@ -2,13 +2,15 @@
 Main TABMON Dashboard Application
 """
 
+from pathlib import Path
+
 import streamlit as st
 
 from audio_dashboard import show_audio_dashboard
 from config.settings import APP_TITLE
 from map_dashboard import app as map_app
 from site_dashboard import show_site_dashboard
-from pathlib import Path
+
 
 def main():
     """Main application entry point."""
