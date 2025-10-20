@@ -6,43 +6,31 @@ Provides audio file browsing, filtering, and playback functionality.
 import streamlit as st
 
 from components.audio import (
-    render_audio_export_options,
     render_audio_stats,
-    render_datetime_selector,
-    render_recordings_table,
     render_site_details,
     render_site_selection,
 )
 from components.sidebar import render_complete_sidebar
 from components.ui_styles import load_custom_css, render_info_section_header
-from config.settings import ASSETS_PARQUET_FILE, ASSETS_SITE_CSV
 from services.audio_service import AudioService
 from services.data_service import DataService
-from utils.data_loader import load_site_info
+from utils.utils import extract_device_id
 
 
-def show_audio_dashboard(
-    site_csv: str, parquet_file: str, base_dir: str = None
-) -> None:
-    """Main audio dashboard function.
-
-    Args:
-        site_csv: Path or URL to the site CSV file
-        parquet_file: Path or URL to the parquet data file
-        base_dir: Base directory for data files (optional, for backward compatibility)
-    """
+def show_audio_dashboard() -> None:
+    """Main audio dashboard function."""
     load_custom_css()
 
     st.title("🎵 Audio Analysis Dashboard")
     st.markdown("Browse and analyze audio recordings metadata from monitoring devices.")
 
     # Initialize services
-    data_service = DataService(site_csv, parquet_file)
-    audio_service = AudioService(parquet_file)
+    data_service = DataService()
+    audio_service = AudioService()
 
     # Load site information and device data for metrics
     with st.spinner("🔄 Loading site and device information..."):
-        site_info = load_site_info(site_csv)
+        site_info = data_service.load_site_info()
         device_data = data_service.load_device_status()
 
     # Calculate metrics for the sidebar
@@ -50,9 +38,7 @@ def show_audio_dashboard(
 
     # Render complete sidebar with status information only
     with st.sidebar:
-        render_complete_sidebar(
-            metrics=metrics, site_csv=ASSETS_SITE_CSV, parquet_file=ASSETS_PARQUET_FILE
-        )
+        render_complete_sidebar(metrics=metrics)
 
     if site_info.empty:
         st.error("❌ No site information available.")
@@ -65,9 +51,6 @@ def show_audio_dashboard(
         selected_country, selected_site, filtered_site_info = render_site_selection(
             site_info
         )
-
-    with col2:
-        target_datetime = render_datetime_selector()
 
     # Get site data
     site_data = filtered_site_info[filtered_site_info["Site"] == selected_site]
@@ -89,7 +72,7 @@ def show_audio_dashboard(
     render_site_details(record)
 
     # Extract device ID
-    short_device_id = audio_service.extract_device_id(record)
+    short_device_id = extract_device_id(record)
 
     if not short_device_id:
         st.error("❌ No device ID found for this site.")
@@ -97,12 +80,14 @@ def show_audio_dashboard(
 
     # Load audio data and total dataset stats
     with st.spinner("🔄 Loading audio recordings and dataset statistics..."):
-        audio_data = audio_service.get_audio_files_by_device(short_device_id)
         total_stats = audio_service.get_total_dataset_stats()
+        device_stats = audio_service.get_device_stats(short_device_id)
 
-    if audio_data.empty:
-        st.warning(f"📂 No audio recordings found for device: {short_device_id}")
-        # Still show total dataset stats even if no recordings for this device
+    # Always show audio statistics with dataset contribution using preprocessed stats
+    if device_stats:
+        render_audio_stats(device_stats, total_stats)
+    else:
+        st.warning(f"📂 No statistics found for device: {short_device_id}")
         if total_stats and total_stats.get("total_recordings", 0) > 0:
             total_recordings = total_stats["total_recordings"]
             total_size_gb = total_stats["total_size_gb"]
@@ -111,24 +96,3 @@ def show_audio_dashboard(
                 f"({total_size_gb:.2f} GB)"
             )
         return
-
-    # Show audio statistics with dataset contribution
-    stats = audio_service.get_audio_stats(audio_data)
-    render_audio_stats(stats, total_stats)
-
-    # Find closest recordings
-    closest_recordings = audio_service.find_closest_recordings(
-        audio_data, target_datetime
-    )
-
-    # Show target time info
-    st.markdown(
-        f"**🎯 Target Time:** {target_datetime.strftime('%Y-%m-%d %H:%M:%S UTC')}"
-    )
-
-    # Render recordings table for metadata viewing only
-    render_recordings_table(closest_recordings, target_datetime, show_selection=False)
-
-    # Additional features
-    st.markdown("---")
-    render_audio_export_options(closest_recordings, selected_site, audio_data)

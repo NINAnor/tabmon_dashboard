@@ -9,7 +9,7 @@ import streamlit as st
 from config.settings import HEATMAP_COLORSCALE, HEATMAP_ROW_HEIGHT, MIN_HEATMAP_HEIGHT
 
 
-def render_activity_heatmap(matrix_data: pd.DataFrame, period_title: str):
+def render_activity_heatmap(matrix_data: pd.DataFrame):
     """Render improved activity heatmap with better styling."""
     if matrix_data.empty:
         st.info("ℹ️ No recording data available for the selected period")
@@ -33,9 +33,7 @@ def render_activity_heatmap(matrix_data: pd.DataFrame, period_title: str):
             colorbar=dict(title="📊 Recordings", thickness=15, len=0.8),
             hoverongaps=False,
             hovertemplate=(
-                f"<b>{period_title}:</b> %{{x}}<br>"
-                f"<b>Device:</b> %{{y}}<br>"
-                f"<b>Recordings:</b> %{{z}}<extra></extra>"
+                "<b>Device:</b> %{y}<br><b>Recordings:</b> %{z}<extra></extra>"
             ),
         )
     )
@@ -45,12 +43,12 @@ def render_activity_heatmap(matrix_data: pd.DataFrame, period_title: str):
 
     fig.update_layout(
         title=dict(
-            text=f"🎵 Recording Activity by {period_title}",
+            text="🎵 Recording Activity by day",
             x=0.5,
             font=dict(size=18, color="#2E86AB"),
         ),
         xaxis=dict(
-            title=dict(text=f"📅 {period_title}", font=dict(size=14)),
+            title=dict(text="📅 Day", font=dict(size=14)),
             tickangle=45 if len(x_labels) > 10 else 0,
         ),
         yaxis=dict(title=dict(text="🎙️ Device (by Country)", font=dict(size=14))),
@@ -59,41 +57,6 @@ def render_activity_heatmap(matrix_data: pd.DataFrame, period_title: str):
         font=dict(size=12),
         plot_bgcolor="white",
         paper_bgcolor="white",
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def render_status_pie_chart(metrics: dict):
-    """Render a pie chart showing online/offline distribution."""
-    if not metrics or metrics["total_devices"] == 0:
-        return
-
-    fig = go.Figure(
-        data=[
-            go.Pie(
-                labels=["Online", "Offline"],
-                values=[metrics["online_devices"], metrics["offline_devices"]],
-                hole=0.4,
-                marker_colors=["#11998e", "#ff6b6b"],
-                textinfo="label+percent",
-                textfont_size=14,
-                hovertemplate="<b>%{label}</b><br>Count: %{value}<br>"
-                "Percentage: %{percent}<extra></extra>",
-            )
-        ]
-    )
-
-    fig.update_layout(
-        title=dict(
-            text="📊 Device Status Distribution",
-            x=0.5,
-            font=dict(size=16, color="#2E86AB"),
-        ),
-        height=400,
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(t=80, b=20, l=20, r=20),
     )
 
     st.plotly_chart(fig, use_container_width=True)

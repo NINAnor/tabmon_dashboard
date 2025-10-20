@@ -38,6 +38,8 @@ services:
   rclone:
     image: rclone/rclone:1.69
     command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/
+    ports:
+      - 8081:8081
     environment:
       RCLONE_CONFIG: /run/secrets/tabmon_rclone
     secrets:

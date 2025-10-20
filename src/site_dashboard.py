@@ -9,17 +9,15 @@ from components.sidebar import render_complete_sidebar
 from components.site_components import (
     render_device_images,
     render_site_details,
-    render_site_export_options,
     render_site_filters,
 )
 from components.ui_styles import load_custom_css, render_info_section_header
-from config.settings import ASSETS_PARQUET_FILE, ASSETS_SITE_CSV
 from services.data_service import DataService
-from services.site_service import SiteMetadataService
-from utils.data_loader import load_site_info
+from services.site_service import SiteService
+from utils.utils import extract_device_id
 
 
-def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None:
+def show_site_dashboard() -> None:
     """Main site metadata dashboard function."""
     load_custom_css()
 
@@ -28,26 +26,24 @@ def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None
         "Explore detailed information about recording sites and device deployments."
     )
 
-    # Initialize services with correct URL parameters
-    data_service = DataService(site_csv, parquet_file)
-    site_metadata_service = SiteMetadataService(parquet_file)
+    # Initialize services
+    data_service = DataService()
+    site_service = SiteService()
 
     # Load data
     with st.spinner("🔄 Loading site and device information..."):
-        site_info = load_site_info(site_csv)
+        site_info = data_service.load_site_info()
         device_data = data_service.load_device_status()
 
     with st.spinner("🔄 Loading device images..."):
-        pictures_mapping = site_metadata_service.generate_pictures_mapping()
+        pictures_mapping = site_service.get_image_mapping()
 
     # Calculate metrics for the sidebar
     metrics = data_service.calculate_metrics(device_data)
 
     # Render complete sidebar with status information only
     with st.sidebar:
-        render_complete_sidebar(
-            metrics=metrics, site_csv=ASSETS_SITE_CSV, parquet_file=ASSETS_PARQUET_FILE
-        )
+        render_complete_sidebar(metrics=metrics)
 
     if site_info.empty:
         st.error("❌ No site information available.")
@@ -90,9 +86,5 @@ def show_site_dashboard(site_csv: str, parquet_file: str, base_dir: str) -> None
 
     # Render device images
     # Extract short device ID for image matching
-    short_device_id = site_metadata_service.extract_device_id(record)
+    short_device_id = extract_device_id(record)
     render_device_images(short_device_id, pictures_mapping)
-
-    # Additional features and export options
-    st.markdown("---")
-    render_site_export_options(site_data, selected_site, record)

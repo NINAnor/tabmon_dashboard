@@ -21,23 +21,17 @@ from components.ui_styles import (
 )
 from config.settings import (
     APP_TITLE,
-    ASSETS_PARQUET_FILE,
-    ASSETS_SITE_CSV,
     TAB_ICONS,
 )
 from services.data_service import DataService
 
 
-def app(site_csv: str = None, parquet_file: str = None):
+def app():
     """Main map dashboard application."""
     load_custom_css()
 
-    # Use provided URLs or fall back to defaults
-    site_csv_url = site_csv or ASSETS_SITE_CSV
-    parquet_file_url = parquet_file or ASSETS_PARQUET_FILE
-
-    # Initialize data service with provided URLs
-    data_service = DataService(site_csv_url, parquet_file_url)
+    # Initialize data service
+    data_service = DataService()
 
     # Load all data
     with st.spinner("Loading device data..."):
@@ -48,9 +42,7 @@ def app(site_csv: str = None, parquet_file: str = None):
 
     # Render sidebar with controls and metrics
     with st.sidebar:
-        render_complete_sidebar(
-            metrics=metrics, site_csv=ASSETS_SITE_CSV, parquet_file=ASSETS_PARQUET_FILE
-        )
+        render_complete_sidebar(metrics=metrics)
 
     # Main dashboard tabs
     tab1, tab2, tab3 = st.tabs(
@@ -208,76 +200,12 @@ def render_activity_tab(data_service: DataService):
 
     # Load recording matrix data with day granularity
     with st.spinner("Loading daily activity data..."):
-        recording_data = data_service.load_recording_matrix("Day")
+        recording_data = data_service.load_recording_matrix()
 
     if not recording_data.empty:
         # Activity heatmap
         st.markdown("#### Recording Activity Heatmap")
-        render_activity_heatmap(recording_data, "Day")
-
-        # Activity insights
-        st.markdown("#### Activity Insights")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            # Most active devices - recording_data is a crosstab with MultiIndex
-            # Sum across all time periods for each device
-            device_totals = recording_data.sum(axis=1).sort_values(ascending=False)
-
-            st.markdown("**🏆 Most Active Devices**")
-            top_devices = device_totals.head(10)
-            for device_info, count in top_devices.items():
-                # device_info is a tuple (Country, device) due to MultiIndex
-                if isinstance(device_info, tuple):
-                    country, device = device_info
-                    st.write(f"• **{device}** ({country}): {count:,} recordings")
-                else:
-                    st.write(f"• **{device_info}**: {count:,} recordings")
-
-        with col2:
-            # Activity statistics - recording_data is a crosstab matrix
-            total_recordings = (
-                recording_data.sum().sum()
-            )  # Sum all values in the matrix
-            device_totals = recording_data.sum(
-                axis=1
-            )  # Sum across time periods for each device
-            avg_per_device = device_totals.mean()
-            active_cells = (recording_data > 0).sum().sum()  # Count non-zero cells
-
-            st.markdown("**Activity Statistics**")
-            st.write(f"• **Total recordings**: {total_recordings:,.0f}")
-            st.write(f"• **Average per device**: {avg_per_device:.1f}")
-            st.write(f"• **Active data points**: {active_cells:,}")
-            st.write(f"• **Coverage**: {len(recording_data.index)} devices")
-
-        # Downloadable data
-        st.markdown("#### 💾 Export Data")
-
-        # Convert crosstab to CSV format
-        csv_data = recording_data.to_csv()
-        st.download_button(
-            label="📥 Download activity data as CSV",
-            data=csv_data,
-            file_name=f"tabmon_activity_day_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv",
-            help="Download the current activity data for further analysis",
-        )
-    else:
-        st.warning(
-            "⚠️ No recording activity data available for the selected time granularity."
-        )
-        st.info(
-            "💡 This might be due to missing data or no recordings in the "
-            "specified time period."
-        )
-
-
-# Legacy function for backward compatibility
-def show_map_dashboard(site_csv: str, parquet_file: str) -> None:
-    """Legacy function for backward compatibility."""
-    app()
+        render_activity_heatmap(recording_data)
 
 
 if __name__ == "__main__":
