@@ -33,8 +33,7 @@ def render_activity_heatmap(matrix_data: pd.DataFrame):
             colorbar=dict(title="📊 Recordings", thickness=15, len=0.8),
             hoverongaps=False,
             hovertemplate=(
-                f"<b>Device:</b> %{{y}}<br>"
-                f"<b>Recordings:</b> %{{z}}<extra></extra>"
+                "<b>Device:</b> %{y}<br><b>Recordings:</b> %{z}<extra></extra>"
             ),
         )
     )
@@ -44,7 +43,7 @@ def render_activity_heatmap(matrix_data: pd.DataFrame):
 
     fig.update_layout(
         title=dict(
-            text=f"🎵 Recording Activity by day",
+            text="🎵 Recording Activity by day",
             x=0.5,
             font=dict(size=18, color="#2E86AB"),
         ),

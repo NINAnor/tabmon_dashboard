@@ -12,7 +12,6 @@ from components.audio import (
 )
 from components.sidebar import render_complete_sidebar
 from components.ui_styles import load_custom_css, render_info_section_header
-from config.settings import SITE_CSV_URL, PARQUET_FILE_URL, BASE_DATA_URL
 from services.audio_service import AudioService
 from services.data_service import DataService
 from utils.utils import extract_device_id

@@ -3,7 +3,6 @@ Site Dashboard for TABMON - Modernized Version
 Provides detailed site metadata exploration and device information.
 """
 
-import pandas as pd
 import streamlit as st
 
 from components.sidebar import render_complete_sidebar
@@ -13,7 +12,6 @@ from components.site_components import (
     render_site_filters,
 )
 from components.ui_styles import load_custom_css, render_info_section_header
-from config.settings import SITE_CSV_URL, PARQUET_FILE_URL, BASE_DATA_URL
 from services.data_service import DataService
 from services.site_service import SiteService
 from utils.utils import extract_device_id

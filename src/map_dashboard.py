@@ -21,11 +21,10 @@ from components.ui_styles import (
 )
 from config.settings import (
     APP_TITLE,
-    SITE_CSV_URL,
-    PARQUET_FILE_URL,
     TAB_ICONS,
 )
 from services.data_service import DataService
+
 
 def app():
     """Main map dashboard application."""

@@ -20,7 +20,7 @@ dependencies = [
   "pyyaml>=6.0.2",
   "requests>=2.32.3",
   "streamlit>=1.42.2",
-  "streamlit-folium>=0.24.0",
+  "streamlit-folium>=0.24.0"
 ]
 description = ""
 license = {text = "GPL-3.0+"}

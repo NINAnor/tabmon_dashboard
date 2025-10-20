@@ -6,10 +6,8 @@ Handles audio file operations and data processing for the TABMON dashboard.
 import pandas as pd
 import streamlit as st
 
-from config.settings import (
-    CACHE_TTL,
-    BASE_DATA_URL
-)
+from config.settings import BASE_DATA_URL, CACHE_TTL
+
 
 class AudioService:
     """Service for handling audio file operations and data processing."""
@@ -22,27 +20,24 @@ class AudioService:
         """Get preprocessed statistics for a specific device."""
         device_stats_url = f"{_self.BASE_DIR}/data/preprocessed/all_device_stats.csv"
         device_stats = pd.read_csv(device_stats_url)
-        
+
         # Filter for the specific device
         device_row = device_stats[device_stats["device_id"] == short_device_id]
-        
+
         if device_row.empty:
             return {}
-        
+
         row = device_row.iloc[0]
         earliest = pd.to_datetime(row["earliest_recording"])
         latest = pd.to_datetime(row["latest_recording"])
-        
+
         return {
             "device_id": row["device_id"],
             "full_device_name": row["full_device_name"],
             "total_recordings": int(row["total_recordings"]),
             "total_size_gb": float(row["total_size_gb"]),
             "avg_file_size_mb": float(row["avg_file_size_mb"]),
-            "date_range": {
-                "earliest": earliest,
-                "latest": latest
-            }
+            "date_range": {"earliest": earliest, "latest": latest},
         }
 
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)

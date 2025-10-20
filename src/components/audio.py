@@ -3,8 +3,6 @@ Audio Dashboard Components
 Provides reusable components for audio file browsing and playbook functionality.
 """
 
-from datetime import datetime, timezone
-
 import pandas as pd
 import streamlit as st
 
@@ -112,4 +110,3 @@ def render_audio_stats(stats: dict, total_stats: dict = None) -> None:
         with col6:
             st.metric("🗂️ Total Dataset", f"{total_recordings:,} recordings")
             st.caption(f"Total size: {total_size:.2f} GB")
-

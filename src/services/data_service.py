@@ -6,12 +6,7 @@ Handles all data loading, processing, and caching operations.
 import pandas as pd
 import streamlit as st
 
-from config.settings import (
-    SITE_CSV_URL,
-    PARQUET_FILE_URL,
-    CACHE_TTL,
-    BASE_DATA_URL
-)
+from config.settings import BASE_DATA_URL, CACHE_TTL, PARQUET_FILE_URL, SITE_CSV_URL
 from utils.data_loader import load_site_info
 
 
@@ -22,7 +17,7 @@ class DataService:
         """Initialize DataService with centralized configuration."""
         self.site_csv = SITE_CSV_URL
         self.parquet_file = PARQUET_FILE_URL
-        self._temp_files = {} 
+        self._temp_files = {}
         self.base_dir = BASE_DATA_URL
 
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
@@ -30,7 +25,7 @@ class DataService:
         """Load device status from preprocessed CSV file."""
         device_status_url = f"{_self.base_dir}/data/preprocessed/device_status.csv"
         df = pd.read_csv(device_status_url)
-        return df   
+        return df
 
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
     def load_site_info(_self) -> pd.DataFrame:
@@ -38,7 +33,9 @@ class DataService:
 
     @st.cache_data(ttl=CACHE_TTL, show_spinner=False)
     def load_recording_matrix(_self) -> pd.DataFrame:
-        return pd.read_csv(f"{_self.base_dir}/data/preprocessed/recording_matrix.csv", index_col=[0,1])
+        return pd.read_csv(
+            f"{_self.base_dir}/data/preprocessed/recording_matrix.csv", index_col=[0, 1]
+        )
 
     @staticmethod
     def calculate_metrics(status_df: pd.DataFrame) -> dict:

@@ -1,11 +1,10 @@
 import io
-from datetime import datetime
 
 import pandas as pd
 import requests
 import streamlit as st
-
 from PIL import Image
+
 from components.ui_styles import render_info_section_header
 
 
@@ -49,9 +48,9 @@ def render_site_details(filtered_data: pd.DataFrame, selected_site: str) -> None
         st.markdown(f"**Cluster:** {record.get('Cluster', 'N/A')}")
 
         # Coordinates
-        latitude = record.get("Latitude", "N/A")
-        longitude = record.get("Longitude", "N/A")
-        st.markdown(f"**Coordinates:** {latitude}, {longitude}")
+        # latitude = record.get("Latitude", "N/A")
+        # longitude = record.get("Longitude", "N/A")
+        # st.markdown(f"**Coordinates:** {latitude}, {longitude}")
 
         # Coordinate uncertainty
         uncertainty = record.get("Coordinates_uncertainty", "N/A")
@@ -105,10 +104,11 @@ def render_site_details(filtered_data: pd.DataFrame, selected_site: str) -> None
     if comments != "N/A":
         st.markdown(f"**Comments:** {comments}")
 
+
 @st.cache_data
 def download_image(url):
-    #TODO: create a thumbnail for faster loading
-    response = requests.get(url)
+    # TODO: create a thumbnail for faster loading
+    response = requests.get(url, timeout=30)
     response.raise_for_status()
 
     image = Image.open(io.BytesIO(response.content))
@@ -116,6 +116,7 @@ def download_image(url):
     image_without_exif = Image.new(image.mode, image.size)
     image_without_exif.putdata(image.getdata())
     return image_without_exif
+
 
 def render_image_grid(images_df: pd.DataFrame) -> None:
     """Render images in a responsive grid layout."""

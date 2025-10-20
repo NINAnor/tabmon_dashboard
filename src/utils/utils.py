@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def extract_device_id(record: pd.Series) -> str:
     """Extract short device ID from a site record."""
     full_device_id = record.get("DeviceID", "")

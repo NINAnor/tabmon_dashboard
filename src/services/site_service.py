@@ -1,10 +1,8 @@
 import pandas as pd
 import streamlit as st
 
-from config.settings import (
-    CACHE_TTL,
-    BASE_DATA_URL
-)
+from config.settings import BASE_DATA_URL, CACHE_TTL
+
 
 class SiteService:
     """Service for handling site operations and data processing."""
