@@ -37,7 +37,7 @@ def main():
     st.sidebar.markdown("---")
 
     option = st.sidebar.selectbox(
-        "📊 Choose Dashboard",
+        "📊 Choose panel",
         ["Device status", "Dataset overview", "Site Metadata"],
         index=0,
         help="Select which dashboard view to display",
@@ -49,13 +49,11 @@ def main():
     st.sidebar.markdown("""
     ### 📋 Dashboard Overview
 
-    **🗺️ Map Visualization**: Real-time device monitoring with interactive maps
-    and status tracking
-
-    **🎵 Audio Analysis**: Audio recording metadata analysis and visualization
-    (playback disabled for privacy protection)
-
-    **📊 Site Metadata**: Site information and metadata management
+    **🗺️ Device status**: Explore the status of our devices
+                        
+    **🎵 Dataset overview**: Explore the size of our dataset
+                        
+    **📊 Site Metadata**: Explore our sites
     """)
 
     # Route to appropriate dashboard
