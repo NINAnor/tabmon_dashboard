@@ -8,7 +8,7 @@ from audio_dashboard import show_audio_dashboard
 from config.settings import APP_TITLE
 from map_dashboard import app as map_app
 from site_dashboard import show_site_dashboard
-
+from pathlib import Path
 
 def main():
     """Main application entry point."""
@@ -27,13 +27,16 @@ def main():
         page_icon="🎙️",
     )
 
-    # Navigation sidebar
+    # Add the logo
+    logo_path = Path("/app/src/images/tabmon_logo.png")
+    st.sidebar.image(logo_path, width=300)
+
     st.sidebar.title("🎙️ TABMON Dashboard")
     st.sidebar.markdown("---")
 
     option = st.sidebar.selectbox(
         "📊 Choose Dashboard",
-        ["Map Visualization", "Audio Analysis", "Site Metadata"],
+        ["Device status", "Dataset overview", "Site Metadata"],
         index=0,
         help="Select which dashboard view to display",
     )
@@ -54,9 +57,9 @@ def main():
     """)
 
     # Route to appropriate dashboard
-    if option == "Map Visualization":
+    if option == "Device status":
         map_app()
-    elif option == "Audio Analysis":
+    elif option == "Dataset overview":
         show_audio_dashboard()
     elif option == "Site Metadata":
         show_site_dashboard()
