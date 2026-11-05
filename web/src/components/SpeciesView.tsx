@@ -2,7 +2,7 @@
 
 import { ArrowRight, Shuffle } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { fetcher, qs, type Cluster, type SpeciesPhenology } from "@/lib/api";
 import { weekLabel } from "@/lib/format";
@@ -56,6 +56,15 @@ export function SpeciesView({
   const south = detected.at(-1);
   const north = detected[0];
   const expanded = week !== null && !!data;
+  const expandedRef = useRef<HTMLDivElement>(null);
+  const wasExpanded = useRef(false);
+  // Bring the large map into view when the time-lapse starts.
+  useEffect(() => {
+    if (expanded && !wasExpanded.current) {
+      expandedRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    wasExpanded.current = expanded;
+  }, [expanded]);
 
   const controls = (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -106,7 +115,7 @@ export function SpeciesView({
 
       <div className="mt-6">
         {expanded ? (
-          <div className="card p-5">
+          <div ref={expandedRef} className="card scroll-mt-20 p-5">
             {controls}
             <div className="grid gap-5 lg:grid-cols-[3fr_2fr]">
               <ClusterMap

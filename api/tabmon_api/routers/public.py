@@ -112,18 +112,55 @@ def network(store: DataStore = Depends(get_store)):
                    (SELECT sum(n_validated) FROM validations)::BIGINT AS validated,
                    (SELECT count(*) FROM species
                     WHERE threshold_source IN ('calibrated', 'calibrated_low')) AS calibrated,
-                   (SELECT count(*) FROM species) AS species
+                   (SELECT count(*) FROM species) AS species,
+                   (SELECT sum(n_validated) FROM validations
+                    WHERE source = 'citizen')::BIGINT AS citizen_validated,
+                   (SELECT sum(n_validated) FROM validations
+                    WHERE source = 'expert')::BIGINT AS expert_validated
             """
         )
-        files = (
-            store.one("SELECT total_recordings FROM dataset_stats")
-            if _has_column(store, "dataset_stats", "total_recordings")
+        totals = (
+            store.one("SELECT total_recordings, total_size_bytes FROM dataset_stats")
+            if _has_column(store, "dataset_stats", "total_size_bytes")
             else None
         )
-        pipeline["files"] = files["total_recordings"] if files else None
+        pipeline["files"] = totals["total_recordings"] if totals else None
+        pipeline["size_tb"] = totals["total_size_bytes"] / 1e12 if totals else None
         return {"countries": countries, "monthly": monthly, "pipeline": pipeline}
 
     return store.cached(("network",), compute)
+
+
+@router.get("/most-wanted")
+def most_wanted(
+    limit: int = Query(8, le=30),
+    store: DataStore = Depends(get_store),
+):
+    """Frequently detected species that still need validations to be calibrated,
+    with the country and landscape where they are most detected."""
+    return store.cached(
+        ("most_wanted", limit),
+        lambda: store.query(
+            f"""
+            WITH where_most AS (
+                SELECT p.species, arg_max(s.country, p.n) AS country,
+                       arg_max(s.cluster, p.n) AS cluster
+                FROM (
+                    SELECT species, site_id, sum(n_detections) AS n
+                    FROM phenology GROUP BY ALL
+                ) p JOIN sites s USING (site_id)
+                GROUP BY ALL
+            )
+            SELECT sp.species, sp.common_en, sp.n_detections, sp.n_validated,
+                   greatest(0, 20 - sp.n_validated) AS needed,
+                   w.country, w.cluster
+            FROM species sp JOIN where_most w USING (species)
+            WHERE sp.threshold_source = 'default' AND sp.n_sites >= 5
+            ORDER BY sp.n_detections DESC
+            LIMIT {int(limit)}
+            """
+        ),
+    )
 
 
 @router.get("/clusters")

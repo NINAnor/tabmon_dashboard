@@ -59,7 +59,7 @@ export function TimeLapse({
         className="w-36 accent-amber md:w-56"
         aria-label="Week of the year"
       />
-      <span className="w-16 text-xs tabular-nums text-amber">
+      <span className="w-20 whitespace-nowrap text-xs tabular-nums text-amber">
         {week ? weekLabel(weekStarts, week) : "Time-lapse"}
       </span>
       {week !== null && (

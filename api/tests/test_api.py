@@ -240,3 +240,8 @@ def test_network_summary(client):
     assert data["monthly"] and data["pipeline"]["calibrated"] == 1
     top = client.get("/api/public/clusters/norway-north/species").json()
     assert top[0]["species"] == "Cuculus canorus" and top[0]["rate"] > 0
+
+
+def test_most_wanted_endpoint(client):
+    # The fixture's only species is calibrated, so nothing is "wanted".
+    assert client.get("/api/public/most-wanted").json() == []

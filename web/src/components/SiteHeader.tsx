@@ -1,12 +1,15 @@
 "use client";
 
+import { Headphones } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { labLink } from "@/lib/lab";
 
 const PUBLIC_TABS = [
   ["/", "Network"],
   ["/sites", "Sites"],
   ["/species", "Species"],
+  ["/project", "Project"],
 ] as const;
 
 const OPS_LINKS = [
@@ -50,9 +53,22 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
           ))}
         </div>
 
-        <Link href={variant === "public" ? "/ops" : "/"} className="pill shrink-0">
-          {variant === "public" ? "Team area" : "Public site"}
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          {variant === "public" && (
+            <a
+              href={labLink()}
+              target="_blank"
+              rel="noreferrer"
+              className="hidden items-center gap-1.5 rounded-full bg-amber px-3.5 py-1.5 text-xs font-medium text-ocean-950 hover:bg-amber/90 md:inline-flex"
+              title="Listen to recordings and confirm what BirdNET heard"
+            >
+              <Headphones className="h-3.5 w-3.5" /> Help identify birds
+            </a>
+          )}
+          <Link href={variant === "public" ? "/ops" : "/"} className="pill">
+            {variant === "public" ? "Team area" : "Public site"}
+          </Link>
+        </div>
       </nav>
     </header>
   );

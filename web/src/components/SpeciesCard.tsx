@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowDownRight, ArrowRight, ArrowUpRight, HelpCircle } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Headphones, HelpCircle } from "lucide-react";
+import { labLink, MIN_VALIDATIONS } from "@/lib/lab";
 import { EcologyChips, HowToRead, IucnBadge } from "./Ecology";
 import useSWR from "swr";
 import { fetcher, type SpeciesDetail, type Trend } from "@/lib/api";
@@ -200,9 +201,15 @@ export function SpeciesStats({ species }: { species: string }) {
             <p className="mt-1 font-serif text-2xl">
               {data.n_validated > 0 ? `${int(data.n_validated)} clips checked` : "Not yet validated"}
             </p>
+            <div className="mt-2 h-1.5 rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-amber"
+                style={{ width: `${Math.min(100, (data.n_validated / MIN_VALIDATIONS) * 100)}%` }}
+              />
+            </div>
             <p className="mt-1 text-xs text-white/50">
-              Too few checks to calibrate, so a conservative confidence threshold of {data.threshold.toFixed(2)} is
-              used. Treat patterns with some caution.
+              {Math.max(0, MIN_VALIDATIONS - data.n_validated)} more checks needed to calibrate. Until then a
+              conservative confidence threshold of {data.threshold.toFixed(2)} is used, so treat patterns with caution.
             </p>
           </>
         ) : (
@@ -217,6 +224,15 @@ export function SpeciesStats({ species }: { species: string }) {
             </p>
           </>
         )}
+        <a
+          href={labLink({ country: data.by_country[0]?.country, species: data.species })}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber/15 px-3 py-1.5 text-xs font-medium text-amber hover:bg-amber/25"
+        >
+          <Headphones className="h-3.5 w-3.5" />
+          {data.threshold_source === "default" ? `Help validate the ${displayName(data)}` : "Check more clips"} →
+        </a>
       </div>
     </div>
   );

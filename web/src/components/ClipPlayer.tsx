@@ -8,6 +8,7 @@ import Spectrogram from "wavesurfer.js/dist/plugins/spectrogram.esm.js";
 import { fetcher, qs, type Clip } from "@/lib/api";
 import { spectrogramColorMap } from "@/lib/color";
 import { displayName } from "@/lib/format";
+import { labLink } from "@/lib/lab";
 
 const COLOR_MAP = typeof window !== "undefined" ? spectrogramColorMap() : [];
 
@@ -149,7 +150,7 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
             <div ref={spec} className="mt-1 overflow-hidden rounded-md" />
             {duration > 0 && (
               <div
-                className="pointer-events-none absolute inset-y-0 rounded-sm border-x border-amber/80 bg-amber/10"
+                className="pointer-events-none absolute inset-y-0 z-10 rounded-sm border-x border-amber/80 bg-amber/10"
                 style={{
                   left: `${(clip.window_start / duration) * 100}%`,
                   width: `${((Math.min(clip.window_end, duration) - clip.window_start) / duration) * 100}%`,
@@ -158,10 +159,20 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
             )}
           </div>
           {duration > 0 && (
-            <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/45">
-              <span className="inline-block h-2 w-3 rounded-sm border-x border-amber/80 bg-amber/20" />
-              BirdNET detection · {clip.window_start.toFixed(0)}–{clip.window_end.toFixed(0)} s of {duration.toFixed(0)} s
-            </p>
+            <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/45">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-3 rounded-sm border-x border-amber/80 bg-amber/20" />
+                BirdNET detection · {clip.window_start.toFixed(0)}–{clip.window_end.toFixed(0)} s of {duration.toFixed(0)} s
+              </span>
+              <a
+                href={labLink({ country: clip.country, cluster: clip.cluster, species: clip.species })}
+                target="_blank"
+                rel="noreferrer"
+                className="text-amber hover:underline"
+              >
+                Does this sound right? Check more clips like this →
+              </a>
+            </div>
           )}
         </div>
       )}

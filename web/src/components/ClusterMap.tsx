@@ -7,6 +7,7 @@ import Map, { Layer, Popup, Source, type MapLayerMouseEvent, type MapRef } from 
 import type { Cluster, SpeciesPhenology } from "@/lib/api";
 import { oceanRamp } from "@/lib/color";
 import { compact, int, weekLabel } from "@/lib/format";
+import { useSize } from "@/lib/useSize";
 
 export const DARK_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
@@ -51,10 +52,13 @@ export function ClusterMap({
       { padding: large ? 50 : 25, duration: 0 },
     );
   }, [clusters, large]);
+  // Refit when the container is resized (e.g. the time-lapse layout expanding).
+  const [wrapRef, size] = useSize<HTMLDivElement>();
   useEffect(() => {
-    const id = setTimeout(fit, 80);
+    if (!size.width) return;
+    const id = setTimeout(fit, 60);
     return () => clearTimeout(id);
-  }, [fit, height]);
+  }, [fit, size.width, size.height]);
 
   const byId = useMemo(() => Object.fromEntries(clusters.map((c) => [c.id, c])), [clusters]);
   const phen = useMemo(
@@ -129,14 +133,14 @@ export function ClusterMap({
   const hoveredPhen = hover ? phen[hover.id] : null;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/10" style={{ height }}>
+    <div ref={wrapRef} className="relative overflow-hidden rounded-2xl border border-white/10" style={{ height }}>
       <Map
         ref={mapRef}
         onLoad={fit}
         initialViewState={{ longitude: 8, latitude: 55, zoom: 3.1 }}
         mapStyle={DARK_STYLE}
         maxZoom={8}
-        minZoom={2.5}
+        minZoom={1}
         interactiveLayerIds={["clusters"]}
         onClick={onClick}
         onMouseMove={(e) => {

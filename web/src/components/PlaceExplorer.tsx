@@ -1,6 +1,8 @@
 "use client";
 
+import { Headphones } from "lucide-react";
 import Link from "next/link";
+import { labLink } from "@/lib/lab";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { fetcher, qs, type Cluster, type PlaceProfile } from "@/lib/api";
@@ -198,6 +200,22 @@ export function PlacesView({
             </div>
           )}
           {cluster && <TopSpeciesList clusterId={cluster.id} />}
+          {cluster && (
+            <a
+              href={labLink({ country: cluster.country, cluster: cluster.label })}
+              target="_blank"
+              rel="noreferrer"
+              className="card flex items-center gap-3 border-amber/30 p-4 hover:bg-amber/[0.06]"
+            >
+              <Headphones className="h-5 w-5 shrink-0 text-amber" />
+              <span className="text-sm">
+                <span className="text-amber">Listen to recordings from {cluster.label}</span>
+                <span className="block text-xs text-white/50">
+                  Help confirm what BirdNET heard here in the Listening Lab →
+                </span>
+              </span>
+            </a>
+          )}
         </div>
         {cluster && <PlaceExplorer level="cluster" id={cluster.id} title={cluster.label} subtitle={cluster.country} />}
       </div>

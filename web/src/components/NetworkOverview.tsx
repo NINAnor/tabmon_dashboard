@@ -25,6 +25,9 @@ export type Network = {
     calibrated: number;
     species: number;
     files: number | null;
+    size_tb: number | null;
+    citizen_validated: number | null;
+    expert_validated: number | null;
   };
 };
 
