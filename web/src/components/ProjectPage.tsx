@@ -1,120 +1,55 @@
 "use client";
 
-import {
-  ArrowUpRight,
-  Building2,
-  CalendarClock,
-  Clock,
-  Cpu,
-  Database,
-  Github,
-  Headphones,
-  Landmark,
-  Mail,
-  Moon,
-  Network as NetworkIcon,
-  Radio,
-  Scale,
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight, Clock, Headphones, Mail, Moon, Network as NetworkIcon, Scale } from "lucide-react";
 import Link from "next/link";
 import useSWR from "swr";
 import { useNetwork } from "@/components/NetworkOverview";
-import { fetcher, type Overview } from "@/lib/api";
+import { fetcher } from "@/lib/api";
 import { compact, displayName, int } from "@/lib/format";
 import { labLink } from "@/lib/lab";
+import { SpectrogramBackdrop } from "./SpectrogramBackdrop";
 
-const SECTIONS = [
-  ["mission", "Mission"],
-  ["methods", "Methods"],
-  ["participate", "Take part"],
-  ["partners", "Partners"],
-  ["publications", "Publications"],
-  ["resources", "Resources"],
-] as const;
+const CONTACT = "mailto:benjamin.cretois@nina.no?subject=TABMON";
+const BEAGLE_URL = "https://cordis.europa.eu/project/id/101288886";
 
 const WHY = [
-  [Moon, "Day and night", "Recorders listen 24/7, catching nocturnal and secretive species that surveys miss."],
-  [Clock, "High frequency", "Continuous time series reveal phenology, trends and early-warning signals."],
-  [Scale, "Scales cheaply", "Autonomous sensors reach remote landscapes with little field effort."],
-  [NetworkIcon, "Comparable", "One protocol across countries, so regions can be compared directly."],
+  [Moon, "Day and night", "Recorders listen around the clock, catching nocturnal and secretive birds."],
+  [Clock, "Every season", "Continuous recordings reveal arrival, song and departure as they happen."],
+  [Scale, "At scale", "Autonomous, solar-powered sensors reach remote landscapes cheaply."],
+  [NetworkIcon, "Comparable", "One protocol from Spain to Norway, so regions can be compared directly."],
 ] as const;
 
-const WORK_PACKAGES = [
-  {
-    icon: Radio,
-    code: "WP1",
-    title: "Network deployment & data logistics",
-    text: "Sites are chosen along biogeographic and land-use gradients. Solar-powered Bugg recorders stream audio over mobile networks; quality checks run from capture, and data are archived on Norway's national research infrastructure (NIRD). WP1 also contributes to a shared metadata standard for acoustic data.",
-    image: "/project/device_setup.jpg",
-  },
-  {
-    icon: Cpu,
-    code: "WP2",
-    title: "From AI to Essential Biodiversity Variables",
-    text: "Detection models (BirdNET) and active learning turn audio into species detections with explicit uncertainty. Validations by experts and citizens calibrate the models, and detections are aggregated into indicators of occurrence, activity and phenology.",
-    image: "/project/classification_pipeline_setup.jpg",
-  },
-  {
-    icon: Database,
-    code: "WP3",
-    title: "Data integration & EBV showcase",
-    text: "Acoustic detections differ from traditional surveys: many repeated observations with model uncertainty instead of few, curated counts. WP3 develops standards and models to combine both into harmonised Essential Biodiversity Variable products for national and European data portals.",
-    image: null,
-  },
-];
-
 const PARTNERS = [
-  ["Norwegian Institute for Nature Research (NINA)", "Norway", "Coordinator", "https://www.nina.no/"],
-  ["Naturalis Biodiversity Center", "Netherlands", null, "https://www.naturalis.nl/"],
-  ["University of Amsterdam – IBED", "Netherlands", null, "https://ibed.uva.nl/"],
-  ["Tilburg University – Cognitive Science & AI", "Netherlands", null, "https://www.tilburguniversity.edu/"],
-  ["Statistics Netherlands (CBS)", "Netherlands", null, "https://www.cbs.nl/"],
-  ["Sovon Vogelonderzoek Nederland", "Netherlands", null, "https://www.sovon.nl/"],
-  ["Université de Toulon – LIS", "France", null, "https://www.lis-lab.fr/"],
-  ["Forest Science and Technology Centre of Catalonia (CTFC)", "Spain", null, "https://www.ctfc.cat/"],
+  ["NINA", "Norwegian Institute for Nature Research", "Norway", "https://www.nina.no/"],
+  ["Naturalis", "Naturalis Biodiversity Center", "Netherlands", "https://www.naturalis.nl/"],
+  ["UvA", "University of Amsterdam – IBED", "Netherlands", "https://ibed.uva.nl/"],
+  ["Tilburg", "Tilburg University", "Netherlands", "https://www.tilburguniversity.edu/"],
+  ["CBS", "Statistics Netherlands", "Netherlands", "https://www.cbs.nl/"],
+  ["Sovon", "Sovon Vogelonderzoek Nederland", "Netherlands", "https://www.sovon.nl/"],
+  ["LIS", "Université de Toulon – LIS", "France", "https://www.lis-lab.fr/"],
+  ["CTFC", "Forest Science and Technology Centre of Catalonia", "Spain", "https://www.ctfc.cat/"],
 ] as const;
 
 const PUBLICATIONS = [
   {
     year: 2026,
-    kind: "Journal article",
     title: "TABMON: Design and deployment of a transnational passive acoustic monitoring network for European birds",
-    authors: "Cretois, B., Rosten, C. M., Wiel, J., Barile, C., McEwen, B., Bernard, C., … & Sethi, S.",
-    venue: "Methods in Ecology and Evolution, 17(6), 1867–1879",
+    venue: "Methods in Ecology and Evolution",
     url: "https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210x.70308",
   },
   {
     year: 2026,
-    kind: "Journal article",
     title: "Data-driven sampling strategies for fine-tuning bird detection models",
-    authors: "Bernard, C., McEwen, B., Cretois, B., Glotin, H., Stowell, D., & Marxer, R.",
-    venue: "The Journal of the Acoustical Society of America, 159(6), 4891–4903",
+    venue: "Journal of the Acoustical Society of America",
     url: "https://pubs.aip.org/asa/jasa/article/159/6/4891/3393438",
   },
   {
-    year: 2026,
-    kind: "Report",
-    title: "Safe and Sound Project Report: Is Camtrap DP a suitable standard for (bio)acoustic data?",
-    authors: "Wiel, J. A. M.-A., Govaert, S., Cretois, B., & Desmet, P.",
-    venue: "NINA Report 2731",
-    url: "https://hdl.handle.net/11250/5343743",
-  },
-  {
     year: 2025,
-    kind: "Preprint",
-    title: "Stratified Active Learning for Spatiotemporal Generalisation in Large-Scale Bioacoustic Monitoring",
-    authors: "McEwen, B., Bernard, C., & Stowell, D.",
-    venue: "bioRxiv, 2025.09.01.673472",
+    title: "Stratified active learning for spatiotemporal generalisation in large-scale bioacoustic monitoring",
+    venue: "bioRxiv preprint",
     url: "https://doi.org/10.1101/2025.09.01.673472",
   },
 ];
-
-const RESOURCES = [
-  [Github, "TABMON", "Documentation hub linking repositories, protocols and metadata standards.", "https://github.com/NINAnor/TABMON"],
-  [Cpu, "Classification pipeline", "From raw field audio to detections, uncertainty and EBVs.", "https://github.com/BenMcEwen1/TABMON-Classification-Pipeline"],
-  [CalendarClock, "Yearly reports", "Automated site-level monitoring reports and visualisations.", "https://github.com/NINAnor/tabmon_reporting"],
-  [Database, "Zenodo archive", "Published reports, datasets and supplementary material with DOIs.", "https://zenodo.org/records/17899019"],
-] as const;
 
 type Wanted = {
   species: string;
@@ -126,235 +61,231 @@ type Wanted = {
   cluster: string;
 };
 
-function Section({ id, eyebrow, title, children }: { id: string; eyebrow: string; title: string; children: React.ReactNode }) {
+function ContactButton({ className = "" }: { className?: string }) {
   return (
-    <section id={id} className="scroll-mt-32 border-t border-white/5 py-14">
-      <p className="eyebrow">{eyebrow}</p>
-      <h2 className="mt-2 max-w-3xl font-serif text-3xl md:text-4xl">{title}</h2>
-      <div className="mt-6">{children}</div>
-    </section>
+    <a
+      href={CONTACT}
+      className={`inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/5 px-5 py-2.5 text-sm backdrop-blur hover:bg-white/15 ${className}`}
+    >
+      <Mail className="h-4 w-4" /> Contact
+    </a>
   );
 }
 
 export function ProjectPage() {
-  const { data: overview } = useSWR<Overview>("/api/public/overview", fetcher);
   const { data: network } = useNetwork();
-  const { data: wanted } = useSWR<Wanted[]>("/api/public/most-wanted?limit=8", fetcher);
+  const { data: wanted } = useSWR<Wanted[]>("/api/public/most-wanted?limit=5", fetcher);
   const p = network?.pipeline;
-  const tb = p?.size_tb ?? null;
 
   return (
-    <div className="mx-auto max-w-7xl px-6">
-      {/* Intro */}
-      <div className="grid items-center gap-10 pb-10 pt-12 lg:grid-cols-[1fr_1fr]">
-        <div>
-          <p className="eyebrow">Biodiversa+ · Horizon Europe · 2024–2027</p>
-          <h1 className="mt-3 font-serif text-4xl leading-tight md:text-5xl">
-            Towards a Transnational Acoustic Biodiversity Monitoring Network
+    <>
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_#123044_0%,_#07131c_60%)]" />
+        <SpectrogramBackdrop />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ocean-900 to-transparent" />
+        <div className="relative mx-auto max-w-7xl px-6 pb-16 pt-20">
+          <p className="eyebrow">The project</p>
+          <h1 className="mt-3 max-w-3xl font-serif text-4xl leading-tight md:text-6xl">
+            A listening network for <span className="italic text-teal">Europe&rsquo;s birds</span>
           </h1>
-          <p className="mt-4 text-white/65">
-            TABMON builds a standardised passive acoustic monitoring network across Europe, from the Arctic to the
-            Mediterranean, and turns soundscapes into policy-relevant biodiversity indicators that complement
-            traditional surveys and support the EU Biodiversity Strategy 2030.
+          <p className="mt-5 max-w-2xl text-lg text-white/70">
+            TABMON places autonomous recorders from the Mediterranean to the Arctic and uses AI to turn their
+            soundscapes into comparable biodiversity indicators, complementing traditional bird surveys.
           </p>
-          <p className="mt-4 text-sm text-white/50">
-            Coordinated by the Norwegian Institute for Nature Research (NINA) · Project leader{" "}
-            <span className="text-white/80">Benjamin Cretois</span>
-          </p>
-        </div>
-        <img
-          src="/project/figure_grant.png"
-          alt="TABMON overview: from field recorders to biodiversity indicators"
-          className="w-full rounded-2xl border border-white/10 bg-white"
-        />
-      </div>
-
-      {/* At a glance (live) */}
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-4">
-        {[
-          ["Recorders", overview ? int(overview.devices) : "–", "deployed in the field"],
-          ["Audio archived", tb ? `${tb.toFixed(0)} TB` : "–", `${compact(p?.files ?? null)} five-minute files`],
-          ["Countries", overview ? overview.countries : "–", "Norway · Netherlands · France · Spain"],
-          ["Species detected", overview ? int(overview.n_species) : "–", "identified by BirdNET"],
-        ].map(([k, v, sub]) => (
-          <div key={k as string} className="bg-ocean-900 px-5 py-4">
-            <dt className="eyebrow">{k}</dt>
-            <dd className="mt-1 font-serif text-3xl tabular-nums">{v}</dd>
-            <dd className="text-xs text-white/45">{sub}</dd>
-          </div>
-        ))}
-      </dl>
-
-      {/* In-page navigation */}
-      <nav className="sticky top-16 z-30 -mx-6 mt-8 flex gap-1 overflow-x-auto border-b border-white/5 bg-ocean-900/90 px-6 py-2 backdrop-blur">
-        {SECTIONS.map(([id, label]) => (
-          <a key={id} href={`#${id}`} className="whitespace-nowrap rounded-full px-3 py-1 text-sm text-white/60 hover:bg-white/5 hover:text-white">
-            {label}
-          </a>
-        ))}
-      </nav>
-
-      <Section id="mission" eyebrow="Mission" title="Why listen to biodiversity?">
-        <p className="max-w-3xl text-white/65">
-          We operationalise a pan-European network of autonomous acoustic sensors and AI pipelines that convert
-          soundscapes into Essential Biodiversity Variables (EBVs). The aim is to fill gaps in reporting for EU
-          directives with high-frequency, comparable data from four biogeographic regions.
-        </p>
-        <div className="mt-6 grid gap-4 md:grid-cols-4">
-          {WHY.map(([Icon, title, text]) => (
-            <div key={title} className="card p-5">
-              <Icon className="h-5 w-5 text-teal" />
-              <p className="mt-3 font-serif text-lg">{title}</p>
-              <p className="mt-1 text-sm text-white/55">{text}</p>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      <Section id="methods" eyebrow="Methods" title="Three work packages, from sensor to indicator">
-        <div className="space-y-5">
-          {WORK_PACKAGES.map((wp) => (
-            <div key={wp.code} className={`card grid gap-6 p-5 ${wp.image ? "md:grid-cols-[1fr_360px]" : ""}`}>
-              <div>
-                <div className="flex items-center gap-2">
-                  <wp.icon className="h-5 w-5 text-teal" />
-                  <span className="rounded-full bg-teal/15 px-2 py-0.5 text-xs text-teal">{wp.code}</span>
-                </div>
-                <p className="mt-3 font-serif text-2xl">{wp.title}</p>
-                <p className="mt-2 text-white/60">{wp.text}</p>
-              </div>
-              {wp.image && <img src={wp.image} alt={wp.title} className="w-full rounded-xl object-cover" loading="lazy" />}
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-sm text-white/50">
-          See the pipeline in numbers on the{" "}
-          <Link href="/" className="text-teal hover:underline">
-            Network
-          </Link>{" "}
-          tab, and how calibrated detections become phenology on the{" "}
-          <Link href="/species" className="text-teal hover:underline">
-            Species
-          </Link>{" "}
-          tab.
-        </p>
-      </Section>
-
-      <Section id="participate" eyebrow="Take part" title="Lend us your ears">
-        <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-          <div className="card border-amber/30 bg-amber/[0.04] p-6">
-            <Headphones className="h-6 w-6 text-amber" />
-            <p className="mt-3 font-serif text-2xl">The Listening Lab</p>
-            <p className="mt-2 text-white/65">
-              BirdNET is good but not perfect. In the Listening Lab you hear short clips from our recorders and
-              tell us whether the bird it suggests is really there. Every yes or no sets the confidence threshold
-              that all charts on this site use, so your ears directly make the results more reliable.
-            </p>
-            {p && (
-              <p className="mt-4 text-sm text-white/70">
-                So far <b className="text-amber">{int(p.citizen_validated)}</b> citizen and{" "}
-                <b className="text-amber">{int(p.expert_validated)}</b> expert checks have calibrated{" "}
-                <b className="text-amber">{p.calibrated}</b> species.
-              </p>
-            )}
+          <div className="mt-8 flex flex-wrap gap-3">
+            <ContactButton />
             <a
               href={labLink()}
               target="_blank"
               rel="noreferrer"
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber px-5 py-2.5 text-sm font-medium text-ocean-950 hover:bg-amber/90"
+              className="inline-flex items-center gap-2 rounded-full bg-amber px-5 py-2.5 text-sm font-medium text-ocean-950 hover:bg-amber/90"
             >
-              Start listening <ArrowUpRight className="h-4 w-4" />
+              <Headphones className="h-4 w-4" /> Help identify birds
             </a>
           </div>
-          <div className="card p-6">
-            <p className="eyebrow">Most wanted · often detected, rarely checked</p>
-            <ul className="mt-3 divide-y divide-white/5">
-              {wanted?.map((w) => (
-                <li key={w.species} className="flex items-center gap-3 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/species?species=${encodeURIComponent(w.species)}`} className="truncate hover:text-teal">
-                      {displayName(w)}
-                    </Link>
-                    <p className="text-xs text-white/45">
-                      {compact(w.n_detections)} detections · {w.n_validated} checked · {w.needed} more needed
-                    </p>
-                  </div>
-                  <a
-                    href={labLink({ country: w.country, cluster: w.cluster, species: w.species })}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="shrink-0 rounded-full bg-amber/15 px-3 py-1 text-xs text-amber hover:bg-amber/25"
-                  >
-                    Validate →
-                  </a>
-                </li>
-              ))}
-              {!wanted && <li className="h-60 animate-pulse rounded bg-white/5" />}
-            </ul>
-          </div>
         </div>
-      </Section>
+      </section>
 
-      <Section id="partners" eyebrow="Partners" title="A European consortium">
-        <p className="mb-5 max-w-3xl text-white/60">
-          Coordinated by NINA and led by <span className="text-white">Benjamin Cretois</span>, with research
-          institutes, universities, statistics offices and bird-monitoring organisations in four countries. Funded by{" "}
-          <a href="https://www.biodiversa.eu/" target="_blank" rel="noreferrer" className="text-teal hover:underline">
-            Biodiversa+
-          </a>{" "}
-          with national funding agencies.
-        </p>
-        <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {PARTNERS.map(([name, country, role, url]) => (
-            <li key={name}>
-              <a href={url} target="_blank" rel="noreferrer" className="card flex h-full items-start gap-3 p-4 hover:bg-white/[0.06]">
-                {role ? <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-amber" /> : <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-teal" />}
-                <span>
-                  <span className="block text-sm">{name}</span>
-                  <span className="text-xs text-white/45">
-                    {country}
-                    {role ? ` · ${role}` : ""}
-                  </span>
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </Section>
-
-      <Section id="publications" eyebrow="Publications" title="Research output">
-        <ol className="space-y-3">
-          {PUBLICATIONS.map((pub) => (
-            <li key={pub.title}>
-              <a href={pub.url} target="_blank" rel="noreferrer" className="card group flex gap-5 p-5 hover:bg-white/[0.06]">
-                <span className="font-serif text-2xl text-white/35">{pub.year}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-white/60">{pub.kind}</span>
-                  <span className="mt-1.5 block font-medium group-hover:text-teal">{pub.title}</span>
-                  <span className="block text-sm text-white/50">{pub.authors}</span>
-                  <span className="block text-sm italic text-white/40">{pub.venue}</span>
-                </span>
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-white/30 group-hover:text-teal" />
-              </a>
-            </li>
-          ))}
-        </ol>
-      </Section>
-
-      <Section id="resources" eyebrow="Resources" title="Code, data and contact">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {RESOURCES.map(([Icon, title, text, url]) => (
-            <a key={title} href={url} target="_blank" rel="noreferrer" className="card p-5 hover:bg-white/[0.06]">
-              <Icon className="h-5 w-5 text-teal" />
-              <p className="mt-3 font-medium">{title}</p>
+      <div className="mx-auto max-w-7xl px-6">
+        {/* Why */}
+        <section className="grid gap-4 py-6 md:grid-cols-4">
+          {WHY.map(([Icon, title, text]) => (
+            <div key={title} className="rounded-2xl bg-gradient-to-b from-white/[0.06] to-transparent p-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal/15">
+                <Icon className="h-5 w-5 text-teal" />
+              </div>
+              <p className="mt-4 font-serif text-xl">{title}</p>
               <p className="mt-1 text-sm text-white/55">{text}</p>
-            </a>
+            </div>
           ))}
-        </div>
-        <a href="mailto:benjamin.cretois@nina.no" className="mt-6 inline-flex items-center gap-2 text-sm text-teal hover:underline">
-          <Mail className="h-4 w-4" /> Contact the project: benjamin.cretois@nina.no
-        </a>
-      </Section>
-    </div>
+        </section>
+
+        {/* Timeline: TABMON -> BEAGLE */}
+        <section className="py-14">
+          <p className="eyebrow">Funding</p>
+          <h2 className="mt-2 font-serif text-3xl md:text-4xl">From TABMON to BEAGLE</h2>
+          <div className="relative mt-8 grid gap-6 md:grid-cols-2">
+            <div className="absolute left-0 right-0 top-[22px] hidden h-px bg-gradient-to-r from-teal via-teal/60 to-amber md:block" />
+            <div className="relative">
+              <span className="relative z-10 inline-flex h-11 items-center rounded-full border border-teal/40 bg-ocean-900 px-4 font-serif text-teal">
+                2024 → 2026
+              </span>
+              <div className="card mt-4 p-6">
+                <p className="font-serif text-2xl">TABMON</p>
+                <p className="text-sm text-white/50">Biodiversa+ · with national funding agencies</p>
+                <p className="mt-3 text-white/65">
+                  Designed and deployed the network: more than 100 recorders in Norway, the Netherlands, France and
+                  Spain, the AI pipeline, and the validation tools behind this dashboard.
+                </p>
+              </div>
+            </div>
+            <div className="relative">
+              <span className="relative z-10 inline-flex h-11 items-center rounded-full border border-amber/50 bg-ocean-900 px-4 font-serif text-amber">
+                Oct 2026 → 2030
+              </span>
+              <a
+                href={BEAGLE_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="card group mt-4 block border-amber/30 bg-amber/[0.04] p-6 hover:bg-amber/[0.08]"
+              >
+                <p className="flex items-center justify-between font-serif text-2xl">
+                  BEAGLE
+                  <ArrowUpRight className="h-5 w-5 text-amber/60 group-hover:text-amber" />
+                </p>
+                <p className="text-sm text-white/50">Horizon Europe · coordinated by Aarhus University</p>
+                <p className="mt-3 text-white/65">
+                  The network continues within <span className="text-white">BEAGLE</span>, Biodiversity methods for
+                  advanced monitoring at large scales: 17 partners combining sensors, eDNA, AI and citizen science
+                  to deliver harmonised biodiversity indicators across Europe.
+                </p>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Take part */}
+        <section className="py-14">
+          <div className="overflow-hidden rounded-3xl border border-amber/25 bg-gradient-to-br from-amber/[0.10] via-ocean-800 to-ocean-900">
+            <div className="grid gap-8 p-8 md:p-10 lg:grid-cols-[1.1fr_1fr]">
+              <div>
+                <p className="eyebrow text-amber/80">Take part</p>
+                <h2 className="mt-2 font-serif text-3xl md:text-4xl">Lend us your ears</h2>
+                <p className="mt-4 text-white/70">
+                  BirdNET is good, but not perfect. In the Listening Lab you hear short clips from our recorders and
+                  say whether the suggested bird is really there. Each answer sets the confidence threshold used by
+                  every chart on this site.
+                </p>
+                {p && (
+                  <p className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
+                    <span>
+                      <span className="font-serif text-3xl text-amber">{compact(p.validated)}</span>
+                      <span className="ml-2 text-sm text-white/55">clips checked</span>
+                    </span>
+                    <span>
+                      <span className="font-serif text-3xl text-amber">{p.calibrated}</span>
+                      <span className="ml-2 text-sm text-white/55">species calibrated</span>
+                    </span>
+                  </p>
+                )}
+                <a
+                  href={labLink()}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-7 inline-flex items-center gap-2 rounded-full bg-amber px-6 py-3 text-sm font-medium text-ocean-950 hover:bg-amber/90"
+                >
+                  <Headphones className="h-4 w-4" /> Open the Listening Lab
+                </a>
+              </div>
+              <div>
+                <p className="eyebrow">Most wanted · often heard, rarely checked</p>
+                <ul className="mt-3 space-y-2">
+                  {wanted?.map((w) => (
+                    <li key={w.species}>
+                      <a
+                        href={labLink({ country: w.country, cluster: w.cluster, species: w.species })}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group flex items-center gap-3 rounded-xl bg-ocean-950/50 px-4 py-3 hover:bg-ocean-950/80"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate">{displayName(w)}</span>
+                          <span className="text-xs text-white/45">
+                            {compact(w.n_detections)} detections · {int(w.n_validated)} checked
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-xs text-amber/80 group-hover:text-amber">
+                          {w.needed} needed <ArrowRight className="inline h-3 w-3" />
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                  {!wanted && <li className="h-56 animate-pulse rounded-xl bg-white/5" />}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Partners */}
+        <section className="py-14">
+          <p className="eyebrow">Partners</p>
+          <h2 className="mt-2 font-serif text-3xl md:text-4xl">A European consortium</h2>
+          <ul className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {PARTNERS.map(([short, name, country, url]) => (
+              <li key={short}>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex h-full flex-col rounded-2xl border border-white/10 p-4 hover:border-white/25 hover:bg-white/[0.04]"
+                >
+                  <span className="font-serif text-2xl group-hover:text-teal">{short}</span>
+                  <span className="mt-1 text-xs text-white/55">{name}</span>
+                  <span className="mt-auto pt-2 text-[11px] uppercase tracking-wider text-white/35">{country}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Publications */}
+        <section className="py-14">
+          <p className="eyebrow">Publications</p>
+          <h2 className="mt-2 font-serif text-3xl md:text-4xl">Selected research</h2>
+          <ul className="mt-6 divide-y divide-white/10 border-y border-white/10">
+            {PUBLICATIONS.map((pub) => (
+              <li key={pub.title}>
+                <a href={pub.url} target="_blank" rel="noreferrer" className="group flex items-baseline gap-5 py-4">
+                  <span className="font-serif text-white/35">{pub.year}</span>
+                  <span className="flex-1">
+                    <span className="block group-hover:text-teal">{pub.title}</span>
+                    <span className="text-sm italic text-white/45">{pub.venue}</span>
+                  </span>
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-white/30 group-hover:text-teal" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Closing contact */}
+        <section className="pb-20 pt-6 text-center">
+          <p className="font-serif text-2xl">Questions, data requests or collaboration ideas?</p>
+          <ContactButton className="mt-5" />
+          <p className="mt-6 text-xs text-white/35">
+            Coordinated by the Norwegian Institute for Nature Research (NINA) · Funded by{" "}
+            <a href="https://www.biodiversa.eu/" target="_blank" rel="noreferrer" className="hover:text-white">
+              Biodiversa+
+            </a>{" "}
+            and{" "}
+            <a href={BEAGLE_URL} target="_blank" rel="noreferrer" className="hover:text-white">
+              Horizon Europe (BEAGLE)
+            </a>
+          </p>
+        </section>
+      </div>
+    </>
   );
 }
