@@ -2,24 +2,17 @@
 
 import useSWR from "swr";
 import { Hero } from "@/components/Hero";
-import { PhenologySection } from "@/components/PhenologySection";
-import { PlacesSection } from "@/components/PlaceExplorer";
-import { Footer, SiteHeader } from "@/components/SiteHeader";
-import { SpeciesSection } from "@/components/SpeciesSection";
+import { NetworkOverview, useNetwork } from "@/components/NetworkOverview";
+import { PublicShell } from "@/components/SiteHeader";
 import { fetcher, type Cluster } from "@/lib/api";
 
-export default function Home() {
+export default function NetworkPage() {
   const { data: clusters = [] } = useSWR<Cluster[]>("/api/public/clusters", fetcher);
+  const { data: network } = useNetwork();
   return (
-    <>
-      <SiteHeader />
-      <main>
-        <Hero />
-        <PhenologySection clusters={clusters} />
-        {clusters.length > 0 && <PlacesSection clusters={clusters} />}
-        <SpeciesSection />
-      </main>
-      <Footer />
-    </>
+    <PublicShell>
+      <Hero validated={network?.pipeline.validated} />
+      <NetworkOverview clusters={clusters} />
+    </PublicShell>
   );
 }

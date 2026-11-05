@@ -1,14 +1,15 @@
-"""Audio clip extraction and photo proxying."""
+"""Audio clip serving and photo proxying."""
 
 import asyncio
 import logging
-import shutil
+import re
 from pathlib import Path
 from urllib.parse import quote
 
 import httpx
 from fastapi import HTTPException
 
+from . import mp3
 from .config import Settings
 
 log = logging.getLogger("tabmon.media")
@@ -28,61 +29,72 @@ def bucket_url(settings: Settings, path: str) -> str:
     return str(Path(base) / path.lstrip("/"))
 
 
+def precut_key(settings: Settings, clip_id: str) -> str:
+    """Bucket path of a clip produced by the cut_clips job."""
+    return f"{settings.tables_prefix.strip('/')}/clips/{mp3.CLIP_VERSION}/{clip_id}.mp3"
+
+
+def range_reader(settings: Settings, path: str) -> mp3.RangeReader:
+    """Synchronous byte-range reader for a bucket object (HTTP via rclone, or local)."""
+    if not is_remote(settings):
+        local = Path(bucket_url(settings, path))
+
+        def read_local(start: int, end: int) -> tuple[bytes, int]:
+            with local.open("rb") as fh:
+                fh.seek(start)
+                return fh.read(end - start + 1), local.stat().st_size
+
+        return read_local
+
+    url = bucket_url(settings, path)
+
+    def read_http(start: int, end: int) -> tuple[bytes, int]:
+        resp = httpx.get(
+            url,
+            headers={"Range": f"bytes={start}-{end}"},
+            timeout=settings.upstream_timeout_s,
+        )
+        if resp.status_code == 206:
+            match = re.search(r"/(\d+)$", resp.headers.get("content-range", ""))
+            total = int(match.group(1)) if match else start + len(resp.content)
+            return resp.content, total
+        if resp.status_code == 200:  # server ignored the range
+            return resp.content[start : end + 1], len(resp.content)
+        raise HTTPException(resp.status_code, "Recording not available")
+
+    return read_http
+
+
 async def clip_file(
     settings: Settings, clip_id: str, path: str, start_s: float
 ) -> Path:
-    """Cut a short mp3 around a detection, cached on disk."""
+    """Path to a cached clip: local cache, else pre-cut clip, else cut on demand."""
     cache = settings.clip_cache_dir
     cache.mkdir(parents=True, exist_ok=True)
-    target = cache / f"{clip_id}.mp3"
+    target = cache / f"{clip_id}.{mp3.CLIP_VERSION}.mp3"
     if target.exists():
         return target
-
-    ffmpeg = shutil.which("ffmpeg")
-    if ffmpeg is None:
-        raise HTTPException(503, "ffmpeg is not installed on the API server")
 
     lock = _locks.setdefault(clip_id, asyncio.Lock())
     async with lock:
         if target.exists():
             return target
-        tmp = target.with_suffix(".part.mp3")
-        offset = max(0.0, start_s - settings.clip_pre_roll_s)
-        # Seeking over HTTP makes ffmpeg issue many small range requests, each a
-        # round trip to S3 through rclone. Fetching the 5 MB file once is faster.
-        source = bucket_url(settings, path)
-        download = None
-        if is_remote(settings):
-            download = cache / f"{clip_id}.src.mp3"
-            content, _ = await fetch_bytes(settings, path)
-            download.write_bytes(content)
-            source = str(download)
-        proc = await asyncio.create_subprocess_exec(
-            ffmpeg,
-            "-nostdin",
-            "-loglevel",
-            "error",
-            "-ss",
-            f"{offset:.2f}",
-            "-t",
-            f"{settings.clip_length_s:.2f}",
-            "-i",
-            source,
-            "-ac",
-            "1",
-            "-b:a",
-            "128k",
-            "-y",
-            str(tmp),
-            stderr=asyncio.subprocess.PIPE,
-        )
-        _, stderr = await proc.communicate()
-        if download is not None:
-            download.unlink(missing_ok=True)
-        if proc.returncode != 0 or not tmp.exists():
-            log.error("ffmpeg failed for %s: %s", clip_id, stderr.decode()[-500:])
-            tmp.unlink(missing_ok=True)
-            raise HTTPException(502, "Could not extract audio clip")
+        try:
+            content, _ = await fetch_bytes(settings, precut_key(settings, clip_id))
+        except HTTPException:
+            try:
+                content = await asyncio.to_thread(
+                    mp3.cut_clip,
+                    range_reader(settings, path),
+                    start_s,
+                    settings.clip_context_s,
+                    settings.clip_detection_s,
+                )
+            except (RuntimeError, ValueError) as exc:
+                log.error("clip %s failed: %s", clip_id, exc)
+                raise HTTPException(502, "Could not extract audio clip") from exc
+        tmp = target.with_suffix(".part")
+        tmp.write_bytes(content)
         tmp.rename(target)
     _locks.pop(clip_id, None)
     return target
@@ -93,7 +105,9 @@ async def fetch_bytes(settings: Settings, path: str) -> tuple[bytes, str]:
         local = Path(bucket_url(settings, path))
         if not local.is_file():
             raise HTTPException(404, "File not available")
-        ctype = "image/png" if local.suffix.lower() == ".png" else "image/jpeg"
+        ctype = {".png": "image/png", ".mp3": "audio/mpeg"}.get(
+            local.suffix.lower(), "image/jpeg"
+        )
         return local.read_bytes(), ctype
     async with httpx.AsyncClient(timeout=settings.upstream_timeout_s) as client:
         resp = await client.get(bucket_url(settings, path))

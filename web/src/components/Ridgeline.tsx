@@ -17,9 +17,11 @@ type Props = {
   mode: "shape" | "absolute";
   selected?: string | null;
   onSelect?: (group: PhenologyGroup) => void;
+  /** Week highlighted by the time-lapse. */
+  cursorWeek?: number | null;
 };
 
-export function Ridgeline({ data, mode, selected, onSelect }: Props) {
+export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props) {
   const [ref, { width }] = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<{ g: PhenologyGroup; week: number; x: number; y: number } | null>(
     null,
@@ -177,6 +179,18 @@ export function Ridgeline({ data, mode, selected, onSelect }: Props) {
             <line key={i} x1={px} x2={px} y1={py - 7} y2={py + 3} stroke="#f4b860" strokeWidth={2} pointerEvents="none" />
           ))}
 
+          {cursorWeek && (
+            <g pointerEvents="none">
+              <rect
+                x={x(cursorWeek - 0.5)}
+                width={x(2) - x(1)}
+                y={TOP - 6}
+                height={height - 24 - TOP + 6}
+                fill="rgba(244,184,96,0.12)"
+              />
+              <line x1={x(cursorWeek)} x2={x(cursorWeek)} y1={TOP - 6} y2={height - 24} stroke="#f4b860" strokeWidth={1.5} />
+            </g>
+          )}
           {hover && (
             <line
               x1={x(hover.week)}

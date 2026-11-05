@@ -4,8 +4,10 @@ All rates are detections per recorded hour, computed as
 sum(detections) / (sum(recorded_minutes) / 60) over the sites in a group.
 """
 
+import math
 from datetime import date
 
+from . import ecology
 from .config import Settings
 from .data import DataStore
 
@@ -136,6 +138,7 @@ def species_phenology(
         g["sparse"] = g["total"] < max(100, 0.01 * max_total)
     return {
         "species": species,
+        "migration": migration_speed(groups),
         "level": level,
         "year": year,
         "years": available_years(store),
@@ -317,6 +320,10 @@ def species_summary(store: DataStore, settings: Settings, species: str) -> dict 
         [species],
     )
     media = store.one("SELECT * FROM species_media WHERE species = ?", [species])
+    eco = store.one("SELECT * FROM species_ecology WHERE species = ?", [species])
+    info = store.one(
+        "SELECT * EXCLUDE (species) FROM species_info WHERE species = ?", [species]
+    )
 
     return {
         **base,
@@ -328,6 +335,8 @@ def species_summary(store: DataStore, settings: Settings, species: str) -> dict 
         "trend": trend,
         "by_country": by_country,
         "media": media,
+        "info": info,
+        "ecology": ecology.describe(eco),
     }
 
 
@@ -370,3 +379,51 @@ def _trend(rows: list[dict], settings: Settings) -> dict:
         "rate_from": r_prev,
         "rate_to": r_last,
     }
+
+
+KM_PER_DEGREE_LAT = 111.2
+
+
+def migration_speed(groups: list[dict]) -> dict:
+    """Weighted fit of mid-season date (day of year) against latitude.
+
+    A clear positive slope means the season arrives later further north; the
+    inverse of the slope is how fast it travels. Each group is weighted by the
+    square root of its detections, so noisy small groups count less.
+    """
+    pts = [
+        (g["lat"], g["median_week"] * 7 - 3.5, math.sqrt(g["total"]))
+        for g in groups
+        if not g.get("sparse") and g["median_week"] and g["lat"] is not None
+    ]
+    result: dict = {"n": len(pts), "clear": False}
+    if len(pts) < 5:
+        result["reason"] = "too few landscapes with enough detections"
+        return result
+    sw = sum(w for _, _, w in pts)
+    mx = sum(x * w for x, _, w in pts) / sw
+    my = sum(y * w for _, y, w in pts) / sw
+    sxx = sum(w * (x - mx) ** 2 for x, _, w in pts)
+    sxy = sum(w * (x - mx) * (y - my) for x, y, w in pts)
+    syy = sum(w * (y - my) ** 2 for _, y, w in pts)
+    if sxx == 0 or syy == 0:
+        result["reason"] = "no spread in latitude or timing"
+        return result
+    slope = sxy / sxx  # days per degree latitude
+    r2 = sxy * sxy / (sxx * syy)
+    result.update(
+        {
+            "days_per_degree": slope,
+            "intercept": my - slope * mx,
+            "r2": r2,
+            "points": [{"lat": x, "day": y} for x, y, _ in pts],
+        }
+    )
+    if slope > 0.2 and r2 >= 0.3:
+        result["clear"] = True
+        result["km_per_day"] = KM_PER_DEGREE_LAT / slope
+    else:
+        result["reason"] = (
+            "no clear north-south timing" if r2 < 0.3 else "season does not move north"
+        )
+    return result

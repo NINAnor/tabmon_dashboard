@@ -9,7 +9,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project
 
-COPY build_tables.py birdnet_multilingual.csv ./
+COPY build_tables.py species_info.py species_ecology.py birdnet_multilingual.csv ./
+COPY reference/ ./reference/
 RUN python -c "import duckdb; c = duckdb.connect(); c.execute('INSTALL httpfs'); c.execute('INSTALL icu')"
 
 ENV SOURCE=s3://bencretois-ns8129k-proj-tabmon \

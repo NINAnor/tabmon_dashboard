@@ -2,9 +2,10 @@
 
 import { scaleSequential, scaleSqrt } from "d3-scale";
 import { interpolateViridis, interpolateYlGnBu } from "d3-scale-chromatic";
-import { useMemo, useState } from "react";
-import Map, { Layer, Popup, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Map, { Layer, Popup, Source, type MapLayerMouseEvent, type MapRef } from "react-map-gl/maplibre";
 import type { Cluster, SpeciesPhenology } from "@/lib/api";
+import { oceanRamp } from "@/lib/color";
 import { compact, int, weekLabel } from "@/lib/format";
 
 export const DARK_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
@@ -15,10 +16,45 @@ type Props = {
   selected?: string | null;
   onSelect?: (id: string) => void;
   height?: number | string;
+  /** When set, size and colour circles by activity in this week (time-lapse). */
+  week?: number | null;
+  /** Time-lapse scaling: each landscape against its own peak, or one shared scale. */
+  mode?: "shape" | "absolute";
+  /** Larger circles for the expanded time-lapse view. */
+  large?: boolean;
 };
 
-export function ClusterMap({ clusters, phenology, selected, onSelect, height = 560 }: Props) {
+export function ClusterMap({
+  clusters,
+  phenology,
+  selected,
+  onSelect,
+  height = 560,
+  week,
+  mode = "absolute",
+  large = false,
+}: Props) {
   const [hover, setHover] = useState<{ id: string; lng: number; lat: number } | null>(null);
+  const mapRef = useRef<MapRef>(null);
+
+  // Fit all landscapes in view whenever the data or the map size changes.
+  const fit = useCallback(() => {
+    if (!clusters.length || !mapRef.current) return;
+    const lons = clusters.map((c) => c.lon);
+    const lats = clusters.map((c) => c.lat);
+    mapRef.current.resize();
+    mapRef.current.fitBounds(
+      [
+        [Math.min(...lons), Math.min(...lats)],
+        [Math.max(...lons), Math.max(...lats)],
+      ],
+      { padding: large ? 50 : 25, duration: 0 },
+    );
+  }, [clusters, large]);
+  useEffect(() => {
+    const id = setTimeout(fit, 80);
+    return () => clearTimeout(id);
+  }, [fit, height]);
 
   const byId = useMemo(() => Object.fromEntries(clusters.map((c) => [c.id, c])), [clusters]);
   const phen = useMemo(
@@ -34,6 +70,32 @@ export function ClusterMap({ clusters, phenology, selected, onSelect, height = 5
       Math.min(...medians, 52),
       Math.max(...medians, 1),
     ]);
+    if (phenology && week) {
+      const maxRate = Math.max(
+        1e-9,
+        ...phenology.groups.filter((g) => !g.sparse).flatMap((g) => g.weeks.map((w) => (w.low_effort ? 0 : w.rate ?? 0))),
+      );
+      return {
+        type: "FeatureCollection" as const,
+        features: clusters.map((c) => {
+          const w = phen[c.id]?.weeks[week - 1];
+          const g = phen[c.id];
+          const live = w && !w.low_effort && w.rate !== null && !g?.sparse;
+          const scale = mode === "shape" ? Math.max(1e-9, g?.peak_rate ?? 0) : maxRate;
+          const t = live ? Math.min(1, Math.sqrt((w!.rate ?? 0) / scale)) : 0;
+          return {
+            type: "Feature" as const,
+            geometry: { type: "Point" as const, coordinates: [c.lon, c.lat] },
+            properties: {
+              id: c.id,
+              color: !w || w.low_effort ? "#26323c" : t > 0 ? oceanRamp(0.25 + 0.75 * t) : "#33414d",
+              radius: (large ? 5 : 4) + (large ? 38 : 26) * t,
+              selected: c.id === selected ? 1 : 0,
+            },
+          };
+        }),
+      };
+    }
     return {
       type: "FeatureCollection" as const,
       features: clusters.map((c) => {
@@ -56,7 +118,7 @@ export function ClusterMap({ clusters, phenology, selected, onSelect, height = 5
         };
       }),
     };
-  }, [clusters, phen, phenology, selected]);
+  }, [clusters, phen, phenology, selected, week, mode, large]);
 
   const onClick = (e: MapLayerMouseEvent) => {
     const id = e.features?.[0]?.properties?.id;
@@ -69,6 +131,8 @@ export function ClusterMap({ clusters, phenology, selected, onSelect, height = 5
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10" style={{ height }}>
       <Map
+        ref={mapRef}
+        onLoad={fit}
         initialViewState={{ longitude: 8, latitude: 55, zoom: 3.1 }}
         mapStyle={DARK_STYLE}
         maxZoom={8}
@@ -89,6 +153,7 @@ export function ClusterMap({ clusters, phenology, selected, onSelect, height = 5
             type="circle"
             paint={{
               "circle-radius": ["*", ["get", "radius"], 2.2],
+              "circle-radius-transition": { duration: 220 },
               "circle-color": ["get", "color"],
               "circle-opacity": 0.18,
               "circle-blur": 1,
@@ -99,6 +164,7 @@ export function ClusterMap({ clusters, phenology, selected, onSelect, height = 5
             type="circle"
             paint={{
               "circle-radius": ["get", "radius"],
+              "circle-radius-transition": { duration: 220 },
               "circle-color": ["get", "color"],
               "circle-opacity": 0.9,
               "circle-stroke-color": ["case", ["==", ["get", "selected"], 1], "#ffffff", "#07131c"],
@@ -136,8 +202,36 @@ export function ClusterMap({ clusters, phenology, selected, onSelect, height = 5
         )}
       </Map>
       <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-ocean-950/80 px-3 py-2 text-[11px] text-white/60">
-        {phenology ? "Colour: mid-season date (early → late) · Size: peak activity" : "Colour: species richness · Size: hours recorded"}
+        {phenology && week
+          ? mode === "shape"
+            ? "Size & colour: this week vs each landscape's own peak"
+            : "Size & colour: detections per hour this week"
+          : phenology
+            ? "Colour: mid-season date (early → late) · Size: peak activity"
+            : "Colour: species richness · Size: hours recorded"}
         <div className="text-white/35">Locations are generalised to ~10 km</div>
+        {phenology && week && (
+          <div className="mt-2 flex items-end gap-3">
+            {[0.15, 0.5, 1].map((t) => {
+              const r = (large ? 5 : 4) + (large ? 38 : 26) * Math.sqrt(t);
+              return (
+                <span key={t} className="flex flex-col items-center gap-1">
+                  <span
+                    className="rounded-full border border-white/20"
+                    style={{ width: r * 2 * 0.6, height: r * 2 * 0.6, background: oceanRamp(0.25 + 0.75 * Math.sqrt(t)) }}
+                  />
+                  <span className="text-[10px] text-white/45">
+                    {t === 1 ? "peak" : `${Math.round(t * 100)}%`}
+                  </span>
+                </span>
+              );
+            })}
+            <span className="flex flex-col items-center gap-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#26323c]" />
+              <span className="text-[10px] text-white/45">no data</span>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

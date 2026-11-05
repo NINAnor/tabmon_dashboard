@@ -24,6 +24,9 @@ from pathlib import Path
 
 import duckdb
 
+from species_ecology import build_species_ecology
+from species_info import build_species_info
+
 log = logging.getLogger("tabmon.preprocess")
 
 COUNTRY_TZ = {
@@ -363,17 +366,24 @@ def build_species(con, names_csv: str | None, out: str):
                        count(DISTINCT site_id) AS n_sites,
                        count(DISTINCT country) AS n_countries
                 FROM detections_sited GROUP BY ALL
+            ),
+            checked AS (
+                SELECT species, count(*) AS n_validated,
+                       count(*) FILTER (WHERE correct) AS n_correct
+                FROM validated GROUP BY ALL
             )
             SELECT tot.species, n.en_uk AS common_en, n.fr AS common_fr,
                    n.es AS common_es, n.nl AS common_nl, n.no AS common_no,
                    tot.n_detections, tot.n_sites, tot.n_countries,
                    COALESCE(th.threshold, {DEFAULT_THRESHOLD}) AS threshold,
                    COALESCE(th.status, 'default') AS threshold_source,
-                   COALESCE(th.n_validated, 0) AS n_validated,
+                   COALESCE(ck.n_validated, 0) AS n_validated,
+                   COALESCE(ck.n_correct, 0) AS n_correct,
                    th.precision_at_threshold
             FROM totals tot
             LEFT JOIN {names} n ON n.Scientific_Name = tot.species
             LEFT JOIN thresholds th USING (species)
+            LEFT JOIN checked ck USING (species)
             ORDER BY n_detections DESC
         ) TO '{out}/species.parquet' (FORMAT parquet)
         """
@@ -451,6 +461,11 @@ def main():
         "--names", help="CSV with Scientific_Name,en_uk,fr,es,nl,no columns"
     )
     parser.add_argument("--skip-detections", action="store_true")
+    parser.add_argument(
+        "--skip-species-info",
+        action="store_true",
+        help="Do not query Wikipedia / Wikidata",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
@@ -471,6 +486,9 @@ def main():
         build_detections(con, src, out)
         build_species(con, args.names, out)
         build_clips(con, out)
+        if not args.skip_species_info:
+            build_species_info(con, out)
+            build_species_ecology(con, out)
     log.info("done -> %s", out)
 
 

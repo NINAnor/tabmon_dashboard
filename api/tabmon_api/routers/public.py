@@ -66,6 +66,66 @@ def _has_column(store: DataStore, table: str, column: str) -> bool:
     )
 
 
+@router.get("/network")
+def network(store: DataStore = Depends(get_store)):
+    """Per-country summary, monthly analysed hours and pipeline numbers."""
+
+    def compute():
+        countries = store.query(
+            """
+            WITH ef AS (
+                SELECT s.country, sum(e.recorded_minutes) / 60 AS hours
+                FROM effort e JOIN sites s USING (site_id) GROUP BY ALL
+            ),
+            sp AS (
+                SELECT s.country, p.species, sum(p.n_detections) AS n
+                FROM phenology p JOIN sites s USING (site_id) GROUP BY ALL
+            ),
+            top AS (
+                SELECT sp.country, count(*) AS n_species,
+                       arg_max(COALESCE(x.common_en, sp.species), sp.n) AS top_species
+                FROM sp LEFT JOIN species x USING (species) GROUP BY ALL
+            ),
+            geo AS (
+                SELECT country, count(DISTINCT cluster_id) AS n_clusters,
+                       count(*) AS n_sites
+                FROM sites GROUP BY ALL
+            )
+            SELECT geo.country, geo.n_clusters, geo.n_sites,
+                   COALESCE(ef.hours, 0) AS hours, COALESCE(top.n_species, 0) AS n_species,
+                   top.top_species
+            FROM geo LEFT JOIN ef USING (country) LEFT JOIN top USING (country)
+            ORDER BY hours DESC
+            """
+        )
+        monthly = store.query(
+            """
+            SELECT s.country, strftime(date_trunc('month', e.date), '%Y-%m') AS month,
+                   sum(e.recorded_minutes) / 60 AS hours
+            FROM effort e JOIN sites s USING (site_id)
+            GROUP BY ALL ORDER BY month
+            """
+        )
+        pipeline = store.one(
+            """
+            SELECT (SELECT sum(n_detections) FROM species)::BIGINT AS detections,
+                   (SELECT sum(n_validated) FROM validations)::BIGINT AS validated,
+                   (SELECT count(*) FROM species
+                    WHERE threshold_source IN ('calibrated', 'calibrated_low')) AS calibrated,
+                   (SELECT count(*) FROM species) AS species
+            """
+        )
+        files = (
+            store.one("SELECT total_recordings FROM dataset_stats")
+            if _has_column(store, "dataset_stats", "total_recordings")
+            else None
+        )
+        pipeline["files"] = files["total_recordings"] if files else None
+        return {"countries": countries, "monthly": monthly, "pipeline": pipeline}
+
+    return store.cached(("network",), compute)
+
+
 @router.get("/clusters")
 def clusters(
     store: DataStore = Depends(get_store), settings: Settings = Depends(get_settings)
@@ -107,6 +167,39 @@ def clusters(
     return store.cached(("clusters",), compute)
 
 
+@router.get("/clusters/{cluster_id}/species")
+def cluster_species(
+    cluster_id: str,
+    limit: int = Query(15, le=60),
+    store: DataStore = Depends(get_store),
+):
+    """Most detected species in a landscape, with detection rate and Red List status."""
+    return store.cached(
+        ("cluster_species", cluster_id, limit),
+        lambda: store.query(
+            f"""
+            WITH g AS (SELECT site_id FROM sites WHERE cluster_id = ?),
+            ef AS (
+                SELECT sum(recorded_minutes) / 60 AS hours FROM effort
+                WHERE site_id IN (SELECT site_id FROM g)
+            ),
+            ph AS (
+                SELECT species, sum(n_detections)::BIGINT AS n FROM phenology
+                WHERE site_id IN (SELECT site_id FROM g) GROUP BY ALL
+            )
+            SELECT ph.species, sp.common_en, ph.n, ph.n / NULLIF(ef.hours, 0) AS rate,
+                   eco.iucn, eco.migration,
+                   sp.threshold_source IN ('calibrated', 'calibrated_low') AS calibrated
+            FROM ph CROSS JOIN ef
+            LEFT JOIN species sp USING (species)
+            LEFT JOIN species_ecology eco USING (species)
+            ORDER BY ph.n DESC LIMIT {int(limit)}
+            """,
+            [cluster_id],
+        ),
+    )
+
+
 @router.get("/species")
 def species_list(
     q: str | None = None,
@@ -122,9 +215,10 @@ def species_list(
         f"""
         SELECT species, common_en, common_fr, common_es, common_nl, common_no,
                n_detections, n_sites, n_countries, threshold, threshold_source,
-               n_validated
+               n_validated, n_correct, precision_at_threshold,
+               threshold_source IN ('calibrated', 'calibrated_low') AS calibrated
         FROM species {where}
-        ORDER BY n_detections DESC LIMIT {int(limit)}
+        ORDER BY calibrated DESC, n_detections DESC LIMIT {int(limit)}
         """,
         params,
     )
@@ -188,6 +282,7 @@ def clips(
     month: int | None = Query(None, ge=1, le=12),
     limit: int = Query(12, le=50),
     store: DataStore = Depends(get_store),
+    settings: Settings = Depends(get_settings),
 ):
     where, params = ["true"], []
     if species:
@@ -202,7 +297,9 @@ def clips(
     return store.query(
         f"""
         SELECT c.clip_id, c.species, sp.common_en, c.cluster_id, cl.cluster,
-               c.country, c.recorded_at::DATE AS recorded_on, c.confidence, c.validated
+               c.country, c.recorded_at::DATE AS recorded_on, c.confidence, c.validated,
+               least(c.start_s, ?) AS window_start,
+               least(c.start_s, ?) + ? AS window_end
         FROM clips c
         LEFT JOIN clusters cl USING (cluster_id)
         LEFT JOIN species sp USING (species)
@@ -210,7 +307,12 @@ def clips(
         ORDER BY c.validated DESC, c.confidence DESC
         LIMIT {int(limit)}
         """,
-        params,
+        [
+            settings.clip_context_s,
+            settings.clip_context_s,
+            settings.clip_detection_s,
+            *params,
+        ],
     )
 
 

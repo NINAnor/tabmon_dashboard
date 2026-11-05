@@ -165,3 +165,78 @@ def test_species_card(client):
     card = client.get("/api/public/species/Cuculus canorus").json()
     assert 0 < card["hour_share"] < 1
     assert card["trend"]["label"] == "uncertain"
+
+
+def test_migration_speed_detects_northward_wave(client):
+    from tabmon_api.phenology import migration_speed
+
+    groups = [
+        {"lat": 40 + i * 6, "median_week": 18 + i, "total": 1000, "sparse": False}
+        for i in range(6)
+    ]
+    m = migration_speed(groups)
+    assert m["clear"]
+    assert m["days_per_degree"] == pytest.approx(7 / 6, rel=1e-6)
+    assert m["km_per_day"] == pytest.approx(111.2 / (7 / 6), rel=1e-6)
+
+    flat = [{**g, "median_week": 20} for g in groups]
+    assert not migration_speed(flat)["clear"]
+    assert not migration_speed(groups[:3])["clear"]
+
+
+def test_mp3_layout_from_xing_header():
+    from tabmon_api.mp3 import clip_window, parse_layout
+
+    frame_header = bytes([0xFF, 0xFB, 0x90, 0xC0])  # MPEG-1 L3, 128 kbps, 44.1 kHz
+    xing = b"Xing" + (3).to_bytes(4, "big") + (11486).to_bytes(4, "big")
+    xing += (4_000_000).to_bytes(4, "big")
+    head = b"ID3\x04\x00\x00\x00\x00\x00\x05" + b"\x00" * 5 + frame_header
+    head += b"\x00" * 32 + xing + b"\x00" * 200
+    layout = parse_layout(head, 4_000_100)
+    assert layout.audio_start == 15
+    assert layout.duration == pytest.approx(11486 * 1152 / 44100)
+    assert layout.byte_at(layout.duration / 2) == 15 + 2_000_000
+    assert clip_window(3, 5, 3) == (0, 11)
+    assert clip_window(100, 5, 3) == (95, 13)
+
+
+def test_ecology_description():
+    import json as _json
+
+    from tabmon_api.ecology import _month_span, describe
+
+    assert _month_span([4, 5, 6]) == "Apr–Jun"
+    assert _month_span([10, 11, 12, 1, 2]) == "Oct–Feb"
+    assert _month_span(list(range(1, 13))) == "all year"
+    assert _month_span([3, 4, 5, 9]) == "mainly Mar–May"
+
+    d = describe(
+        {
+            "iucn": "VU",
+            "migration": "long_distance",
+            "habitats": ["woodland"],
+            "diet": ["insects & spiders"],
+            "peak_hour": 5,
+            "night_share": 0.05,
+            "active_months": _json.dumps({"Norway": [5, 6], "Spain": [4, 5, 6]}),
+        }
+    )
+    assert d["iucn_label"] == "Vulnerable"
+    assert d["migration_label"] == "Long-distance migrant"
+    assert "Sahara" in d["how_to_read"][0]
+    assert "at dawn" in d["how_to_read"][1]
+    assert d["how_to_read"][1].index("Spain") < d["how_to_read"][1].index("Norway")
+
+    owl = describe({"migration": "resident", "peak_hour": 23, "night_share": 0.7})
+    assert "at night" in owl["how_to_read"][1]
+    assert describe(None) is None
+
+
+def test_network_summary(client):
+    data = client.get("/api/public/network").json()
+    assert {c["country"] for c in data["countries"]} == {"Spain", "Norway"}
+    spain = next(c for c in data["countries"] if c["country"] == "Spain")
+    assert spain["n_clusters"] == 1 and spain["top_species"] == "Common Cuckoo"
+    assert data["monthly"] and data["pipeline"]["calibrated"] == 1
+    top = client.get("/api/public/clusters/norway-north/species").json()
+    assert top[0]["species"] == "Cuculus canorus" and top[0]["rate"] > 0

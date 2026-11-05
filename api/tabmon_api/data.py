@@ -50,6 +50,35 @@ class DataStore:
             url = self._url(self.settings.tables_prefix, f"{table}.parquet")
             con.execute(f"CREATE TABLE {table} AS SELECT * FROM read_parquet('{url}')")
 
+        # Optional: produced by the Wikipedia step of the preprocessing job.
+        url = self._url(self.settings.tables_prefix, "species_info.parquet")
+        try:
+            con.execute(
+                f"CREATE TABLE species_info AS SELECT * FROM read_parquet('{url}')"
+            )
+        except duckdb.Error:
+            log.warning("species_info.parquet not available")
+            con.execute(
+                "CREATE TABLE species_info (species VARCHAR, wiki_title VARCHAR, "
+                "wiki_url VARCHAR, extract VARCHAR, image_url VARCHAR, "
+                "image_page VARCHAR, image_artist VARCHAR, image_license VARCHAR, "
+                "image_license_url VARCHAR)"
+            )
+
+        url = self._url(self.settings.tables_prefix, "species_ecology.parquet")
+        try:
+            con.execute(
+                f"CREATE TABLE species_ecology AS SELECT * FROM read_parquet('{url}')"
+            )
+        except duckdb.Error:
+            log.warning("species_ecology.parquet not available")
+            con.execute(
+                "CREATE TABLE species_ecology (species VARCHAR, iucn VARCHAR, "
+                "migration VARCHAR, habitats VARCHAR[], diet VARCHAR[], "
+                "lifestyle VARCHAR, trait_source VARCHAR, peak_hour INTEGER, "
+                "night_share DOUBLE, active_months VARCHAR)"
+            )
+
         for table, name in LEGACY_CSV.items():
             url = self._url(self.settings.legacy_prefix, name)
             try:
