@@ -7,7 +7,7 @@ import useSWR from "swr";
 import { PageTitle, Stat } from "@/components/ops/ui";
 import { PlaceExplorer } from "@/components/PlaceExplorer";
 import { fetcher, type SiteDetail } from "@/lib/api";
-import { compact } from "@/lib/format";
+import { compact, relativeDays } from "@/lib/format";
 
 const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "–");
 
@@ -31,7 +31,18 @@ export default function SitePage({ params }: { params: Promise<{ id: string }> }
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat label="Status" value={data.active ? "Active" : "Inactive"} tone={data.active ? "good" : undefined} />
+        <Stat
+          label="Recorder"
+          value={data.status ?? "No deployment"}
+          tone={data.status === "Online" ? "good" : data.status === "Offline" ? "bad" : undefined}
+          sub={
+            data.status
+              ? data.days_since_last === null
+                ? "no files yet"
+                : `last file ${relativeDays(data.days_since_last)}`
+              : undefined
+          }
+        />
         <Stat label="Hours recorded" value={compact(data.effort.hours)} />
         <Stat label="First recording" value={<span className="text-xl">{fmtDate(data.effort.first)}</span>} />
         <Stat label="Last recording" value={<span className="text-xl">{fmtDate(data.effort.last)}</span>} />

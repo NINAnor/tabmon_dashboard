@@ -27,7 +27,7 @@ export function SpeciesView({
   clusters: Cluster[];
 }) {
   const { data: list } = useSpeciesList();
-  const [year, setYear] = useState<number | null>(2025);
+  const [year, setYear] = useState<number | null>(null);
   const [mode, setMode] = useState<"shape" | "absolute">("shape");
   const [selected, setSelected] = useState<string | null>(null);
   const [week, setWeek] = useState<number | null>(null);

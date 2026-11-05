@@ -126,19 +126,48 @@ def dataset(store: DataStore = Depends(get_store)):
 @router.get("/sites")
 def sites(store: DataStore = Depends(get_store)):
     return store.query(
-        """
+        f"""
+        WITH status AS ({_site_status_sql(store)})
         SELECT s.site_id, s.site, s.cluster, s.cluster_id, s.country, s.lat, s.lon,
                s.active, s.habitat, len(s.deployment_ids) AS n_deployments,
                (SELECT count(*) FROM photos p WHERE list_contains(s.device_ids, p.device_id))
-                   AS n_photos
-        FROM sites s ORDER BY s.country, s.cluster, s.site
+                   AS n_photos,
+               st.status, st.days_since_last
+        FROM sites s LEFT JOIN status st USING (site_id)
+        ORDER BY s.country, s.cluster, s.site
         """
     )
 
 
+def _site_status_sql(store: DataStore) -> str:
+    """Current recorder status per site: Online if any of its deployments is online,
+    otherwise Offline, with the most recent upload. Empty when device_status is missing."""
+    has_status = store.query(
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name = 'device_status' AND column_name = 'status'"
+    )
+    if not has_status:
+        return "SELECT NULL::VARCHAR AS site_id, NULL::VARCHAR AS status, NULL::DOUBLE AS days_since_last WHERE false"
+    return """
+        SELECT d.site_id,
+               CASE WHEN bool_or(ds.status = 'Online') THEN 'Online' ELSE 'Offline' END AS status,
+               min(CASE WHEN isfinite(TRY_CAST(ds.days_since_last AS DOUBLE))
+                        THEN TRY_CAST(ds.days_since_last AS DOUBLE) END) AS days_since_last
+        FROM device_status ds JOIN deployments d ON d.deployment_id = ds.DeploymentID
+        GROUP BY d.site_id
+    """
+
+
 @router.get("/sites/{site_id}")
 def site_detail(site_id: str, store: DataStore = Depends(get_store)):
-    site = store.one("SELECT * FROM sites WHERE site_id = ?", [site_id])
+    site = store.one(
+        f"""
+        WITH status AS ({_site_status_sql(store)})
+        SELECT s.*, st.status, st.days_since_last
+        FROM sites s LEFT JOIN status st USING (site_id) WHERE s.site_id = ?
+        """,
+        [site_id],
+    )
     if site is None:
         raise HTTPException(404, "Unknown site")
     deployments = store.query(

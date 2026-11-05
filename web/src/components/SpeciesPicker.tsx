@@ -4,18 +4,8 @@ import { AlertTriangle, CheckCircle2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetcher, type SpeciesRow } from "@/lib/api";
-import { compact, displayName, pct } from "@/lib/format";
+import { compact, displayName, int, pct } from "@/lib/format";
 
-const FEATURED = [
-  "Cuculus canorus",
-  "Hirundo rustica",
-  "Phylloscopus trochilus",
-  "Phylloscopus collybita",
-  "Apus apus",
-  "Ficedula hypoleuca",
-  "Sylvia atricapilla",
-  "Erithacus rubecula",
-];
 
 export function useSpeciesList() {
   return useSWR<SpeciesRow[]>("/api/public/species?limit=500", fetcher);
@@ -67,7 +57,11 @@ export function SpeciesPicker({
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
 
-  const featured = FEATURED.map((s) => data.find((d) => d.species === s)).filter(Boolean) as SpeciesRow[];
+  // Shortcuts: the species with the most validated clips.
+  const featured = useMemo(
+    () => [...data].sort((a, b) => b.n_validated - a.n_validated).slice(0, 10),
+    [data],
+  );
   const validated = useMemo(() => data.filter((d) => d.calibrated), [data]);
   const matches = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -129,6 +123,7 @@ export function SpeciesPicker({
             key={s.species}
             className={`pill ${value === s.species ? "pill-active" : ""}`}
             onClick={() => onChange(s.species)}
+            title={`${int(s.n_validated)} clips checked`}
           >
             {displayName(s)}
           </button>

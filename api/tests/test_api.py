@@ -257,3 +257,12 @@ def test_species_diel(client):
     assert d["overall"][6] == 0 and d["overall"][0] is None
     assert set(d["countries"]) == {"Spain", "Norway"}
     assert d["night_share"] == 0
+
+
+def test_ops_sites_have_status_field(client):
+    client.post("/api/auth/login", json={"username": "tabmon", "password": "pw"})
+    sites = client.get("/api/ops/sites").json()
+    # No device_status in the fixture: the field exists but is empty.
+    assert sites and all("status" in s and s["status"] is None for s in sites)
+    detail = client.get(f"/api/ops/sites/{sites[0]['site_id']}").json()
+    assert "status" in detail
