@@ -1,99 +1,92 @@
 # TABMON Dashboard
 
-Dashboard for the [TABMON project](https://www.nina.no/english/TABMON): a public
-**sound map** that follows bird phenology from Spain to Arctic Norway, plus a
-login-protected **team area** for device monitoring.
-
-## What's inside
+Public dashboard and team area for [TABMON](https://www.nina.no/english/TABMON), a
+transnational passive acoustic monitoring network for European birds, from Spain to
+Arctic Norway. The network continues from October 2026 within
+[BEAGLE](https://cordis.europa.eu/project/id/101288886) (Horizon Europe).
 
 | Path | What | Stack |
 |---|---|---|
-| `web/` | Public site + team area | Next.js, React, Tailwind, MapLibre, d3, wavesurfer.js |
-| `api/` | Data API, auth, clip extraction | FastAPI, DuckDB, ffmpeg |
+| `web/` | Public site (Network · Sites · Species · Project) and team area (`/ops`) | Next.js, React, Tailwind, MapLibre, d3, wavesurfer.js |
+| `api/` | Data API, team login, clip serving, clip pre-cutting job | FastAPI, DuckDB, ffmpeg, boto3 |
 | `preprocessing/` | Builds the aggregated tables the API serves | DuckDB (reads S3 directly) |
-| `src/` | Legacy Streamlit dashboard (kept during the transition) | Streamlit |
+| `scheduler/` | Nightly cron that runs preprocessing + clip cutting | docker:cli + crond |
 
 ```
-            ┌────────── Traefik ──────────┐
-   /  ───►  web (Next.js)                 │
-   /api ─►  api (FastAPI + DuckDB) ──► rclone ──► S3 bucket
-                                          ▲
-   preprocessing (scheduled job) ─────────┘ writes data/preprocessed/dashboard/*.parquet
+                 ┌──── Traefik ────┐
+     /      ──►  web (Next.js)     │
+     /api   ──►  api (FastAPI) ────┼──► rclone (internal) ──► S3 bucket
+                                   │
+     scheduler (02:00 UTC) ──► preprocessing ──► data/preprocessed/dashboard/*.parquet
+                           └─► clips ──────────► data/preprocessed/dashboard/clips/v2/*.mp3
 ```
 
-### Public site (`/`)
-- **When does it arrive where?** Ridgeline of weekly detection rate for a species, one
-  row per landscape (cluster), ordered by latitude. Arrival (10% of peak) and
-  mid-season (50% of activity) markers, and a dashed line tracing the wave north.
-  The map recolours by mid-season date.
-- **What does this place sound like?** Species x week calendar and an "acoustic clock"
-  (hour of day x month) for any landscape, with playable example clips.
-- **Species cards**: share of recorded hours with the species (with the spread
-  across sites), a year-on-year trend, validation status and Macaulay Library media.
+## Public site
 
-### Team area (`/ops`, login required)
-Device health map and table (exact coordinates), daily recording activity heatmap,
-dataset statistics, site pages with deployment history, field photos and the
-site-level soundscape, and validation progress.
+- **Network**: live totals, landscape map, per-country summary, monthly hours analysed,
+  and how the pipeline works.
+- **Sites**: per-landscape species × week calendar, acoustic clock (hour × month),
+  most-heard species and example clips.
+- **Species**: photo and description (Wikipedia/Wikimedia Commons), IUCN status,
+  migration strategy and diet, a "how to read the chart" text, the latitude-ordered
+  phenology ridgeline with a time-lapse map, the speed of the season northwards, the
+  daily vocal rhythm, validation status and clips with spectrograms.
+- **Project**: mission, TABMON → BEAGLE, the Listening Lab, partners, publications.
+
+Every "Help identify birds" link deep-links into the
+[Listening Lab](https://tabmon-listening-lab.nina.no) with the country, landscape and
+species preselected.
 
 ## Method notes
 
-- **Effort correction.** Every rate is `detections / recorded hours`. Recording effort
-  comes from `index.parquet` (5-minute files) and only counts deployment-days that
-  BirdNET has processed, so gaps in recording or analysis never look like absences.
-  Weeks with less than 2 h of recording are hatched.
-- **Thresholds.** Per-species BirdNET confidence thresholds are calibrated on the
-  expert and citizen validations: the lowest threshold reaching 90% precision, or the
-  most precise threshold above 70%. Species whose validations never reach 70% are
-  excluded. Species without validations use a conservative 0.7.
-- **Sparse rows.** Landscapes with very few detections of a species (mostly isolated
-  false positives) are drawn faded and left out of the arrival line.
-- **Trends** compare the two most recent years using only site-weeks recorded in both.
+- **Effort correction.** Rates are detections per recorded hour. Effort comes from
+  `index.parquet` (5-minute files) and only counts deployment-days BirdNET has processed,
+  so gaps in recording or analysis never look like absences.
+- **Thresholds.** Per-species BirdNET thresholds are calibrated on expert and citizen
+  validations (lowest threshold reaching 90% precision, else the best above 70%).
+  Species never reaching 70% are excluded; species with fewer than 20 validations use 0.7
+  and are flagged "not yet validated" on the site.
+- **Sparse rows.** Landscapes with very few detections of a species are drawn faded and
+  left out of arrival estimates.
+- **Trends** compare the two latest years on site-weeks recorded in both.
 - **Privacy.** Public endpoints only return cluster centroids snapped to a 0.1° grid,
   never site coordinates, photos or bucket paths. Site-level data needs a login.
 
-## Running locally
+Trait data: Storchová & Hořák (2018) and AVONET (Tobias et al. 2022); see
+`preprocessing/reference/README.md`.
 
-Requirements: Docker, an rclone remote `nirds3` in `~/.config/rclone/rclone.conf`.
+## Running
+
+Requirements: Docker (rootless socket path is set in `docker-compose.yml`), an rclone
+remote `nirds3` in `~/.config/rclone/rclone.conf`.
 
 ```bash
-cp .env.example .env            # set DASHBOARD_PASSWORD and SESSION_SECRET
-docker compose run --rm preprocessing   # once, then on a schedule (e.g. nightly cron)
+cp .env.example .env                     # passwords, session secret, S3 keys
+docker compose run --rm preprocessing    # first run only; afterwards nightly
+docker compose run --rm clips
 docker compose up -d --build
 ```
 
-Open http://localhost:8050. The legacy Streamlit app can still be started with
-`docker compose --profile legacy up streamlit` (http://localhost:8501).
+Open http://localhost:8058 (Traefik dashboard on :8088). The scheduler then refreshes
+the data every night (`NIGHTLY_SCHEDULE`, cron syntax, UTC). Logs:
+`docker compose logs -f scheduler`; run immediately:
+`docker compose exec scheduler sh /project/scheduler/nightly.sh`.
 
-### Development without Docker
+### Development
 
 ```bash
-# Build the tables into a local folder that mirrors the bucket layout
-cd preprocessing
-S3_ACCESS_KEY_ID=... S3_SECRET_ACCESS_KEY=... uv run build_tables.py \
-  --source s3://bencretois-ns8129k-proj-tabmon \
-  --out ../.mirror/data/preprocessed/dashboard --names birdnet_multilingual.csv
-# (also copy data/preprocessed/*.csv from the bucket into ../.mirror/data/preprocessed/)
-
-cd ../api
-DATA_URL=../.mirror SESSION_SECRET=dev DASHBOARD_PASSWORD=dev uv run uvicorn tabmon_api.main:app --reload
-uv run pytest
-
-cd ../web
-npm install
-npm run dev                      # proxies /api to http://localhost:8000
+cd api && DATA_URL=/path/to/bucket-mirror SESSION_SECRET=dev DASHBOARD_PASSWORD=dev \
+  uv run uvicorn tabmon_api.main:app --reload       # tests: uv run pytest
+cd web && npm install && npm run dev                # proxies /api to localhost:8000
 ```
 
-## Adding species media
+`DATA_URL` can be a local folder that mirrors the bucket layout
+(`data/preprocessed/dashboard/*.parquet`, `data/preprocessed/*.csv`).
 
-`api/data/species_media.csv` maps species to Macaulay Library asset IDs:
+## Species media
 
-```csv
-species,ml_photo_asset,ml_audio_asset,photo_credit,audio_credit
-Cuculus canorus,123456789,,Photographer Name,
-```
-
-Photos are embedded from Macaulay Library (not re-hosted), with credit and a link back.
+Photos and descriptions come from Wikipedia/Wikimedia Commons with attribution. To use a
+Macaulay Library photo instead, add its asset ID to `api/data/species_media.csv`.
 
 ## Acknowledgment
 

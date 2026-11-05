@@ -6,10 +6,9 @@ import useSWR from "swr";
 import { useNetwork } from "@/components/NetworkOverview";
 import { fetcher } from "@/lib/api";
 import { compact, displayName, int } from "@/lib/format";
-import { labLink } from "@/lib/lab";
+import { CONTACT_URL, labLink } from "@/lib/lab";
 import { SpectrogramBackdrop } from "./SpectrogramBackdrop";
 
-const CONTACT = "mailto:benjamin.cretois@nina.no?subject=TABMON";
 const BEAGLE_URL = "https://cordis.europa.eu/project/id/101288886";
 
 const WHY = [
@@ -64,7 +63,7 @@ type Wanted = {
 function ContactButton({ className = "" }: { className?: string }) {
   return (
     <a
-      href={CONTACT}
+      href={CONTACT_URL}
       className={`inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/5 px-5 py-2.5 text-sm backdrop-blur hover:bg-white/15 ${className}`}
     >
       <Mail className="h-4 w-4" /> Contact

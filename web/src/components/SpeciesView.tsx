@@ -13,6 +13,7 @@ import { MigrationSpeed } from "./MigrationSpeed";
 import { PhenologyStrip } from "./PhenologyStrip";
 import { Ridgeline, RidgelineLegend } from "./Ridgeline";
 import { SpeciesHeader, SpeciesHowToRead, SpeciesStats } from "./SpeciesCard";
+import { SpeciesDielPanel } from "./SpeciesDiel";
 import { pickRandomSpecies, SpeciesPicker, useSpeciesList } from "./SpeciesPicker";
 import { TimeLapse } from "./TimeLapse";
 
@@ -188,6 +189,9 @@ export function SpeciesView({
 
       {species && (
         <>
+          <div className="mt-6">
+            <SpeciesDielPanel species={species} year={year} />
+          </div>
           <div className="mt-6">
             <SpeciesStats species={species} />
           </div>

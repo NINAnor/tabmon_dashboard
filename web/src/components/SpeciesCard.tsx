@@ -1,13 +1,13 @@
 "use client";
 
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Headphones, HelpCircle } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Headphones, HelpCircle } from "lucide-react";
 import { labLink, MIN_VALIDATIONS } from "@/lib/lab";
 import { EcologyChips, HowToRead, IucnBadge } from "./Ecology";
 import useSWR from "swr";
 import { fetcher, type SpeciesDetail, type Trend } from "@/lib/api";
 import { COUNTRY_COLORS, compact, displayName, int, pct } from "@/lib/format";
 
-export function TrendBadge({ trend }: { trend: Trend }) {
+function TrendBadge({ trend }: { trend: Trend }) {
   const map = {
     rising: ["Rising", ArrowUpRight, "text-teal bg-teal/10"],
     falling: ["Falling", ArrowDownRight, "text-coral bg-coral/10"],
@@ -26,7 +26,7 @@ export function TrendBadge({ trend }: { trend: Trend }) {
   );
 }
 
-export function SpeciesMedia({ data, compact }: { data: SpeciesDetail; compact: boolean }) {
+function SpeciesMedia({ data, compact }: { data: SpeciesDetail; compact: boolean }) {
   const media = data.media;
   const info = data.info;
   const aspect = compact ? "aspect-[16/9]" : "aspect-[4/3]";
@@ -132,6 +132,14 @@ export function SpeciesHeader({ species }: { species: string }) {
           <div className="flex flex-col items-end gap-1.5">
             <IucnBadge ecology={data.ecology} />
             <TrendBadge trend={data.trend} />
+            {data.threshold_source === "default" && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full border border-coral/40 bg-coral/10 px-2 py-0.5 text-[11px] text-coral"
+                title="Too few expert/citizen checks to calibrate BirdNET for this species. Some detections may be false positives."
+              >
+                <AlertTriangle className="h-3 w-3" /> Not yet validated · treat with caution
+              </span>
+            )}
           </div>
         </div>
         <div className="mt-3">

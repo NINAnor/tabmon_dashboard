@@ -15,10 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - context: .
-            image: ghcr.io/ninanor/dashboard-dashboard
-          - context: ./proxy
-            image: ghcr.io/ninanor/dashboard-proxy
           - context: ./api
             image: ghcr.io/ninanor/dashboard-api
           - context: ./web

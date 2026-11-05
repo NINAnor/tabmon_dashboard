@@ -245,3 +245,15 @@ def test_network_summary(client):
 def test_most_wanted_endpoint(client):
     # The fixture's only species is calibrated, so nothing is "wanted".
     assert client.get("/api/public/most-wanted").json() == []
+
+
+def test_species_diel(client):
+    d = client.get(
+        "/api/public/phenology/diel", params={"species": "Cuculus canorus"}
+    ).json()
+    assert len(d["overall"]) == 24 and len(d["grid"]) == 12
+    # The fixture only has detections at 05:00, with effort at 05:00 and 06:00.
+    assert d["peak_hour"] == 5
+    assert d["overall"][6] == 0 and d["overall"][0] is None
+    assert set(d["countries"]) == {"Spain", "Norway"}
+    assert d["night_share"] == 0

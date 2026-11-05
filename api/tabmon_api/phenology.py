@@ -247,6 +247,75 @@ def place_profile(
     }
 
 
+def species_diel(
+    store: DataStore, settings: Settings, species: str, year: int | None
+) -> dict:
+    """Hourly detection rate (local time) per country and overall, plus a month x hour
+    grid, at the sites where the species occurs."""
+    rows = store.query(
+        f"""
+        WITH occ AS (SELECT DISTINCT site_id FROM phenology WHERE species = ?),
+        ef AS (
+            SELECT s.country, month(e.date) AS month, e.hour,
+                   sum(e.recorded_minutes) AS minutes
+            FROM effort e JOIN sites s USING (site_id)
+            WHERE e.site_id IN (SELECT site_id FROM occ) {_year_clause("e", year)}
+            GROUP BY ALL
+        ),
+        ph AS (
+            SELECT s.country, month(p.date) AS month, p.hour, sum(p.n_detections) AS n
+            FROM phenology p JOIN sites s USING (site_id)
+            WHERE p.species = ? {_year_clause("p", year)}
+            GROUP BY ALL
+        )
+        SELECT ef.country, ef.month, ef.hour, ef.minutes, COALESCE(ph.n, 0) AS n
+        FROM ef LEFT JOIN ph USING (country, month, hour)
+        """,
+        [species, species],
+    )
+
+    def profile(filtered: list[dict]) -> list[float | None]:
+        n = [0.0] * 24
+        m = [0.0] * 24
+        for r in filtered:
+            n[r["hour"]] += r["n"]
+            m[r["hour"]] += r["minutes"]
+        return [
+            n[h] / (m[h] / 60) if m[h] >= settings.min_hour_effort_minutes else None
+            for h in range(24)
+        ]
+
+    overall = profile(rows)
+    countries = {}
+    for country in sorted({r["country"] for r in rows}):
+        sub = [r for r in rows if r["country"] == country]
+        if sum(r["n"] for r in sub) >= 50:  # skip countries with only stray detections
+            countries[country] = profile(sub)
+
+    grid = [[None] * 24 for _ in range(12)]
+    cells: dict[tuple[int, int], list[float]] = {}
+    for r in rows:
+        acc = cells.setdefault((r["month"], r["hour"]), [0.0, 0.0])
+        acc[0] += r["n"]
+        acc[1] += r["minutes"]
+    for (month, hour), (n, minutes) in cells.items():
+        if minutes >= settings.min_hour_effort_minutes:
+            grid[month - 1][hour] = n / (minutes / 60)
+
+    valid = [(h, v) for h, v in enumerate(overall) if v is not None]
+    total = sum(v for _, v in valid)
+    night = sum(v for h, v in valid if h in (23, 0, 1, 2, 3))
+    return {
+        "species": species,
+        "year": year,
+        "overall": overall,
+        "countries": countries,
+        "grid": grid,
+        "peak_hour": max(valid, key=lambda x: x[1])[0] if total > 0 else None,
+        "night_share": night / total if total > 0 else None,
+    }
+
+
 def species_summary(store: DataStore, settings: Settings, species: str) -> dict | None:
     """Card numbers: share of recorded hours with the species, and a year trend."""
     base = store.one("SELECT * FROM species WHERE species = ?", [species])

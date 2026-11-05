@@ -1,9 +1,9 @@
 "use client";
 
-import { Headphones } from "lucide-react";
+import { Headphones, Mail } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { labLink } from "@/lib/lab";
+import { CONTACT_URL, labLink } from "@/lib/lab";
 
 const PUBLIC_TABS = [
   ["/", "Network"],
@@ -55,15 +55,20 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
 
         <div className="flex shrink-0 items-center gap-2">
           {variant === "public" && (
-            <a
-              href={labLink()}
-              target="_blank"
-              rel="noreferrer"
-              className="hidden items-center gap-1.5 rounded-full bg-amber px-3.5 py-1.5 text-xs font-medium text-ocean-950 hover:bg-amber/90 md:inline-flex"
-              title="Listen to recordings and confirm what BirdNET heard"
-            >
-              <Headphones className="h-3.5 w-3.5" /> Help identify birds
-            </a>
+            <>
+              <a
+                href={labLink()}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full bg-amber px-2.5 py-1.5 text-xs font-medium text-ocean-950 hover:bg-amber/90 md:px-3.5"
+                title="Listen to recordings and confirm what BirdNET heard"
+              >
+                <Headphones className="h-3.5 w-3.5" /> <span className="hidden md:inline">Help identify birds</span>
+              </a>
+              <a href={CONTACT_URL} className="pill" title="Email the TABMON team">
+                <Mail className="h-3.5 w-3.5" /> <span className="hidden md:inline">Contact</span>
+              </a>
+            </>
           )}
           <Link href={variant === "public" ? "/ops" : "/"} className="pill">
             {variant === "public" ? "Team area" : "Public site"}
@@ -74,7 +79,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
   );
 }
 
-export function Footer() {
+function Footer() {
   return (
     <footer className="border-t border-white/10 py-10">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 text-sm text-white/40 md:flex-row">

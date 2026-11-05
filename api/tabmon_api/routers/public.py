@@ -293,6 +293,19 @@ def phenology_species(
     )
 
 
+@router.get("/phenology/diel")
+def phenology_diel(
+    species: str,
+    year: int | None = None,
+    store: DataStore = Depends(get_store),
+    settings: Settings = Depends(get_settings),
+):
+    return store.cached(
+        ("diel", species, year),
+        lambda: phenology.species_diel(store, settings, species, year),
+    )
+
+
 @router.get("/phenology/place")
 def phenology_place(
     id: str,  # noqa: A002

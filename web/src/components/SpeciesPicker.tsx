@@ -1,12 +1,12 @@
 "use client";
 
-import { CheckCircle2, Search } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetcher, type SpeciesRow } from "@/lib/api";
 import { compact, displayName, pct } from "@/lib/format";
 
-export const FEATURED = [
+const FEATURED = [
   "Cuculus canorus",
   "Hirundo rustica",
   "Phylloscopus trochilus",
@@ -40,7 +40,7 @@ function Row({ s, onPick }: { s: SpeciesRow; onPick: () => void }) {
           {s.calibrated ? (
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-teal" />
           ) : (
-            <span className="h-3.5 w-3.5 shrink-0" />
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-coral/60" aria-label="Not yet validated" />
           )}
           <span className="truncate">
             {displayName(s)} <span className="italic text-white/40">{s.species}</span>
@@ -114,7 +114,10 @@ export function SpeciesPicker({
                 {validated.map((s) => (
                   <Row key={s.species} s={s} onPick={() => pick(s.species)} />
                 ))}
-                <li className="px-3 py-2 text-xs text-white/40">Type to search all {data.length} species</li>
+                <li className="px-3 py-2 text-xs text-white/40">
+                  Type to search all {data.length} species ·{" "}
+                  <AlertTriangle className="inline h-3 w-3 text-coral/60" /> = not yet validated, treat with caution
+                </li>
               </>
             )}
           </ul>

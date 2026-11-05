@@ -60,7 +60,7 @@ services:
       - default
       - traefik-proxy
 
-  # Rebuilds data/preprocessed/dashboard/*.parquet. Run on a schedule:
+  # Rebuilds data/preprocessed/dashboard/*.parquet (run nightly by the scheduler):
   #   docker compose run --rm preprocessing
   preprocessing:
     build:
@@ -71,8 +71,8 @@ services:
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
       S3_ENDPOINT: ${S3_ENDPOINT:-s3.nird.sigma2.no}
 
-  # Pre-cuts the example clips into data/preprocessed/dashboard/clips/ (incremental).
-  # Run after preprocessing:  docker compose run --rm clips
+  # Pre-cuts the example clips into data/preprocessed/dashboard/clips/ (incremental,
+  # run nightly by the scheduler after preprocessing):  docker compose run --rm clips
   clips:
     build:
       context: ./api
@@ -97,30 +97,26 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    # Internal only: the API is the single public entry point to the bucket.
     labels:
-      - "traefik.http.routers.tabmon__dashboard_rclone.rule=PathPrefix(`/data/`)"
-      - "traefik.http.routers.tabmon__dashboard_rclone.entrypoints=web"
-      - "traefik.http.routers.tabmon__dashboard_rclone.priority=10"
-      - "traefik.http.services.tabmon__dashboard_rclone.loadbalancer.server.port=8081"
-      - "traefik.http.routers.tabmon__dashboard_rclone.middlewares=tabmon__dashboard_rclone_auth"
-      - "traefik.http.middlewares.tabmon__dashboard_rclone_auth.basicauth.users=test:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/"
-    networks:
-      - default
-      - traefik-proxy
+      - "traefik.enable=false"
 
-  # Legacy Streamlit dashboard, kept during the transition:
-  #   docker compose --profile legacy up streamlit   ->  http://localhost:8501
-  streamlit:
-    build:
-      context: .
-    profiles: ["legacy"]
+  # Runs preprocessing + clips every night (crond in a docker:cli container that
+  # drives this compose project through the host Docker socket).
+  # Logs: docker compose logs -f scheduler   ·   Run now: docker compose exec scheduler sh /project/scheduler/nightly.sh
+  scheduler:
+    image: docker:cli
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/project/scheduler/entrypoint.sh"]
+    working_dir: /project
     environment:
-      - BASE_DATA_DIR="http://rclone:8081/data/"
-    ports:
-      - 8501:8501
-    depends_on:
-      rclone:
-        condition: service_healthy
+      COMPOSE_PROJECT_NAME: dashboard
+      SCHEDULE: ${NIGHTLY_SCHEDULE:-0 2 * * *}
+    volumes:
+      - /run/user/210015162/docker.sock:/var/run/docker.sock
+      - ./:/project:ro
+      # Compose resolves the rclone secret path when parsing this file.
+      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
     labels:
       - "traefik.enable=false"
 
