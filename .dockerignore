@@ -4,3 +4,9 @@ __pycache__/
 .git
 .pre-commit-config.yaml
 .venv
+web/
+api/
+preprocessing/
+.cache
+.duckdb
+assets/

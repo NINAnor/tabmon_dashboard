@@ -1,148 +1,101 @@
-# TABMON Dashboard ⭐
+# TABMON Dashboard
 
-A modern, secure Streamlit dashboard for visualizing and managing device deployment metadata for the [TABMON project](https://www.nina.no/english/TABMON).
+Dashboard for the [TABMON project](https://www.nina.no/english/TABMON): a public
+**sound map** that follows bird phenology from Spain to Arctic Norway, plus a
+login-protected **team area** for device monitoring.
 
-## 🎯 Features
+## What's inside
 
-### 📊 **Dashboard Components**
-- **🗺️ Map Visualization**: Interactive maps with real-time device monitoring and status tracking
-- **🎵 Audio Analysis**: Advanced audio file browsing, playback, and analysis tools
-- **📋 Site Metadata**: Comprehensive site information and metadata management
-
-### 🔐 **Security & Authentication**
-- HTTP Basic Authentication for secure data access
-- Environment-based credential management
-- Docker secrets integration for production deployments
-
-### 🚀 **Modern Architecture**
-- Service layer separation for data handling
-- Component-based UI architecture
-- Efficient data processing with DuckDB
-- Responsive design with custom CSS styling
-
-## 🏗️ Architecture
-
-The dashboard leverages:
-- **`rclone`** to serve data from S3 storage
-- **`duckdb`** for optimized querying of `.parquet` files
-- **Docker Compose** for multi-service orchestration
-- **Reverse proxy** with authentication for secure access
+| Path | What | Stack |
+|---|---|---|
+| `web/` | Public site + team area | Next.js, React, Tailwind, MapLibre, d3, wavesurfer.js |
+| `api/` | Data API, auth, clip extraction | FastAPI, DuckDB, ffmpeg |
+| `preprocessing/` | Builds the aggregated tables the API serves | DuckDB (reads S3 directly) |
+| `src/` | Legacy Streamlit dashboard (kept during the transition) | Streamlit |
 
 ```
-┌─────────────────┐    ┌──────────────┐    ┌─────────────┐
-│   Dashboard     │────│ Reverse Proxy│────│   rclone    │
-│   (Streamlit)   │    │   (nginx)    │    │  (S3 data)  │
-└─────────────────┘    └──────────────┘    └─────────────┘
+            ┌────────── Traefik ──────────┐
+   /  ───►  web (Next.js)                 │
+   /api ─►  api (FastAPI + DuckDB) ──► rclone ──► S3 bucket
+                                          ▲
+   preprocessing (scheduled job) ─────────┘ writes data/preprocessed/dashboard/*.parquet
 ```
 
-## 🚀 Quick Start
+### Public site (`/`)
+- **When does it arrive where?** Ridgeline of weekly detection rate for a species, one
+  row per landscape (cluster), ordered by latitude. Arrival (10% of peak) and
+  mid-season (50% of activity) markers, and a dashed line tracing the wave north.
+  The map recolours by mid-season date.
+- **What does this place sound like?** Species x week calendar and an "acoustic clock"
+  (hour of day x month) for any landscape, with playable example clips.
+- **Species cards**: share of recorded hours with the species (with the spread
+  across sites), a year-on-year trend, validation status and Macaulay Library media.
 
-### Prerequisites
-- Docker and Docker Compose
-- Access credentials for the S3 bucket
+### Team area (`/ops`, login required)
+Device health map and table (exact coordinates), daily recording activity heatmap,
+dataset statistics, site pages with deployment history, field photos and the
+site-level soundscape, and validation progress.
 
-### Environment Setup
+## Method notes
 
-1. **Create environment file**:
+- **Effort correction.** Every rate is `detections / recorded hours`. Recording effort
+  comes from `index.parquet` (5-minute files) and only counts deployment-days that
+  BirdNET has processed, so gaps in recording or analysis never look like absences.
+  Weeks with less than 2 h of recording are hatched.
+- **Thresholds.** Per-species BirdNET confidence thresholds are calibrated on the
+  expert and citizen validations: the lowest threshold reaching 90% precision, or the
+  most precise threshold above 70%. Species whose validations never reach 70% are
+  excluded. Species without validations use a conservative 0.7.
+- **Sparse rows.** Landscapes with very few detections of a species (mostly isolated
+  false positives) are drawn faded and left out of the arrival line.
+- **Trends** compare the two most recent years using only site-weeks recorded in both.
+- **Privacy.** Public endpoints only return cluster centroids snapped to a 0.1° grid,
+  never site coordinates, photos or bucket paths. Site-level data needs a login.
+
+## Running locally
+
+Requirements: Docker, an rclone remote `nirds3` in `~/.config/rclone/rclone.conf`.
+
 ```bash
-cp .env.example .env
+cp .env.example .env            # set DASHBOARD_PASSWORD and SESSION_SECRET
+docker compose run --rm preprocessing   # once, then on a schedule (e.g. nightly cron)
+docker compose up -d --build
 ```
 
-2. **Configure credentials in `.env`**:
+Open http://localhost:8050. The legacy Streamlit app can still be started with
+`docker compose --profile legacy up streamlit` (http://localhost:8501).
+
+### Development without Docker
+
 ```bash
-AUTH_USERNAME=guest
-AUTH_PASSWORD=your_password_here
+# Build the tables into a local folder that mirrors the bucket layout
+cd preprocessing
+S3_ACCESS_KEY_ID=... S3_SECRET_ACCESS_KEY=... uv run build_tables.py \
+  --source s3://bencretois-ns8129k-proj-tabmon \
+  --out ../.mirror/data/preprocessed/dashboard --names birdnet_multilingual.csv
+# (also copy data/preprocessed/*.csv from the bucket into ../.mirror/data/preprocessed/)
+
+cd ../api
+DATA_URL=../.mirror SESSION_SECRET=dev DASHBOARD_PASSWORD=dev uv run uvicorn tabmon_api.main:app --reload
+uv run pytest
+
+cd ../web
+npm install
+npm run dev                      # proxies /api to http://localhost:8000
 ```
 
-3. **Start the dashboard**:
-```bash
-docker compose up
+## Adding species media
+
+`api/data/species_media.csv` maps species to Macaulay Library asset IDs:
+
+```csv
+species,ml_photo_asset,ml_audio_asset,photo_credit,audio_credit
+Cuculus canorus,123456789,,Photographer Name,
 ```
 
-4. **Access the dashboard**:
-   - Open your browser to `http://localhost:8085`
-   - Login with the credentials from your `.env` file
+Photos are embedded from Macaulay Library (not re-hosted), with credit and a link back.
 
-## 🔧 Configuration
+## Acknowledgment
 
-### Environment Variables
-- `AUTH_USERNAME`: HTTP Basic Auth username
-- `AUTH_PASSWORD`: HTTP Basic Auth password
-
-### Data Sources
-The dashboard connects to remote S3 storage via rclone. Configure your data paths in the `docker-compose.yml` file or create a `stack.env` for production deployments.
-
-## 📱 Usage
-
-### Map Dashboard
-- View device locations on interactive maps
-- Monitor device status and connectivity
-- Filter by country, region, and deployment status
-
-### Audio Dashboard
-- Browse audio recordings by device and time
-- Play audio files with secure authentication
-- Export recording lists and metadata
-- View audio statistics and recording frequency
-
-### Site Metadata Dashboard
-- Manage site information and device metadata
-- View deployment details and configurations
-- Access device images and documentation
-
-## 🧪 Testing
-
-Run component tests:
-```bash
-python test_components.py
-```
-
-## 🐳 Production Deployment
-
-For production deployment using Portainer or similar container orchestration:
-
-1. Use Docker secrets for credentials:
-```yaml
-secrets:
-  htpasswd:
-    file: ./htpasswd
-```
-
-2. Configure environment variables appropriately
-3. Ensure proper network security and access controls
-
-See `DEPLOYMENT.md` for detailed deployment instructions.
-
-## 🔒 Security Notes
-
-- Never commit credentials to version control
-- Use `.env` files for local development only
-- Use Docker secrets or proper secret management for production
-- The reverse proxy provides an additional security layer
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes and test thoroughly
-4. Commit with clear, descriptive messages
-5. Push and create a pull request
-
-## 📝 Changelog
-
-### Latest Updates
-- ✨ Modernized audio dashboard with enhanced playback and analysis features
-- 🔐 Implemented secure authentication system with environment-based credentials
-- 🎨 Updated UI with modern styling and responsive design
-- 🏗️ Refactored to service-based architecture for better maintainability
-- 🧹 Cleaned up codebase and removed legacy files
-
-## 👥 Acknowledgment
-
-The dashboard has been developed by:
-- [Benjamin Cretois](mailto:benjamin.cretois@nina.no) - Lead Developer
-- [Francesco Frassinelli](mailto:francesco.frassinelli@nina.no) - Contributor
-
----
-
-*For technical support or questions, please open an issue on the repository.*
+Developed by [Benjamin Cretois](mailto:benjamin.cretois@nina.no) and
+[Francesco Frassinelli](mailto:francesco.frassinelli@nina.no).

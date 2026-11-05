@@ -1,11 +1,10 @@
-version: '3.8'
-
 services:
   traefik:
     image: traefik:v2.10
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=true"
       - "--entrypoints.web.address=:80"
     ports:
       - 8080:8080  # Traefik dashboard
@@ -17,29 +16,62 @@ services:
       - default
       - traefik-proxy
 
-  dashboard:
+  # Next.js frontend: public sound map + team area.
+  web:
     build:
-      context: .
-    #image: ghcr.io/ninanor/dashboard-dashboard:main@sha-9a71d5a
+      context: ./web
+    restart: unless-stopped
+    depends_on:
+      - api
+    labels:
+      - "traefik.http.routers.tabmon__web.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.tabmon__web.entrypoints=web"
+      - "traefik.http.routers.tabmon__web.priority=1"
+      - "traefik.http.services.tabmon__web.loadbalancer.server.port=3000"
+    networks:
+      - default
+      - traefik-proxy
+
+  # FastAPI + DuckDB. Reads the bucket through rclone; never exposes raw paths.
+  api:
+    build:
+      context: ./api
     environment:
-      - BASE_DATA_DIR="http://rclone:8081/data/"
+      DATA_URL: http://rclone:8081/data
+      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:-tabmon}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:?set DASHBOARD_PASSWORD in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CLIP_CACHE_DIR: /cache/clips
+    volumes:
+      - clip-cache:/cache
     depends_on:
       rclone:
         condition: service_healthy
     restart: unless-stopped
     labels:
-      - "traefik.http.routers.tabmon__dashboard.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.tabmon__dashboard.entrypoints=web"
-      - "traefik.http.routers.tabmon__dashboard.priority=1"
-      - "traefik.http.services.tabmon__dashboard.loadbalancer.server.port=8501"
+      - "traefik.http.routers.tabmon__api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.tabmon__api.entrypoints=web"
+      - "traefik.http.routers.tabmon__api.priority=20"
+      - "traefik.http.services.tabmon__api.loadbalancer.server.port=8000"
     networks:
       - default
       - traefik-proxy
+
+  # Rebuilds data/preprocessed/dashboard/*.parquet. Run on a schedule:
+  #   docker compose run --rm preprocessing
+  preprocessing:
+    build:
+      context: ./preprocessing
+    profiles: ["jobs"]
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-s3.nird.sigma2.no}
+
   rclone:
     image: rclone/rclone:1.69
     command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/
-    ports:
-      - 8081:8081
     environment:
       RCLONE_CONFIG: /run/secrets/tabmon_rclone
     secrets:
@@ -61,6 +93,25 @@ services:
     networks:
       - default
       - traefik-proxy
+
+  # Legacy Streamlit dashboard, kept during the transition:
+  #   docker compose --profile legacy up streamlit   ->  http://localhost:8501
+  streamlit:
+    build:
+      context: .
+    profiles: ["legacy"]
+    environment:
+      - BASE_DATA_DIR="http://rclone:8081/data/"
+    ports:
+      - 8501:8501
+    depends_on:
+      rclone:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=false"
+
+volumes:
+  clip-cache:
 
 secrets:
   tabmon_rclone:

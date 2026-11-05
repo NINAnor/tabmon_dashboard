@@ -1,0 +1,15 @@
+[project]
+name = "tabmon-preprocessing"
+version = "0.1.0"
+description = "Builds the aggregated tables served by the TABMON dashboard API"
+requires-python = ">=3.11"
+license = {text = "GPL-3.0+"}
+authors = [{name = "Benjamin Cretois", email = "benjamin.cretois@nina.no"}]
+dependencies = ["duckdb>=1.2.0"]
+
+[tool.ruff]
+fix = true
+
+[tool.ruff.lint]
+ignore = ["COM812", "S608", "E501"]
+select = ["E", "W", "I", "F", "UP", "S", "B", "A", "COM", "LOG", "PTH", "Q"]
