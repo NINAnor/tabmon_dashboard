@@ -48,6 +48,15 @@ async def clip_file(
             return target
         tmp = target.with_suffix(".part.mp3")
         offset = max(0.0, start_s - settings.clip_pre_roll_s)
+        # Seeking over HTTP makes ffmpeg issue many small range requests, each a
+        # round trip to S3 through rclone. Fetching the 5 MB file once is faster.
+        source = bucket_url(settings, path)
+        download = None
+        if is_remote(settings):
+            download = cache / f"{clip_id}.src.mp3"
+            content, _ = await fetch_bytes(settings, path)
+            download.write_bytes(content)
+            source = str(download)
         proc = await asyncio.create_subprocess_exec(
             ffmpeg,
             "-nostdin",
@@ -58,7 +67,7 @@ async def clip_file(
             "-t",
             f"{settings.clip_length_s:.2f}",
             "-i",
-            bucket_url(settings, path),
+            source,
             "-ac",
             "1",
             "-b:a",
@@ -68,6 +77,8 @@ async def clip_file(
             stderr=asyncio.subprocess.PIPE,
         )
         _, stderr = await proc.communicate()
+        if download is not None:
+            download.unlink(missing_ok=True)
         if proc.returncode != 0 or not tmp.exists():
             log.error("ffmpeg failed for %s: %s", clip_id, stderr.decode()[-500:])
             tmp.unlink(missing_ok=True)
@@ -84,7 +95,7 @@ async def fetch_bytes(settings: Settings, path: str) -> tuple[bytes, str]:
             raise HTTPException(404, "File not available")
         ctype = "image/png" if local.suffix.lower() == ".png" else "image/jpeg"
         return local.read_bytes(), ctype
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=settings.upstream_timeout_s) as client:
         resp = await client.get(bucket_url(settings, path))
     if resp.status_code != 200:
         raise HTTPException(resp.status_code, "Upstream file not available")

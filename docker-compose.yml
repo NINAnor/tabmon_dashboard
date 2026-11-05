@@ -1,14 +1,16 @@
 services:
   traefik:
-    image: traefik:v2.10
+    image: traefik:v3.6
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=true"
+      # Only route containers of this compose project, not other stacks on the host.
+      - "--providers.docker.constraints=Label(`com.docker.compose.project`,`dashboard`)"
       - "--entrypoints.web.address=:80"
     ports:
-      - 8080:8080  # Traefik dashboard
-      - 8050:80      # HTTP
+      - 8088:8080  # Traefik dashboard
+      - 8058:80      # HTTP
     volumes:
       - /run/user/210015162/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped

@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     clip_cache_dir: Path = Path("/tmp/tabmon-clips")  # noqa: S108
     clip_pre_roll_s: float = 1.0
     clip_length_s: float = 5.0
+    # Some objects on NIRD S3 take >30 s on first read.
+    upstream_timeout_s: float = 180.0
 
     species_media_csv: Path = Path(__file__).parent.parent / "data/species_media.csv"
 

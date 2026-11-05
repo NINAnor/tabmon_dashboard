@@ -49,6 +49,7 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
   const ws = useRef<WaveSurfer | null>(null);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!active || !container.current) return;
@@ -63,11 +64,18 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
       barGap: 1,
       barRadius: 2,
     });
-    w.on("ready", () => w.play());
+    setLoading(true);
+    w.on("ready", () => {
+      setLoading(false);
+      w.play();
+    });
     w.on("play", () => setPlaying(true));
     w.on("pause", () => setPlaying(false));
     w.on("finish", () => setPlaying(false));
-    w.on("error", () => setError(true));
+    w.on("error", () => {
+      setLoading(false);
+      setError(true);
+    });
     ws.current = w;
     return () => {
       w.destroy();
@@ -90,7 +98,10 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
           error ? (
             <p className="text-xs text-coral">Recording unavailable</p>
           ) : (
-            <div ref={container} />
+            <>
+              {loading && <p className="text-xs text-white/45">Fetching recording from the archive…</p>}
+              <div ref={container} />
+            </>
           )
         ) : (
           <>
