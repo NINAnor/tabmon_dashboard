@@ -19,9 +19,6 @@ jobs:
             image: ghcr.io/ninanor/dashboard-api
           - context: ./web
             image: ghcr.io/ninanor/dashboard-web
-          - context: ./preprocessing
-            image: ghcr.io/ninanor/dashboard-preprocessing
-
     permissions:
       contents: read
       packages: write

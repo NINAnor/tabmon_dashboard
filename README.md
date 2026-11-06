@@ -8,17 +8,14 @@ Arctic Norway. The network continues from October 2026 within
 | Path | What | Stack |
 |---|---|---|
 | `web/` | Public site (Network · Sites · Species · Project) and team area (`/ops`) | Next.js, React, Tailwind, MapLibre, d3, wavesurfer.js |
-| `api/` | Data API, team login, clip serving, clip pre-cutting job | FastAPI, DuckDB, ffmpeg, boto3 |
-| `preprocessing/` | Builds the aggregated tables the API serves | DuckDB (reads S3 directly) |
-| `scheduler/` | Nightly cron that runs preprocessing + clip cutting | docker:cli + crond |
+| `api/` | Data API, team login, and clip serving | FastAPI, DuckDB, ffmpeg |
 
 ```
                  ┌──── Traefik ────┐
      /      ──►  web (Next.js)     │
      /api   ──►  api (FastAPI) ────┼──► rclone (internal) ──► S3 bucket
                                    │
-     scheduler (02:00 UTC) ──► preprocessing ──► data/preprocessed/dashboard/*.parquet
-                           └─► clips ──────────► data/preprocessed/dashboard/clips/v3/*.mp3
+     data_transfer (daily 06:00 UTC; steps 05/06) ──► data/preprocessed/dashboard/
 ```
 
 ## Public site
@@ -40,6 +37,8 @@ species preselected.
 
 ## Method notes
 
+These table-building methods are implemented by `data_transfer` in `05_dashboard/`.
+
 - **Effort correction.** Rates are detections per recorded hour. Effort comes from
   `index.parquet` (5-minute files) and only counts deployment-days BirdNET has processed,
   so gaps in recording or analysis never look like absences.
@@ -58,7 +57,14 @@ species preselected.
   never site coordinates, photos or bucket paths. Site-level data needs a login.
 
 Trait data: Storchová & Hořák (2018) and AVONET (Tobias et al. 2022); see
-`preprocessing/reference/README.md`.
+the references used by `05_dashboard/` in
+[WP1-data-transfer](https://github.com/NINAnor/WP1-data-transfer).
+
+Dashboard data is produced by the
+[data_transfer pipeline](https://github.com/NINAnor/WP1-data-transfer), which runs daily
+at 06:00 UTC (step 05 builds dashboard tables; step 06 pre-cuts clips). See the
+[data contract](docs/data-contract.md) for the API input schemas and compatibility
+requirements.
 
 ## Running
 
@@ -66,16 +72,11 @@ Requirements: Docker (rootless socket path is set in `docker-compose.yml`), an r
 remote `nirds3` in `~/.config/rclone/rclone.conf`.
 
 ```bash
-cp .env.example .env                     # passwords, session secret, S3 keys
-docker compose run --rm preprocessing    # first run only; afterwards nightly
-docker compose run --rm clips
+cp .env.example .env  # set dashboard password and session secret
 docker compose up -d --build
 ```
 
-Open http://localhost:8058 (Traefik dashboard on :8088). The scheduler then refreshes
-the data every night (`NIGHTLY_SCHEDULE`, cron syntax, UTC). Logs:
-`docker compose logs -f scheduler`; run immediately:
-`docker compose exec scheduler sh /project/scheduler/nightly.sh`.
+Open http://localhost:8058 (Traefik dashboard on :8088).
 
 ### Development
 

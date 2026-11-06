@@ -50,7 +50,7 @@ class DataStore:
             url = self._url(self.settings.tables_prefix, f"{table}.parquet")
             con.execute(f"CREATE TABLE {table} AS SELECT * FROM read_parquet('{url}')")
 
-        # Optional: produced by the Wikipedia step of the preprocessing job.
+        # Optional enrichment produced by the data-transfer pipeline.
         url = self._url(self.settings.tables_prefix, "species_info.parquet")
         try:
             con.execute(

@@ -30,7 +30,7 @@ def bucket_url(settings: Settings, path: str) -> str:
 
 
 def precut_key(settings: Settings, clip_id: str) -> str:
-    """Bucket path of a clip produced by the cut_clips job."""
+    """Bucket path of a pre-cut clip produced by the data-transfer pipeline."""
     return f"{settings.tables_prefix.strip('/')}/clips/{mp3.CLIP_VERSION}/{clip_id}.mp3"
 
 

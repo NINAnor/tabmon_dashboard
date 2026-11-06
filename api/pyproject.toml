@@ -6,7 +6,6 @@ requires-python = ">=3.11"
 license = {text = "GPL-3.0+"}
 authors = [{name = "Benjamin Cretois", email = "benjamin.cretois@nina.no"}]
 dependencies = [
-  "boto3>=1.43.124",
   "duckdb>=1.2.0",
   "fastapi>=0.115",
   "httpx>=0.28",

@@ -9,9 +9,9 @@ class Settings(BaseSettings):
 
     # Root of the bucket as served by rclone (or a local mirror for development).
     data_url: str = "http://rclone:8081/data"
-    # Where build_tables.py writes its output, relative to data_url.
+    # Dashboard tables produced by the data-transfer pipeline, relative to data_url.
     tables_prefix: str = "data/preprocessed/dashboard"
-    # Existing preprocessed CSVs (device status, recording matrix, ...).
+    # Legacy CSVs, relative to data_url.
     legacy_prefix: str = "data/preprocessed"
     refresh_seconds: int = 3600
 
