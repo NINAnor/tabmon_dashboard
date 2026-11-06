@@ -69,10 +69,12 @@ export function ClusterMap({
   const geojson = useMemo(() => {
     const size = scaleSqrt().domain([0, Math.max(1, ...clusters.map((c) => c.hours))]).range([5, 26]);
     const richness = scaleSequential(interpolateYlGnBu).domain([0, Math.max(1, ...clusters.map((c) => c.n_species)) * 1.15]);
-    const medians = (phenology?.groups ?? []).filter((g) => !g.sparse).map((g) => g.median_week).filter((w): w is number => w !== null);
-    const arrival = scaleSequential(interpolateViridis).domain([
-      Math.min(...medians, 52),
-      Math.max(...medians, 1),
+    const starts = (phenology?.groups ?? [])
+      .filter((g) => !g.sparse && g.total > 0 && g.onset_week !== null)
+      .map((g) => ((g.onset_week! - (phenology?.season_start_week ?? 1) + 53) % 53));
+    const startColor = scaleSequential(interpolateViridis).domain([
+      Math.min(...starts, 52),
+      Math.max(...starts, 1),
     ]);
     if (phenology && week) {
       const maxRate = Math.max(
@@ -104,10 +106,10 @@ export function ClusterMap({
       type: "FeatureCollection" as const,
       features: clusters.map((c) => {
         const g = phen[c.id];
-        const detected = g && !g.sparse && g.total > 0 && g.median_week;
+        const detected = g && !g.sparse && g.total > 0 && g.onset_week !== null;
         const color = phenology
           ? detected
-            ? arrival(g.median_week!)
+            ? startColor((g.onset_week! - phenology.season_start_week + 53) % 53)
             : "#33414d"
           : richness(c.n_species);
         return {
@@ -185,10 +187,13 @@ export function ClusterMap({
                 hoveredPhen.total > 0 ? (
                   <div className="mt-1.5 space-y-0.5">
                     <div>
-                      Arrival: <b>{hoveredPhen.first_week ? weekLabel(phenology.week_starts, hoveredPhen.first_week) : "–"}</b>
+                      Starts: <b>{hoveredPhen.onset_week !== null ? weekLabel(phenology.week_starts, hoveredPhen.onset_week) : "–"}</b>
                     </div>
                     <div>
-                      Mid-season: <b>{hoveredPhen.median_week ? weekLabel(phenology.week_starts, hoveredPhen.median_week) : "–"}</b>
+                      Peak: <b>{hoveredPhen.peak_week !== null ? weekLabel(phenology.week_starts, hoveredPhen.peak_week) : "–"}</b>
+                    </div>
+                    <div>
+                      Falls silent: <b>{hoveredPhen.end_week !== null ? weekLabel(phenology.week_starts, hoveredPhen.end_week) : "–"}</b>
                     </div>
                     <div>{int(hoveredPhen.total)} detections</div>
                   </div>
@@ -211,7 +216,7 @@ export function ClusterMap({
             ? "Size & colour: this week vs each landscape's own peak"
             : "Size & colour: detections per hour this week"
           : phenology
-            ? "Colour: mid-season date (early → late) · Size: peak activity"
+            ? "Colour: start of the vocal season (early → late) · Size: peak activity"
             : "Colour: species richness · Size: hours recorded"}
         <div className="text-white/35">Locations are generalised to ~10 km</div>
         {phenology && week && (

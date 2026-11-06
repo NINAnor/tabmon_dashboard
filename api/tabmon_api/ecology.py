@@ -38,28 +38,32 @@ MIGRATION_LABELS = {
 
 MIGRATION_TEXT = {
     "long_distance": (
-        "A long-distance migrant that winters south of the Sahara. Expect it only in "
-        "the warm half of the year: the rising edge of each ridge marks spring arrival, "
-        "and activity fades after breeding as birds fall quiet and leave. Arrival "
-        "should come later further north."
+        "A long-distance migrant that winters south of the Sahara. The amber spring "
+        "wave marks the onset of the vocal season moving north, while the coral autumn "
+        "wave marks its end, earlier in the north. Recordings show when birds fall "
+        "silent, which can be weeks before they leave; some species call at night on migration."
     ),
     "short_distance": (
-        "A short-distance migrant: many birds winter in southern and western Europe. "
-        "It can be heard much of the year in the south, but mainly in spring and "
-        "summer in the north. Spring peaks mix song with birds on passage."
+        "A short-distance migrant, with many birds wintering in southern and western "
+        "Europe. The amber spring wave marks the onset of the vocal season moving "
+        "north, while the coral autumn wave marks its end, earlier in the north. "
+        "Recordings show when birds fall silent, sometimes weeks before they leave; "
+        "some species call at night on migration."
     ),
     "partial": (
-        "A partial migrant: some populations stay year-round while others move "
-        "south. Peaks mostly reflect the singing season, so arrival timing is "
-        "only partly visible."
+        "A partial migrant: some populations stay year-round while others move south, "
+        "so the waves may be blurred or absent. Recordings show when birds fall silent, "
+        "not necessarily when they leave."
     ),
     "migrant": (
-        "A migratory species. Timing of the ridges reflects passage and the breeding "
-        "season; compare landscapes to see the season move north."
+        "The amber spring wave marks the onset of the vocal season moving north, while "
+        "the coral autumn wave marks its end, earlier in the north. Recordings show "
+        "when birds fall silent, which can be weeks before they leave; some species "
+        "call at night on migration."
     ),
     "resident": (
-        "A resident species present all year. Peaks show when it is most vocal "
-        "(usually the breeding season), not arrival, so no northward wave is expected."
+        "A resident species is present all year, so no migration wave is expected. "
+        "Peaks show when it is most vocal (usually the breeding season), not arrival or departure."
     ),
 }
 

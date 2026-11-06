@@ -49,23 +49,166 @@ def _group_meta(store: DataStore, level: str) -> dict[str, dict]:
     return {r["id"]: r for r in rows}
 
 
-def _milestones(weeks: list[dict]) -> tuple[int | None, int | None]:
-    """Arrival = first week reaching 10% of the peak rate; median = 50% of activity."""
-    usable = [w for w in weeks if not w["low_effort"] and w["rate"] is not None]
-    peak = max((w["rate"] for w in usable), default=0.0)
-    first = next(
-        (w["week"] for w in usable if peak > 0 and w["rate"] >= 0.1 * peak), None
+def season_start(groups: list[dict]) -> int:
+    """Find the quietest week in the normalized species-wide vocal profile."""
+    profile = [0.0] * 53
+    counts = [0] * 53
+    for group in groups:
+        if group.get("sparse"):
+            continue
+        usable = [
+            w for w in group["weeks"] if not w["low_effort"] and w["rate"] is not None
+        ]
+        peak = max((w["rate"] for w in usable), default=0.0)
+        if peak <= 0:
+            continue
+        for week in usable:
+            idx = week["week"] - 1
+            profile[idx] += week["rate"] / peak
+            counts[idx] += 1
+
+    averaged = [profile[i] / counts[i] if counts[i] else None for i in range(53)]
+    smoothed = []
+    for i in range(53):
+        neighbors = [
+            averaged[(i + offset) % 53]
+            for offset in (-1, 0, 1)
+            if averaged[(i + offset) % 53] is not None
+        ]
+        smoothed.append(sum(neighbors) / len(neighbors) if neighbors else None)
+    available = [i for i, value in enumerate(smoothed) if value is not None]
+    if not available:
+        return 1
+    return min(available, key=smoothed.__getitem__) + 1
+
+
+def season_markers(weeks: list[dict], start: int) -> dict:
+    """Return activity onset, peak, and end in a year rotated to ``start``.
+
+    The season is the continuous block of activity around the peak week: weeks
+    below 10% of the peak are background, and the block may bridge gaps of up to
+    ``MAX_SEASON_GAP`` weeks (quiet or unrecorded). Isolated bursts of false
+    positives months away from the peak are therefore ignored. Onset and end are
+    the weeks reaching 10% and 90% of the block's cumulative activity.
+    """
+    rotated = [weeks[(start - 1 + offset) % 53] for offset in range(53)]
+    usable = [w for w in rotated if not w["low_effort"] and w["rate"] is not None]
+    peak_rate = max((w["rate"] for w in usable), default=0.0)
+    if peak_rate <= 0:
+        return {"onset_week": None, "peak_week": None, "end_week": None}
+
+    def signal(w: dict) -> float:
+        if w["low_effort"] or w["rate"] is None:
+            return 0.0
+        return w["rate"] if w["rate"] >= BACKGROUND_FRACTION * peak_rate else 0.0
+
+    values = [signal(w) for w in rotated]
+    peak_idx = max(range(53), key=lambda i: values[i])
+
+    def extend(step: int) -> int:
+        edge, gap, i = peak_idx, 0, peak_idx + step
+        while 0 <= i < 53:
+            if values[i] > 0:
+                edge, gap = i, 0
+            else:
+                gap += 1
+                if gap > MAX_SEASON_GAP:
+                    break
+            i += step
+        return edge
+
+    lo, hi = extend(-1), extend(1)
+    block = range(lo, hi + 1)
+    total = sum(values[i] for i in block)
+    accumulated = 0.0
+    onset = end = None
+    for i in block:
+        accumulated += values[i]
+        if onset is None and accumulated >= 0.1 * total:
+            onset = rotated[i]["week"]
+        if end is None and accumulated >= 0.9 * total:
+            end = rotated[i]["week"]
+    return {
+        "onset_week": onset,
+        "peak_week": rotated[peak_idx]["week"],
+        "end_week": end,
+    }
+
+
+def _relative_day(week: int, start: int) -> float:
+    return ((week - start) % 53) * 7 + 3.5
+
+
+# Calendar windows (ISO weeks) for each wave: onsets in Feb-Jun, ends in May-Nov.
+# Landscapes whose season starts or ends outside them, typically southern wintering
+# populations active Oct-Mar, are left out of the fits.
+WAVE_WINDOWS = {"onset_week": (5, 26), "end_week": (18, 48)}
+
+
+def _wave_points(groups: list[dict], marker: str, start: int) -> list[dict]:
+    lo, hi = WAVE_WINDOWS[marker]
+    return [
+        {
+            "id": group["id"],
+            "lat": group["lat"],
+            "day": _relative_day(group[marker], start),
+            "weight": math.sqrt(group["total"]),
+        }
+        for group in groups
+        if not group.get("sparse")
+        and group.get(marker) is not None
+        and lo <= group[marker] <= hi
+        and group.get("lat") is not None
+        and group["total"] > 0
+    ]
+
+
+def fit_wave(points: list[dict], kind: str) -> dict:
+    """Fit relative timing against latitude using sqrt(total) weighted least squares."""
+    result = {
+        "n": len(points),
+        "clear": False,
+        "points": [
+            {"id": p.get("id"), "lat": p["lat"], "day": p["day"]} for p in points
+        ],
+    }
+    if len(points) < 5:
+        result["reason"] = "too few landscapes with enough detections"
+        return result
+
+    sw = sum(p["weight"] for p in points)
+    mx = sum(p["lat"] * p["weight"] for p in points) / sw
+    my = sum(p["day"] * p["weight"] for p in points) / sw
+    sxx = sum(p["weight"] * (p["lat"] - mx) ** 2 for p in points)
+    sxy = sum(p["weight"] * (p["lat"] - mx) * (p["day"] - my) for p in points)
+    syy = sum(p["weight"] * (p["day"] - my) ** 2 for p in points)
+    if sxx == 0:
+        result["reason"] = "no spread in latitude or timing"
+        return result
+
+    slope = sxy / sxx
+    r2 = sxy * sxy / (sxx * syy) if syy > 0 else 0.0
+    result.update(
+        {
+            "days_per_degree": slope,
+            "intercept": my - slope * mx,
+            "r2": r2,
+        }
     )
-    total = sum(w["rate"] for w in usable)
-    median = None
-    if total > 0:
-        acc = 0.0
-        for w in usable:
-            acc += w["rate"]
-            if acc >= total / 2:
-                median = w["week"]
-                break
-    return first, median
+    expected_sign = 1 if kind == "spring" else -1
+    if expected_sign * slope > 0.2 and r2 >= 0.3:
+        result["clear"] = True
+        if kind == "spring":
+            result["km_per_day"] = KM_PER_DEGREE_LAT / slope
+    else:
+        result["reason"] = (
+            "no clear north-south timing"
+            if r2 < 0.3
+            else "season does not move north"
+            if kind == "spring"
+            else "season does not move south"
+        )
+    return result
 
 
 def species_phenology(
@@ -115,7 +258,6 @@ def species_phenology(
                     "low_effort": minutes < settings.min_week_effort_minutes,
                 }
             )
-        first, median = _milestones(weeks)
         m = meta.get(gid, {})
         groups.append(
             {
@@ -125,8 +267,6 @@ def species_phenology(
                 "lat": m.get("lat"),
                 "total": sum(w["n"] for w in weeks),
                 "peak_rate": max((w["rate"] or 0) for w in weeks),
-                "first_week": first,
-                "median_week": median,
                 "weeks": weeks,
             }
         )
@@ -136,9 +276,32 @@ def species_phenology(
     max_total = max((g["total"] for g in groups), default=0)
     for g in groups:
         g["sparse"] = g["total"] < max(100, 0.01 * max_total)
+    start = season_start(groups)
+    for group in groups:
+        group.update(season_markers(group["weeks"], start))
+
+    ecology_row = store.one(
+        "SELECT migration FROM species_ecology WHERE species = ?", [species]
+    )
+    migration_kind = ecology_row["migration"] if ecology_row else None
+    show_waves = migration_kind in {"long_distance", "short_distance", "migrant"}
+    migration_reason = {
+        "resident": "resident species",
+        "partial": "partial migrant",
+    }.get(migration_kind)
+    if not show_waves and migration_reason is None:
+        migration_reason = "migration strategy unknown"
+    migration = {
+        "kind": migration_kind,
+        "show_waves": show_waves,
+        "reason": None if show_waves else migration_reason,
+        "spring": fit_wave(_wave_points(groups, "onset_week", start), "spring"),
+        "autumn": fit_wave(_wave_points(groups, "end_week", start), "autumn"),
+    }
     return {
         "species": species,
-        "migration": migration_speed(groups),
+        "season_start_week": start,
+        "migration": migration,
         "level": level,
         "year": year,
         "years": available_years(store),
@@ -451,48 +614,5 @@ def _trend(rows: list[dict], settings: Settings) -> dict:
 
 
 KM_PER_DEGREE_LAT = 111.2
-
-
-def migration_speed(groups: list[dict]) -> dict:
-    """Weighted fit of mid-season date (day of year) against latitude.
-
-    A clear positive slope means the season arrives later further north; the
-    inverse of the slope is how fast it travels. Each group is weighted by the
-    square root of its detections, so noisy small groups count less.
-    """
-    pts = [
-        (g["lat"], g["median_week"] * 7 - 3.5, math.sqrt(g["total"]))
-        for g in groups
-        if not g.get("sparse") and g["median_week"] and g["lat"] is not None
-    ]
-    result: dict = {"n": len(pts), "clear": False}
-    if len(pts) < 5:
-        result["reason"] = "too few landscapes with enough detections"
-        return result
-    sw = sum(w for _, _, w in pts)
-    mx = sum(x * w for x, _, w in pts) / sw
-    my = sum(y * w for _, y, w in pts) / sw
-    sxx = sum(w * (x - mx) ** 2 for x, _, w in pts)
-    sxy = sum(w * (x - mx) * (y - my) for x, y, w in pts)
-    syy = sum(w * (y - my) ** 2 for _, y, w in pts)
-    if sxx == 0 or syy == 0:
-        result["reason"] = "no spread in latitude or timing"
-        return result
-    slope = sxy / sxx  # days per degree latitude
-    r2 = sxy * sxy / (sxx * syy)
-    result.update(
-        {
-            "days_per_degree": slope,
-            "intercept": my - slope * mx,
-            "r2": r2,
-            "points": [{"lat": x, "day": y} for x, y, _ in pts],
-        }
-    )
-    if slope > 0.2 and r2 >= 0.3:
-        result["clear"] = True
-        result["km_per_day"] = KM_PER_DEGREE_LAT / slope
-    else:
-        result["reason"] = (
-            "no clear north-south timing" if r2 < 0.3 else "season does not move north"
-        )
-    return result
+BACKGROUND_FRACTION = 0.1
+MAX_SEASON_GAP = 2

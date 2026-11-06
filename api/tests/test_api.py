@@ -121,17 +121,35 @@ def test_public_clusters_are_generalised(client):
         assert "path" not in r
 
 
-def test_phenology_orders_north_first_and_shows_later_arrival(client):
+def test_phenology_orders_north_first_and_shows_later_onset(client):
     data = client.get(
         "/api/public/phenology/species", params={"species": "Cuculus canorus"}
     ).json()
     labels = [g["label"] for g in data["groups"]]
     assert labels == ["North", "South"]
     north, south = data["groups"]
-    assert north["median_week"] > south["median_week"]
-    assert north["first_week"] > south["first_week"]
-    week = north["weeks"][north["median_week"] - 1]
+    assert north["onset_week"] > south["onset_week"]
+    assert {"onset_week", "peak_week", "end_week"} <= north.keys()
+    week = north["weeks"][north["peak_week"] - 1]
     assert week["rate"] == pytest.approx(week["n"] / (week["minutes"] / 60))
+
+
+def test_phenology_wave_response_shape(client):
+    data = client.get(
+        "/api/public/phenology/species", params={"species": "Cuculus canorus"}
+    ).json()
+    assert "season_start_week" in data
+    assert 1 <= data["season_start_week"] <= 53
+    assert data["migration"]["kind"] is None
+    assert data["migration"]["show_waves"] is False
+    assert data["migration"]["reason"] == "migration strategy unknown"
+    assert {"spring", "autumn"} <= data["migration"].keys()
+    for wave in (data["migration"]["spring"], data["migration"]["autumn"]):
+        assert {"n", "clear", "points", "reason"} <= wave.keys()
+    assert all(
+        {"onset_week", "peak_week", "end_week"} <= group.keys()
+        for group in data["groups"]
+    )
 
 
 def test_site_level_requires_login(client):
@@ -167,21 +185,53 @@ def test_species_card(client):
     assert card["trend"]["label"] == "uncertain"
 
 
-def test_migration_speed_detects_northward_wave(client):
-    from tabmon_api.phenology import migration_speed
+def test_season_markers_preserve_winter_visitor_year_wrap():
+    from tabmon_api.phenology import season_markers, season_start
 
-    groups = [
-        {"lat": 40 + i * 6, "median_week": 18 + i, "total": 1000, "sparse": False}
-        for i in range(6)
+    weeks = []
+    for week in range(1, 54):
+        rate = 10 if week >= 45 or week <= 8 else 0.5
+        if 25 <= week <= 35:
+            rate = 0
+        weeks.append(
+            {
+                "week": week,
+                "rate": rate,
+                "low_effort": False,
+            }
+        )
+    group = {"sparse": False, "weeks": weeks}
+    start = season_start([group])
+    markers = season_markers(weeks, start)
+    assert 20 <= start <= 40
+    assert markers["onset_week"] > markers["end_week"]
+    assert markers["onset_week"] in range(45, 54)
+    assert markers["peak_week"] in range(45, 54)
+
+
+def test_spring_and_autumn_wave_fits():
+    from tabmon_api.phenology import fit_wave
+
+    lats = [40 + i * 5 for i in range(6)]
+    spring_points = [
+        {"lat": lat, "day": 80 + (lat - 40) * 1.1, "weight": 10.0} for lat in lats
     ]
-    m = migration_speed(groups)
-    assert m["clear"]
-    assert m["days_per_degree"] == pytest.approx(7 / 6, rel=1e-6)
-    assert m["km_per_day"] == pytest.approx(111.2 / (7 / 6), rel=1e-6)
+    spring = fit_wave(spring_points, "spring")
+    assert spring["clear"]
+    assert spring["days_per_degree"] == pytest.approx(1.1)
+    assert spring["km_per_day"] == pytest.approx(111.2 / 1.1)
 
-    flat = [{**g, "median_week": 20} for g in groups]
-    assert not migration_speed(flat)["clear"]
-    assert not migration_speed(groups[:3])["clear"]
+    autumn_points = [
+        {"lat": lat, "day": 250 - (lat - 40) * 1.2, "weight": 10.0} for lat in lats
+    ]
+    autumn = fit_wave(autumn_points, "autumn")
+    assert autumn["clear"]
+    assert autumn["days_per_degree"] == pytest.approx(-1.2)
+    assert "km_per_day" not in autumn
+
+    flat = [{**point, "day": 150} for point in spring_points]
+    assert not fit_wave(flat, "spring")["clear"]
+    assert not fit_wave(spring_points[:4], "spring")["clear"]
 
 
 def test_mp3_layout_from_xing_header():
@@ -224,6 +274,9 @@ def test_ecology_description():
     assert d["iucn_label"] == "Vulnerable"
     assert d["migration_label"] == "Long-distance migrant"
     assert "Sahara" in d["how_to_read"][0]
+    assert "amber spring wave" in d["how_to_read"][0]
+    assert "coral autumn wave" in d["how_to_read"][0]
+    assert "fall silent" in d["how_to_read"][0]
     assert "at dawn" in d["how_to_read"][1]
     assert d["how_to_read"][1].index("Spain") < d["how_to_read"][1].index("Norway")
 
@@ -266,3 +319,67 @@ def test_ops_sites_have_status_field(client):
     assert sites and all("status" in s and s["status"] is None for s in sites)
     detail = client.get(f"/api/ops/sites/{sites[0]['site_id']}").json()
     assert "status" in detail
+
+
+def test_season_markers_ignore_background_noise():
+    from tabmon_api.phenology import season_markers
+
+    # A true season in weeks 18-26 plus weak false positives every other week.
+    weeks = [
+        {
+            "week": w,
+            "low_effort": False,
+            "rate": 10.0 if 18 <= w <= 26 else 0.3,
+        }
+        for w in range(1, 54)
+    ]
+    m = season_markers(weeks, start=32)
+    assert m["onset_week"] == 18
+    assert m["end_week"] == 26
+
+
+def test_season_markers_ignore_isolated_bursts():
+    from tabmon_api.phenology import season_markers
+
+    weeks = [{"week": w, "low_effort": False, "rate": 0.0} for w in range(1, 54)]
+    for w in range(20, 27):
+        weeks[w - 1]["rate"] = 8.0
+    weeks[43]["rate"] = 6.0  # one-off false-positive burst in week 44
+    m = season_markers(weeks, start=32)
+    assert (m["onset_week"], m["end_week"]) == (20, 26)
+
+
+def test_wave_points_use_seasonal_windows():
+    from tabmon_api.phenology import _wave_points
+
+    groups = [
+        {
+            "id": "south",
+            "lat": 41.0,
+            "total": 900,
+            "sparse": False,
+            "onset_week": 43,
+            "end_week": 10,
+        },
+        {
+            "id": "mid",
+            "lat": 52.0,
+            "total": 900,
+            "sparse": False,
+            "onset_week": 14,
+            "end_week": 36,
+        },
+        {
+            "id": "north",
+            "lat": 65.0,
+            "total": 900,
+            "sparse": False,
+            "onset_week": 19,
+            "end_week": 33,
+        },
+    ]
+    spring = _wave_points(groups, "onset_week", start=30)
+    autumn = _wave_points(groups, "end_week", start=30)
+    # The southern wintering population (onset in October) is not part of the spring wave.
+    assert [p["id"] for p in spring] == ["mid", "north"]
+    assert [p["id"] for p in autumn] == ["mid", "north"]
