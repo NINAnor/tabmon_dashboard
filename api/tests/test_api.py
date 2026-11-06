@@ -9,6 +9,9 @@ from fastapi.testclient import TestClient
 from tabmon_api.config import Settings, get_settings
 from tabmon_api.main import app
 
+TEST_PASSWORD = "pw"  # pragma: allowlist secret
+LOGIN = {"username": "tabmon", "password": TEST_PASSWORD}
+
 
 @pytest.fixture
 def data_dir(tmp_path):
@@ -94,8 +97,8 @@ def data_dir(tmp_path):
 def client(data_dir):
     settings = Settings(
         data_dir=data_dir,
-        session_secret="test",
-        dashboard_password="pw",
+        session_secret="test",  # pragma: allowlist secret
+        dashboard_password=TEST_PASSWORD,
         species_media_csv=data_dir / "none.csv",
     )
     app.dependency_overrides[get_settings] = lambda: settings
@@ -166,7 +169,8 @@ def test_site_level_requires_login(client):
     )
     assert (
         client.post(
-            "/api/auth/login", json={"username": "tabmon", "password": "pw"}
+            "/api/auth/login",
+            json=LOGIN,
         ).status_code
         == 200
     )
@@ -261,7 +265,8 @@ def test_s3_config_reads_rclone_and_env_overrides(tmp_path, monkeypatch):
 
     from_config = Settings()
     assert from_config.s3_access_key_id == "config-key"
-    assert from_config.s3_secret_access_key == "config-secret%with%percent"
+    expected_secret = "config-secret%with%percent"  # pragma: allowlist secret
+    assert from_config.s3_secret_access_key == expected_secret
     assert from_config.s3_endpoint == "https://config.s3.example"
 
     monkeypatch.setenv("S3_ACCESS_KEY_ID", "env-key")
@@ -270,7 +275,7 @@ def test_s3_config_reads_rclone_and_env_overrides(tmp_path, monkeypatch):
     monkeypatch.setenv("S3_BUCKET", "env-bucket")
     from_env = Settings()
     assert from_env.s3_access_key_id == "env-key"
-    assert from_env.s3_secret_access_key == "env-secret"
+    assert from_env.s3_secret_access_key == "env-secret"  # pragma: allowlist secret
     assert from_env.s3_endpoint == "https://env.s3.example"
     assert from_env.s3_bucket == "env-bucket"
 
@@ -414,7 +419,7 @@ def test_species_diel(client):
 
 
 def test_ops_sites_have_status_field(client):
-    client.post("/api/auth/login", json={"username": "tabmon", "password": "pw"})
+    client.post("/api/auth/login", json=LOGIN)
     sites = client.get("/api/ops/sites").json()
     # No device_status in the fixture: the field exists but is empty.
     assert sites and all("status" in s and s["status"] is None for s in sites)

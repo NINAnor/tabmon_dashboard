@@ -1,21 +1,25 @@
+[dependency-groups]
+dev = ["httpx2>=2.16.0", "pytest>=8", "ruff"]
+
 [project]
-name = "tabmon-api"
-version = "0.1.0"
-description = "Data API for the TABMON dashboard"
-requires-python = ">=3.11"
-license = {text = "GPL-3.0+"}
-authors = [{name = "Benjamin Cretois", email = "benjamin.cretois@nina.no"}]
+authors = [{ name = "Benjamin Cretois", email = "benjamin.cretois@nina.no" }]
 dependencies = [
   "boto3>=1.43.125",
   "duckdb>=1.2.0",
   "fastapi>=0.115",
   "pydantic-settings>=2.6",
   "pytz>=2026.6",
-  "uvicorn[standard]>=0.32",
+  "uvicorn[standard]>=0.32"
 ]
+description = "Data API for the TABMON dashboard"
+license = { text = "GPL-3.0+" }
+name = "tabmon-api"
+requires-python = ">=3.11"
+version = "0.1.0"
 
-[dependency-groups]
-dev = ["httpx2>=2.16.0", "pytest>=8", "ruff"]
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
 
 [tool.ruff]
 fix = true
@@ -25,9 +29,5 @@ ignore = ["COM812", "B008", "E501"]
 select = ["E", "W", "I", "F", "UP", "S", "B", "A", "COM", "LOG", "PTH", "Q"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S105", "S106"]
 "tabmon_api/*" = ["S608"]
-
-[tool.pytest.ini_options]
-pythonpath = ["."]
-testpaths = ["tests"]
+"tests/*" = ["S101", "S105", "S106"]
