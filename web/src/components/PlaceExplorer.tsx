@@ -160,9 +160,9 @@ export function PlacesView({
   return (
     <section className="mx-auto max-w-7xl px-6 py-10">
       <p className="eyebrow">What does this place sound like?</p>
-      <h1 className="mt-2 font-serif text-4xl">A year of sound, landscape by landscape.</h1>
+      <h1 className="mt-2 font-serif text-4xl">A year of sound, cluster by cluster.</h1>
       <p className="mt-3 max-w-2xl text-white/60">
-        Pick a landscape. The calendar shows which species are active each week; the clock shows when in the day
+        Pick a cluster. The calendar shows which species are active each week; the clock shows when in the day
         they sing, from the dawn chorus to night-calling owls and migrants.
       </p>
 

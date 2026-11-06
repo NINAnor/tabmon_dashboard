@@ -140,7 +140,7 @@ def _relative_day(week: int, start: int) -> float:
 
 
 # Calendar windows (ISO weeks) for each wave: onsets in Feb-Jun, ends in May-Nov.
-# Landscapes whose season starts or ends outside them, typically southern wintering
+# Clusters whose season starts or ends outside them, typically southern wintering
 # populations active Oct-Mar, are left out of the fits.
 WAVE_WINDOWS = {"onset_week": (5, 26), "end_week": (18, 48)}
 
@@ -173,7 +173,7 @@ def fit_wave(points: list[dict], kind: str) -> dict:
         ],
     }
     if len(points) < 5:
-        result["reason"] = "too few landscapes with enough detections"
+        result["reason"] = "too few clusters with enough detections"
         return result
 
     sw = sum(p["weight"] for p in points)

@@ -101,7 +101,8 @@ def network(store: DataStore = Depends(get_store)):
         monthly = store.query(
             """
             SELECT s.country, strftime(date_trunc('month', e.date), '%Y-%m') AS month,
-                   sum(e.recorded_minutes) / 60 AS hours
+                   sum(e.recorded_minutes) / 60 AS hours,
+                   count(DISTINCT s.cluster_id) AS n_clusters
             FROM effort e JOIN sites s USING (site_id)
             GROUP BY ALL ORDER BY month
             """
@@ -137,7 +138,7 @@ def most_wanted(
     store: DataStore = Depends(get_store),
 ):
     """Frequently detected species that still need validations to be calibrated,
-    with the country and landscape where they are most detected."""
+    with the country and cluster where they are most detected."""
     return store.cached(
         ("most_wanted", limit),
         lambda: store.query(
@@ -210,7 +211,7 @@ def cluster_species(
     limit: int = Query(15, le=60),
     store: DataStore = Depends(get_store),
 ):
-    """Most detected species in a landscape, with detection rate and Red List status."""
+    """Most detected species in a cluster, with detection rate and Red List status."""
     return store.cached(
         ("cluster_species", cluster_id, limit),
         lambda: store.query(

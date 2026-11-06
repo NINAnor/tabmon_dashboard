@@ -17,7 +17,7 @@ HEAD_BYTES = 16_384
 # Decoding from mid-stream starts ~0.3 s early relative to the linear estimate
 # (measured on TABMON recordings); compensate when trimming.
 SYNC_BIAS_S = 0.3
-CLIP_VERSION = "v2"
+CLIP_VERSION = "v3"
 
 # MPEG-1 Layer III bitrates (kbps) and sample rates, indexed by header fields.
 _BITRATES = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0]
@@ -98,7 +98,7 @@ def clip_window(
 def cut_clip(
     read_range: RangeReader,
     start_s: float,
-    context_s: float = 5.0,
+    context_s: float = 1.0,
     detection_s: float = 3.0,
     bitrate: str = "96k",
 ) -> bytes:

@@ -50,7 +50,7 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
     return { m, week };
   });
 
-  // Only the landscapes the API used for each fit (seasonal windows applied there).
+  // Only the clusters the API used for each fit (seasonal windows applied there).
   const wavePoints = (week: "onset_week" | "end_week", fit: MigrationFit) => {
     const ids = new Set((fit.points ?? []).map((p) => p.id));
     return groups
@@ -164,8 +164,9 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
                   </text>
                 )}
                 {faint && (
-                  <text x={LABEL_W + plotW - 4} y={base - 4} textAnchor="end" fontSize={10} fill="rgba(255,255,255,0.3)">
-                    few detections
+                  <text x={LABEL_W + plotW - 4} y={base - 4} textAnchor="end" fontSize={10} fill="rgba(255,255,255,0.4)">
+                    few detections · {int(g.total)}
+                    {g.peak_week !== null ? ` · peak ${weekLabel(data.week_starts, g.peak_week)}` : ""}
                   </text>
                 )}
               </g>
@@ -195,10 +196,10 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
             />
           )}
           {groups.map((g, i) => {
-            if (g.total === 0 || g.sparse) return null;
+            if (g.total === 0) return null;
             const base = TOP + (i + 1) * ROW;
             return (
-              <g key={g.id} pointerEvents="none">
+              <g key={g.id} pointerEvents="none" opacity={g.sparse ? 0.4 : 1}>
                 {g.onset_week !== null && (
                   <circle cx={x(g.onset_week)} cy={base} r={3.2} fill="#f4b860" stroke="#07131c" strokeWidth={1.5} />
                 )}
@@ -298,6 +299,10 @@ export function RidgelineLegend({ showWaves }: { showWaves: boolean }) {
           </defs>
         </svg>
         Not enough recording
+      </span>
+      <span className="flex items-center gap-1.5 text-white/40">
+        <span className="h-2 w-4 rounded-sm bg-teal/30" /> Faded: few detections
+        {showWaves ? ", not used for the waves" : ""}
       </span>
     </div>
   );

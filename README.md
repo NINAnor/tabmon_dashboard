@@ -18,23 +18,24 @@ Arctic Norway. The network continues from October 2026 within
      /api   ──►  api (FastAPI) ────┼──► rclone (internal) ──► S3 bucket
                                    │
      scheduler (02:00 UTC) ──► preprocessing ──► data/preprocessed/dashboard/*.parquet
-                           └─► clips ──────────► data/preprocessed/dashboard/clips/v2/*.mp3
+                           └─► clips ──────────► data/preprocessed/dashboard/clips/v3/*.mp3
 ```
 
 ## Public site
 
-- **Network**: live totals, landscape map, per-country summary, monthly hours analysed,
+- **Network**: live totals, cluster map, per-country summary, monthly hours analysed,
   and how the pipeline works.
-- **Sites**: per-landscape species × week calendar, acoustic clock (hour × month),
+- **Sites**: per-cluster species × week calendar, acoustic clock (hour × month),
   most-heard species and example clips.
 - **Species**: photo and description (Wikipedia/Wikimedia Commons), IUCN status,
   migration strategy and diet, a "how to read the chart" text, the latitude-ordered
-  phenology ridgeline with a time-lapse map, the speed of the season northwards, the
-  daily vocal rhythm, validation status and clips with spectrograms.
+  phenology ridgeline with a time-lapse map, the spring and autumn waves (onset moving
+  north, end of the vocal season), the daily vocal rhythm, validation status and 5-second
+  clips (3 s BirdNET window + 1 s each side) with spectrograms.
 - **Project**: mission, TABMON → BEAGLE, the Listening Lab, partners, publications.
 
 Every "Help identify birds" link deep-links into the
-[Listening Lab](https://tabmon-listening-lab.nina.no) with the country, landscape and
+[Listening Lab](https://tabmon-listening-lab.nina.no) with the country, cluster and
 species preselected.
 
 ## Method notes
@@ -46,8 +47,12 @@ species preselected.
   validations (lowest threshold reaching 90% precision, else the best above 70%).
   Species never reaching 70% are excluded; species with fewer than 20 validations use 0.7
   and are flagged "not yet validated" on the site.
-- **Sparse rows.** Landscapes with very few detections of a species are drawn faded and
-  left out of arrival estimates.
+- **Seasons and waves.** Per cluster, onset / end are the weeks reaching 10% / 90% of
+  the season's activity (weeks below 10% of the peak and isolated bursts are ignored; the
+  year starts at the species' quietest week). Spring and autumn waves are fitted against
+  latitude for migrants only, using onsets in Feb–Jun and ends in May–Nov.
+- **Sparse rows.** Clusters with very few detections of a species are drawn faded and
+  left out of the waves.
 - **Trends** compare the two latest years on site-weeks recorded in both.
 - **Privacy.** Public endpoints only return cluster centroids snapped to a 0.1° grid,
   never site coordinates, photos or bucket paths. Site-level data needs a login.

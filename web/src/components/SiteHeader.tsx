@@ -31,7 +31,9 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6">
         <Link href="/" className="flex shrink-0 items-center gap-3">
           <img src="/tabmon_logo.png" alt="TABMON" className="h-8 w-auto" />
-          <span className="hidden font-serif text-lg tracking-wide sm:inline">TABMON</span>
+          <span className="hidden font-serif text-lg tracking-wide lg:inline">
+            TABMON <span className="text-white/40">×</span> BEAGLE
+          </span>
           {variant === "ops" && (
             <span className="rounded-full bg-amber/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-amber">
               Team

@@ -9,7 +9,7 @@ const LABEL_W = 132;
 const ROW = 15;
 const TOP = 18;
 
-/** Compact landscape × week heat strip shown beside the expanded time-lapse map. */
+/** Compact cluster × week heat strip shown beside the expanded time-lapse map. */
 export function PhenologyStrip({
   data,
   mode,

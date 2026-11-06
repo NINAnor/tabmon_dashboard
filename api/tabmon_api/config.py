@@ -29,7 +29,7 @@ class Settings(BaseSettings):
 
     clip_cache_dir: Path = Path("/tmp/tabmon-clips")  # noqa: S108
     # Seconds of audio kept before and after the 3 s BirdNET detection window.
-    clip_context_s: float = 5.0
+    clip_context_s: float = 1.0
     clip_detection_s: float = 3.0
     # Some objects on NIRD S3 take >30 s on first read.
     upstream_timeout_s: float = 180.0

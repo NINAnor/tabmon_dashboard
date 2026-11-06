@@ -19,7 +19,7 @@ type Props = {
   height?: number | string;
   /** When set, size and colour circles by activity in this week (time-lapse). */
   week?: number | null;
-  /** Time-lapse scaling: each landscape against its own peak, or one shared scale. */
+  /** Time-lapse scaling: each cluster against its own peak, or one shared scale. */
   mode?: "shape" | "absolute";
   /** Larger circles for the expanded time-lapse view. */
   large?: boolean;
@@ -38,7 +38,7 @@ export function ClusterMap({
   const [hover, setHover] = useState<{ id: string; lng: number; lat: number } | null>(null);
   const mapRef = useRef<MapRef>(null);
 
-  // Fit all landscapes in view whenever the data or the map size changes.
+  // Fit all clusters in view whenever the data or the map size changes.
   const fit = useCallback(() => {
     if (!clusters.length || !mapRef.current) return;
     const lons = clusters.map((c) => c.lon);
@@ -86,15 +86,17 @@ export function ClusterMap({
         features: clusters.map((c) => {
           const w = phen[c.id]?.weeks[week - 1];
           const g = phen[c.id];
-          const live = w && !w.low_effort && w.rate !== null && !g?.sparse;
+          const live = w && !w.low_effort && w.rate !== null;
           const scale = mode === "shape" ? Math.max(1e-9, g?.peak_rate ?? 0) : maxRate;
-          const t = live ? Math.min(1, Math.sqrt((w!.rate ?? 0) / scale)) : 0;
+          // Clusters with few detections stay small and muted, so stray detections
+          // don't look like a real season.
+          const t = live ? Math.min(1, Math.sqrt((w!.rate ?? 0) / scale)) * (g?.sparse ? 0.3 : 1) : 0;
           return {
             type: "Feature" as const,
             geometry: { type: "Point" as const, coordinates: [c.lon, c.lat] },
             properties: {
               id: c.id,
-              color: !w || w.low_effort ? "#26323c" : t > 0 ? oceanRamp(0.25 + 0.75 * t) : "#33414d",
+              color: !w || w.low_effort ? "#26323c" : t > 0 ? (g?.sparse ? "#5b7380" : oceanRamp(0.25 + 0.75 * t)) : "#33414d",
               radius: (large ? 5 : 4) + (large ? 38 : 26) * t,
               selected: c.id === selected ? 1 : 0,
             },
@@ -213,7 +215,7 @@ export function ClusterMap({
       <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-ocean-950/80 px-3 py-2 text-[11px] text-white/60">
         {phenology && week
           ? mode === "shape"
-            ? "Size & colour: this week vs each landscape's own peak"
+            ? "Size & colour: this week vs each cluster's own peak"
             : "Size & colour: detections per hour this week"
           : phenology
             ? "Colour: start of the vocal season (early → late) · Size: peak activity"

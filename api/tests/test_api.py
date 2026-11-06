@@ -383,3 +383,18 @@ def test_wave_points_use_seasonal_windows():
     # The southern wintering population (onset in October) is not part of the spring wave.
     assert [p["id"] for p in spring] == ["mid", "north"]
     assert [p["id"] for p in autumn] == ["mid", "north"]
+
+
+def test_clip_window_is_one_second_of_context():
+    from tabmon_api.mp3 import clip_window
+
+    assert clip_window(3, 1, 3) == (2, 5)
+    assert clip_window(0.5, 1, 3) == (0, 4.5)
+
+
+def test_clip_metadata_window(client):
+    clip = client.get(
+        "/api/public/clips", params={"species": "Cuculus canorus"}
+    ).json()[0]
+    # Fixture detection starts at 3 s: the 5 s clip starts at 2 s, detection at 1-4 s.
+    assert (clip["window_start"], clip["window_end"]) == (1, 4)

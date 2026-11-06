@@ -3,6 +3,7 @@
 import { scaleLinear } from "d3-scale";
 import { AudioLines, CheckCircle2, Mic, SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import useSWR from "swr";
 import { fetcher, type Cluster } from "@/lib/api";
 import { COUNTRY_COLORS, compact, int } from "@/lib/format";
@@ -18,7 +19,7 @@ export type Network = {
     n_species: number;
     top_species: string | null;
   }[];
-  monthly: { country: string; month: string; hours: number }[];
+  monthly: { country: string; month: string; hours: number; n_clusters: number }[];
   pipeline: {
     detections: number;
     validated: number;
@@ -37,38 +38,105 @@ export function useNetwork() {
 
 function MonthlyHours({ rows }: { rows: Network["monthly"] }) {
   const [ref, { width }] = useSize<HTMLDivElement>();
+  const [hover, setHover] = useState<number | null>(null);
   const months = [...new Set(rows.map((r) => r.month))].sort();
   const countries = Object.keys(COUNTRY_COLORS);
   const totals = months.map((m) => rows.filter((r) => r.month === m).reduce((s, r) => s + r.hours, 0));
-  const H = 120;
-  const y = scaleLinear().domain([0, Math.max(1, ...totals)]).range([0, H - 18]);
-  const bw = months.length ? width / months.length : 0;
+  const H = 150;
+  const PAD_L = 34;
+  const PAD_B = 18;
+  const y = scaleLinear()
+    .domain([0, Math.max(1, ...totals)])
+    .nice()
+    .range([H - PAD_B, 6]);
+  const plotW = Math.max(0, width - PAD_L);
+  const bw = months.length ? plotW / months.length : 0;
+  const label = (m: string) =>
+    new Date(`${m}-01`).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+
+  const hovered = hover !== null ? months[hover] : null;
+  const hoverRows = hovered
+    ? countries
+        .map((c) => rows.find((r) => r.month === hovered && r.country === c))
+        .filter((r): r is Network["monthly"][number] => !!r && r.hours > 0)
+    : [];
+
   return (
-    <div ref={ref}>
-      <svg width={width} height={H}>
-        {months.map((m, i) => {
-          let acc = 0;
-          return (
-            <g key={m} transform={`translate(${i * bw},0)`}>
-              {countries.map((c) => {
-                const v = rows.find((r) => r.month === m && r.country === c)?.hours ?? 0;
-                const h = y(v);
-                acc += h;
-                return (
-                  <rect key={c} x={0.5} width={Math.max(1, bw - 1.5)} y={H - 16 - acc} height={h} fill={COUNTRY_COLORS[c]} opacity={0.85}>
-                    <title>{`${c} · ${m}: ${int(v)} h`}</title>
-                  </rect>
-                );
-              })}
-              {m.endsWith("-01") && (
-                <text x={0} y={H - 3} fontSize={9} fill="rgba(255,255,255,0.45)">
-                  {m.slice(0, 4)}
-                </text>
-              )}
+    <div ref={ref} className="relative">
+      {width > 0 && (
+        <svg
+          width={width}
+          height={H}
+          onMouseMove={(e) => {
+            const px = e.clientX - e.currentTarget.getBoundingClientRect().left - PAD_L;
+            const i = Math.floor(px / Math.max(bw, 1e-9));
+            setHover(px >= 0 && i < months.length ? i : null);
+          }}
+          onMouseLeave={() => setHover(null)}
+        >
+          {y.ticks(3).map((t) => (
+            <g key={t}>
+              <line x1={PAD_L} x2={width} y1={y(t)} y2={y(t)} stroke="rgba(255,255,255,0.06)" />
+              <text x={PAD_L - 6} y={y(t) + 3} fontSize={9} textAnchor="end" fill="rgba(255,255,255,0.4)">
+                {compact(t)}
+              </text>
             </g>
-          );
-        })}
-      </svg>
+          ))}
+          {months.map((m, i) => {
+            let acc = H - PAD_B;
+            return (
+              <g key={m} transform={`translate(${PAD_L + i * bw},0)`}>
+                {hover === i && <rect x={0} y={0} width={bw} height={H - PAD_B} fill="rgba(255,255,255,0.06)" />}
+                {countries.map((c) => {
+                  const v = rows.find((r) => r.month === m && r.country === c)?.hours ?? 0;
+                  const h = H - PAD_B - y(v);
+                  acc -= h;
+                  return (
+                    <rect
+                      key={c}
+                      x={0.5}
+                      width={Math.max(1, bw - 1.5)}
+                      y={acc}
+                      height={h}
+                      fill={COUNTRY_COLORS[c]}
+                      opacity={hover === null || hover === i ? 0.85 : 0.45}
+                    />
+                  );
+                })}
+                {(m.endsWith("-01") || m.endsWith("-07")) && (
+                  <text x={0} y={H - 4} fontSize={9} fill="rgba(255,255,255,0.45)">
+                    {m.endsWith("-01") ? m.slice(0, 4) : "Jul"}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      )}
+      {hovered && hover !== null && (
+        <div
+          className="tooltip"
+          style={{ left: Math.min(PAD_L + (hover + 1) * bw + 8, width - 190), top: 4, width: 180 }}
+        >
+          <div className="font-medium text-white">{label(hovered)}</div>
+          {hoverRows.map((r) => (
+            <div key={r.country} className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: COUNTRY_COLORS[r.country] }} />
+                {r.country}
+              </span>
+              <span className="tabular-nums">{int(r.hours)} h</span>
+            </div>
+          ))}
+          <div className="mt-1 flex justify-between border-t border-white/10 pt-1">
+            <span>Total</span>
+            <span className="tabular-nums text-teal">{int(totals[hover])} h</span>
+          </div>
+          <div className="text-white/45">
+            {hoverRows.reduce((s, r) => s + r.n_clusters, 0)} clusters recording
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -87,7 +155,7 @@ export function NetworkOverview({ clusters }: { clusters: Cluster[] }) {
             height={520}
             onSelect={(id) => router.push(`/sites?id=${encodeURIComponent(id)}`)}
           />
-          <p className="mt-2 text-xs text-white/40">Click a landscape to explore its soundscape.</p>
+          <p className="mt-2 text-xs text-white/40">Click a cluster to explore its soundscape.</p>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -101,7 +169,7 @@ export function NetworkOverview({ clusters }: { clusters: Cluster[] }) {
                       {c.country}
                     </span>
                     <span className="text-xs tabular-nums text-white/55">
-                      {c.n_clusters} landscapes · {c.n_sites} sites · {compact(c.hours)} h · {c.n_species} species
+                      {c.n_clusters} clusters · {c.n_sites} sites · {compact(c.hours)} h · {c.n_species} species
                     </span>
                   </div>
                   <div className="mt-1.5 h-1.5 rounded-full bg-white/5">

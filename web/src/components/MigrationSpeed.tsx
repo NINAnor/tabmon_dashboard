@@ -9,8 +9,8 @@ const NO_WAVE: Record<string, string> = {
   resident: "present all year, so no arrival or departure wave is expected.",
   partial: "many birds stay all year, which blurs any arrival or departure wave.",
   short_distance: "short-distance migrants winter nearby, so arrival and departure are spread out.",
-  long_distance: "detections are too uneven across landscapes to time the waves.",
-  migrant: "detections are too uneven across landscapes to time the waves.",
+  long_distance: "detections are too uneven across clusters to time the waves.",
+  migrant: "detections are too uneven across clusters to time the waves.",
 };
 
 const KIND_LABEL: Record<string, string> = {
@@ -45,7 +45,7 @@ function fitLine(fit: MigrationFit, fallbackLats: number[]) {
 }
 
 function fitSummary(fit: MigrationFit) {
-  return `${fit.n} landscapes · R² ${typeof fit.r2 === "number" ? fit.r2.toFixed(2) : "–"}`;
+  return `${fit.n} clusters · R² ${typeof fit.r2 === "number" ? fit.r2.toFixed(2) : "–"}`;
 }
 
 export function MigrationSpeed({ data }: { data: SpeciesPhenology }) {

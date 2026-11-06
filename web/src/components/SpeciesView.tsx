@@ -69,9 +69,9 @@ export function SpeciesView({
       undefined,
     );
   const shapeTitle =
-    "Each landscape scaled to its own peak: compare timing (when the season starts, peaks and ends), regardless of how common the species is.";
+    "Each cluster scaled to its own peak: compare timing (when the season starts, peaks and ends), regardless of how common the species is.";
   const absoluteTitle =
-    "One shared scale for all landscapes: compare how much the species is heard (detections per recorded hour).";
+    "One shared scale for all clusters: compare how much the species is heard (detections per recorded hour).";
   const expanded = week !== null && !!data;
   const expandedRef = useRef<HTMLDivElement>(null);
   const wasExpanded = useRef(false);
@@ -168,7 +168,7 @@ export function SpeciesView({
                 large
               />
               <div className="flex flex-col gap-3">
-                <p className="eyebrow">Activity by landscape · north to south · click to jump</p>
+                <p className="eyebrow">Activity by cluster · north to south · click to jump</p>
                 <PhenologyStrip
                   data={data!}
                   mode={mode}
@@ -180,8 +180,8 @@ export function SpeciesView({
                 />
                 <p className="text-xs text-white/45">
                   {mode === "shape"
-                    ? "Each landscape is scaled to its own peak, so quiet northern sites still light up on arrival."
-                    : "One scale for all landscapes: compare absolute calling rates."}{" "}
+                    ? "Each cluster is scaled to its own peak, so quiet northern sites still light up on arrival."
+                    : "One scale for all clusters: compare absolute calling rates."}{" "}
                   Switch with “Seasonal shape / Absolute activity” above.
                 </p>
               </div>
@@ -192,7 +192,7 @@ export function SpeciesView({
             <div className="card p-5">
               <p className="eyebrow mb-1">When does its vocal season start and end?</p>
               <p className="mb-4 text-sm text-white/55">
-                One ridge per landscape, from Arctic Norway (top) to the Ebro Delta (bottom). Height is detections per
+                One ridge per cluster, from Arctic Norway (top) to the Ebro Delta (bottom). Height is detections per
                 hour of recording. Press play to watch the season sweep across a large map.
               </p>
               {controls}

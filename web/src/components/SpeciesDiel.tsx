@@ -180,7 +180,7 @@ export function SpeciesDielPanel({ species, year }: { species: string; year: num
         <div className="w-full">
           <p className="eyebrow">Through the year</p>
           <p className="mt-1 text-sm text-white/55">
-            Hour of day around the dial, January (inside) to December (outside), all landscapes.
+            Hour of day around the dial, January (inside) to December (outside), all clusters.
           </p>
         </div>
         {data && <DielClock diel={data.grid} size={340} />}

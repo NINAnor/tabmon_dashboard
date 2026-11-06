@@ -29,7 +29,7 @@ export function Hero({ validated }: { validated?: number | null }) {
           Listening to Europe&rsquo;s birds, <span className="italic text-teal">from Spain to the Arctic.</span>
         </h1>
         <p className="mt-4 max-w-2xl text-white/65">
-          Autonomous recorders in {data?.clusters ?? "–"} landscapes across Spain, France, the Netherlands and
+          Autonomous recorders in {data?.clusters ?? "–"} clusters across Spain, France, the Netherlands and
           Norway listen around the clock. Together they show when birds arrive, sing and leave.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
@@ -37,7 +37,7 @@ export function Hero({ validated }: { validated?: number | null }) {
             Follow a species →
           </Link>
           <Link href="/sites" className="rounded-full border border-white/30 px-5 py-2.5 text-sm hover:bg-white/10">
-            Explore a landscape
+            Explore a cluster
           </Link>
         </div>
 
