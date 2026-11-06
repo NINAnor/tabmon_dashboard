@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ocean-950: #050d14;
+  --color-ocean-900: #07131c;
+  --color-ocean-800: #0c1d2a;
+  --color-ocean-700: #123044;
+  --color-ocean-600: #1b4560;
+  --color-teal: #4ecdc4;
+  --color-teal-dim: #2a8f89;
+  --color-amber: #f4b860;
+  --color-coral: #ff7a6b;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+}
+
+html {
+  background: var(--color-ocean-900);
+  color: #e6eef3;
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .eyebrow {
+    @apply text-[11px] font-medium tracking-[0.2em] uppercase text-white/45;
+  }
+
+  .card {
+    @apply rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-xs text-white/80 transition-colors hover:border-white/40 hover:bg-white/5;
+  }
+
+  .pill-active {
+    @apply border-teal/70 bg-teal/15 text-teal;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-white/15 bg-ocean-950/60 px-3 py-2 text-sm text-white placeholder:text-white/35 outline-none focus:border-teal/70;
+  }
+
+  .tooltip {
+    @apply pointer-events-none absolute z-30 rounded-lg border border-white/15 bg-ocean-950/95 px-3 py-2 text-xs text-white/85 shadow-xl;
+  }
+}
+
+.maplibregl-popup-content {
+  background: var(--color-ocean-950) !important;
+  color: #e6eef3;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 0.75rem !important;
+}
+.maplibregl-popup-tip {
+  display: none;
+}
+.maplibregl-ctrl-attrib {
+  background: rgb(5 13 20 / 0.6) !important;
+  color: rgb(255 255 255 / 0.5);
+}
+.maplibregl-ctrl-attrib a {
+  color: rgb(255 255 255 / 0.6) !important;
+}

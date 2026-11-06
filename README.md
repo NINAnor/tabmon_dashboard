@@ -1,148 +1,99 @@
-# TABMON Dashboard ⭐
+# TABMON Dashboard
 
-A modern, secure Streamlit dashboard for visualizing and managing device deployment metadata for the [TABMON project](https://www.nina.no/english/TABMON).
+Public dashboard and team area for [TABMON](https://www.nina.no/english/TABMON), a
+transnational passive acoustic monitoring network for European birds, from Spain to
+Arctic Norway. The network continues from October 2026 within
+[BEAGLE](https://cordis.europa.eu/project/id/101288886) (Horizon Europe).
 
-## 🎯 Features
-
-### 📊 **Dashboard Components**
-- **🗺️ Map Visualization**: Interactive maps with real-time device monitoring and status tracking
-- **🎵 Audio Analysis**: Advanced audio file browsing, playback, and analysis tools
-- **📋 Site Metadata**: Comprehensive site information and metadata management
-
-### 🔐 **Security & Authentication**
-- HTTP Basic Authentication for secure data access
-- Environment-based credential management
-- Docker secrets integration for production deployments
-
-### 🚀 **Modern Architecture**
-- Service layer separation for data handling
-- Component-based UI architecture
-- Efficient data processing with DuckDB
-- Responsive design with custom CSS styling
-
-## 🏗️ Architecture
-
-The dashboard leverages:
-- **`rclone`** to serve data from S3 storage
-- **`duckdb`** for optimized querying of `.parquet` files
-- **Docker Compose** for multi-service orchestration
-- **Reverse proxy** with authentication for secure access
+| Path | What | Stack |
+|---|---|---|
+| `web/` | Public site (Network · Sites · Species · Project) and team area (`/ops`) | Next.js, React, Tailwind, MapLibre, d3, wavesurfer.js |
+| `api/` | Data API, team login, clip serving, clip pre-cutting job | FastAPI, DuckDB, ffmpeg, boto3 |
+| `preprocessing/` | Builds the aggregated tables the API serves | DuckDB (reads S3 directly) |
+| `scheduler/` | Nightly cron that runs preprocessing + clip cutting | docker:cli + crond |
 
 ```
-┌─────────────────┐    ┌──────────────┐    ┌─────────────┐
-│   Dashboard     │────│ Reverse Proxy│────│   rclone    │
-│   (Streamlit)   │    │   (nginx)    │    │  (S3 data)  │
-└─────────────────┘    └──────────────┘    └─────────────┘
+                 ┌──── Traefik ────┐
+     /      ──►  web (Next.js)     │
+     /api   ──►  api (FastAPI) ────┼──► rclone (internal) ──► S3 bucket
+                                   │
+     scheduler (02:00 UTC) ──► preprocessing ──► data/preprocessed/dashboard/*.parquet
+                           └─► clips ──────────► data/preprocessed/dashboard/clips/v3/*.mp3
 ```
 
-## 🚀 Quick Start
+## Public site
 
-### Prerequisites
-- Docker and Docker Compose
-- Access credentials for the S3 bucket
+- **Network**: live totals, cluster map, per-country summary, monthly hours analysed,
+  and how the pipeline works.
+- **Sites**: per-cluster species × week calendar, acoustic clock (hour × month),
+  most-heard species and example clips.
+- **Species**: photo and description (Wikipedia/Wikimedia Commons), IUCN status,
+  migration strategy and diet, a "how to read the chart" text, the latitude-ordered
+  phenology ridgeline with a time-lapse map, the spring and autumn waves (onset moving
+  north, end of the vocal season), the daily vocal rhythm, validation status and 5-second
+  clips (3 s BirdNET window + 1 s each side) with spectrograms.
+- **Project**: mission, TABMON → BEAGLE, the Listening Lab, partners, publications.
 
-### Environment Setup
+Every "Help identify birds" link deep-links into the
+[Listening Lab](https://tabmon-listening-lab.nina.no) with the country, cluster and
+species preselected.
 
-1. **Create environment file**:
+## Method notes
+
+- **Effort correction.** Rates are detections per recorded hour. Effort comes from
+  `index.parquet` (5-minute files) and only counts deployment-days BirdNET has processed,
+  so gaps in recording or analysis never look like absences.
+- **Thresholds.** Per-species BirdNET thresholds are calibrated on expert and citizen
+  validations (lowest threshold reaching 90% precision, else the best above 70%).
+  Species never reaching 70% are excluded; species with fewer than 20 validations use 0.7
+  and are flagged "not yet validated" on the site.
+- **Seasons and waves.** Per cluster, onset / end are the weeks reaching 10% / 90% of
+  the season's activity (weeks below 10% of the peak and isolated bursts are ignored; the
+  year starts at the species' quietest week). Spring and autumn waves are fitted against
+  latitude for migrants only, using onsets in Feb–Jun and ends in May–Nov.
+- **Sparse rows.** Clusters with very few detections of a species are drawn faded and
+  left out of the waves.
+- **Trends** compare the two latest years on site-weeks recorded in both.
+- **Privacy.** Public endpoints only return cluster centroids snapped to a 0.1° grid,
+  never site coordinates, photos or bucket paths. Site-level data needs a login.
+
+Trait data: Storchová & Hořák (2018) and AVONET (Tobias et al. 2022); see
+`preprocessing/reference/README.md`.
+
+## Running
+
+Requirements: Docker (rootless socket path is set in `docker-compose.yml`), an rclone
+remote `nirds3` in `~/.config/rclone/rclone.conf`.
+
 ```bash
-cp .env.example .env
+cp .env.example .env                     # passwords, session secret, S3 keys
+docker compose run --rm preprocessing    # first run only; afterwards nightly
+docker compose run --rm clips
+docker compose up -d --build
 ```
 
-2. **Configure credentials in `.env`**:
+Open http://localhost:8058 (Traefik dashboard on :8088). The scheduler then refreshes
+the data every night (`NIGHTLY_SCHEDULE`, cron syntax, UTC). Logs:
+`docker compose logs -f scheduler`; run immediately:
+`docker compose exec scheduler sh /project/scheduler/nightly.sh`.
+
+### Development
+
 ```bash
-AUTH_USERNAME=guest
-AUTH_PASSWORD=your_password_here
+cd api && DATA_URL=/path/to/bucket-mirror SESSION_SECRET=dev DASHBOARD_PASSWORD=dev \
+  uv run uvicorn tabmon_api.main:app --reload       # tests: uv run pytest
+cd web && npm install && npm run dev                # proxies /api to localhost:8000
 ```
 
-3. **Start the dashboard**:
-```bash
-docker compose up
-```
+`DATA_URL` can be a local folder that mirrors the bucket layout
+(`data/preprocessed/dashboard/*.parquet`, `data/preprocessed/*.csv`).
 
-4. **Access the dashboard**:
-   - Open your browser to `http://localhost:8085`
-   - Login with the credentials from your `.env` file
+## Species media
 
-## 🔧 Configuration
+Photos and descriptions come from Wikipedia/Wikimedia Commons with attribution. To use a
+Macaulay Library photo instead, add its asset ID to `api/data/species_media.csv`.
 
-### Environment Variables
-- `AUTH_USERNAME`: HTTP Basic Auth username
-- `AUTH_PASSWORD`: HTTP Basic Auth password
+## Acknowledgment
 
-### Data Sources
-The dashboard connects to remote S3 storage via rclone. Configure your data paths in the `docker-compose.yml` file or create a `stack.env` for production deployments.
-
-## 📱 Usage
-
-### Map Dashboard
-- View device locations on interactive maps
-- Monitor device status and connectivity
-- Filter by country, region, and deployment status
-
-### Audio Dashboard
-- Browse audio recordings by device and time
-- Play audio files with secure authentication
-- Export recording lists and metadata
-- View audio statistics and recording frequency
-
-### Site Metadata Dashboard
-- Manage site information and device metadata
-- View deployment details and configurations
-- Access device images and documentation
-
-## 🧪 Testing
-
-Run component tests:
-```bash
-python test_components.py
-```
-
-## 🐳 Production Deployment
-
-For production deployment using Portainer or similar container orchestration:
-
-1. Use Docker secrets for credentials:
-```yaml
-secrets:
-  htpasswd:
-    file: ./htpasswd
-```
-
-2. Configure environment variables appropriately
-3. Ensure proper network security and access controls
-
-See `DEPLOYMENT.md` for detailed deployment instructions.
-
-## 🔒 Security Notes
-
-- Never commit credentials to version control
-- Use `.env` files for local development only
-- Use Docker secrets or proper secret management for production
-- The reverse proxy provides an additional security layer
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes and test thoroughly
-4. Commit with clear, descriptive messages
-5. Push and create a pull request
-
-## 📝 Changelog
-
-### Latest Updates
-- ✨ Modernized audio dashboard with enhanced playback and analysis features
-- 🔐 Implemented secure authentication system with environment-based credentials
-- 🎨 Updated UI with modern styling and responsive design
-- 🏗️ Refactored to service-based architecture for better maintainability
-- 🧹 Cleaned up codebase and removed legacy files
-
-## 👥 Acknowledgment
-
-The dashboard has been developed by:
-- [Benjamin Cretois](mailto:benjamin.cretois@nina.no) - Lead Developer
-- [Francesco Frassinelli](mailto:francesco.frassinelli@nina.no) - Contributor
-
----
-
-*For technical support or questions, please open an issue on the repository.*
+Developed by [Benjamin Cretois](mailto:benjamin.cretois@nina.no) and
+[Francesco Frassinelli](mailto:francesco.frassinelli@nina.no).

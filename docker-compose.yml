@@ -1,15 +1,16 @@
-version: '3.8'
-
 services:
   traefik:
-    image: traefik:v2.10
+    image: traefik:v3.6
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=true"
+      # Only route containers of this compose project, not other stacks on the host.
+      - "--providers.docker.constraints=Label(`com.docker.compose.project`,`dashboard`)"
       - "--entrypoints.web.address=:80"
     ports:
-      - 8080:8080  # Traefik dashboard
-      - 8050:80      # HTTP
+      - 8088:8080  # Traefik dashboard
+      - 8058:80      # HTTP
     volumes:
       - /run/user/210015162/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
@@ -17,29 +18,74 @@ services:
       - default
       - traefik-proxy
 
-  dashboard:
+  # Next.js frontend: public sound map + team area.
+  web:
     build:
-      context: .
-    #image: ghcr.io/ninanor/dashboard-dashboard:main@sha-9a71d5a
+      context: ./web
+    restart: unless-stopped
+    depends_on:
+      - api
+    labels:
+      - "traefik.http.routers.tabmon__web.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.tabmon__web.entrypoints=web"
+      - "traefik.http.routers.tabmon__web.priority=1"
+      - "traefik.http.services.tabmon__web.loadbalancer.server.port=3000"
+    networks:
+      - default
+      - traefik-proxy
+
+  # FastAPI + DuckDB. Reads the bucket through rclone; never exposes raw paths.
+  api:
+    build:
+      context: ./api
     environment:
-      - BASE_DATA_DIR="http://rclone:8081/data/"
+      DATA_URL: http://rclone:8081/data
+      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:-tabmon}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:?set DASHBOARD_PASSWORD in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CLIP_CACHE_DIR: /cache/clips
+    volumes:
+      - clip-cache:/cache
     depends_on:
       rclone:
         condition: service_healthy
     restart: unless-stopped
     labels:
-      - "traefik.http.routers.tabmon__dashboard.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.tabmon__dashboard.entrypoints=web"
-      - "traefik.http.routers.tabmon__dashboard.priority=1"
-      - "traefik.http.services.tabmon__dashboard.loadbalancer.server.port=8501"
+      - "traefik.http.routers.tabmon__api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.tabmon__api.entrypoints=web"
+      - "traefik.http.routers.tabmon__api.priority=20"
+      - "traefik.http.services.tabmon__api.loadbalancer.server.port=8000"
     networks:
       - default
       - traefik-proxy
+
+  # Rebuilds data/preprocessed/dashboard/*.parquet (run nightly by the scheduler):
+  #   docker compose run --rm preprocessing
+  preprocessing:
+    build:
+      context: ./preprocessing
+    profiles: ["jobs"]
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-s3.nird.sigma2.no}
+
+  # Pre-cuts the example clips into data/preprocessed/dashboard/clips/ (incremental,
+  # run nightly by the scheduler after preprocessing):  docker compose run --rm clips
+  clips:
+    build:
+      context: ./api
+    profiles: ["jobs"]
+    command: ["python", "-m", "tabmon_api.jobs.cut_clips", "--workers", "16"]
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-s3.nird.sigma2.no}
+
   rclone:
     image: rclone/rclone:1.69
     command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/
-    ports:
-      - 8081:8081
     environment:
       RCLONE_CONFIG: /run/secrets/tabmon_rclone
     secrets:
@@ -51,16 +97,31 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    # Internal only: the API is the single public entry point to the bucket.
     labels:
-      - "traefik.http.routers.tabmon__dashboard_rclone.rule=PathPrefix(`/data/`)"
-      - "traefik.http.routers.tabmon__dashboard_rclone.entrypoints=web"
-      - "traefik.http.routers.tabmon__dashboard_rclone.priority=10"
-      - "traefik.http.services.tabmon__dashboard_rclone.loadbalancer.server.port=8081"
-      - "traefik.http.routers.tabmon__dashboard_rclone.middlewares=tabmon__dashboard_rclone_auth"
-      - "traefik.http.middlewares.tabmon__dashboard_rclone_auth.basicauth.users=test:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/"
-    networks:
-      - default
-      - traefik-proxy
+      - "traefik.enable=false"
+
+  # Runs preprocessing + clips every night (crond in a docker:cli container that
+  # drives this compose project through the host Docker socket).
+  # Logs: docker compose logs -f scheduler   ·   Run now: docker compose exec scheduler sh /project/scheduler/nightly.sh
+  scheduler:
+    image: docker:cli
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/project/scheduler/entrypoint.sh"]
+    working_dir: /project
+    environment:
+      COMPOSE_PROJECT_NAME: dashboard
+      SCHEDULE: ${NIGHTLY_SCHEDULE:-0 2 * * *}
+    volumes:
+      - /run/user/210015162/docker.sock:/var/run/docker.sock
+      - ./:/project:ro
+      # Compose resolves the rclone secret path when parsing this file.
+      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
+    labels:
+      - "traefik.enable=false"
+
+volumes:
+  clip-cache:
 
 secrets:
   tabmon_rclone:
