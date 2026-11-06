@@ -34,22 +34,22 @@ services:
       - default
       - traefik-proxy
 
-  # FastAPI + DuckDB. Reads the bucket through rclone; never exposes raw paths.
+  # FastAPI + DuckDB. Reads tables and media directly from S3.
   api:
     build:
       context: ./api
     environment:
-      DATA_URL: http://rclone:8081/data
+      RCLONE_CONFIG: /run/secrets/tabmon_rclone
+      S3_BUCKET: ${S3_BUCKET:-bencretois-ns8129k-proj-tabmon}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
       DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:-tabmon}
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:?set DASHBOARD_PASSWORD in .env}
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      CLIP_CACHE_DIR: /cache/clips
-    volumes:
-      - clip-cache:/cache
-    depends_on:
-      rclone:
-        condition: service_healthy
+    secrets:
+      - tabmon_rclone
     restart: unless-stopped
     labels:
       - "traefik.http.routers.tabmon__api.rule=PathPrefix(`/api`)"
@@ -59,27 +59,6 @@ services:
     networks:
       - default
       - traefik-proxy
-
-  rclone:
-    image: rclone/rclone:1.69
-    command: serve http nirds3:bencretois-ns8129k-proj-tabmon --addr :8081 --baseurl /data/
-    environment:
-      RCLONE_CONFIG: /run/secrets/tabmon_rclone
-    secrets:
-      - tabmon_rclone
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/data/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
-    # Internal only: the API is the single public entry point to the bucket.
-    labels:
-      - "traefik.enable=false"
-
-volumes:
-  clip-cache:
 
 secrets:
   tabmon_rclone:

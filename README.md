@@ -13,9 +13,9 @@ Arctic Norway. The network continues from October 2026 within
 ```
                  ┌──── Traefik ────┐
      /      ──►  web (Next.js)     │
-     /api   ──►  api (FastAPI) ────┼──► rclone (internal) ──► S3 bucket
+     /api   ──►  api (FastAPI) ────┼──► S3 bucket
                                    │
-     data_transfer (daily 06:00 UTC; steps 05/06) ──► data/preprocessed/dashboard/
+     data_transfer (daily 06:00 UTC; step 05) ──► data/preprocessed/dashboard/
 ```
 
 ## Public site
@@ -62,14 +62,19 @@ the references used by `05_dashboard/` in
 
 Dashboard data is produced by the
 [data_transfer pipeline](https://github.com/NINAnor/WP1-data-transfer), which runs daily
-at 06:00 UTC (step 05 builds dashboard tables; step 06 pre-cuts clips). See the
+at 06:00 UTC (step 05 builds dashboard tables). The API reads tables and media directly
+from S3, cuts clips on demand from the original recordings, and keeps recently cut clips
+in a bounded in-memory cache. Listing clips starts best-effort prefetching. See the
 [data contract](docs/data-contract.md) for the API input schemas and compatibility
 requirements.
 
 ## Running
 
-Requirements: Docker (rootless socket path is set in `docker-compose.yml`), an rclone
-remote `nirds3` in `~/.config/rclone/rclone.conf`.
+Requirements: Docker (rootless socket path is set in `docker-compose.yml`) and S3
+credentials. By default, the API reads `access_key_id`, `secret_access_key`, and
+`endpoint` from the `[nirds3]` section in `~/.config/rclone/rclone.conf`, mounted into
+the API as a secret. Optional `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_ENDPOINT`,
+and `S3_BUCKET` environment variables override the corresponding settings.
 
 ```bash
 cp .env.example .env  # set dashboard password and session secret
@@ -81,13 +86,15 @@ Open http://localhost:8058 (Traefik dashboard on :8088).
 ### Development
 
 ```bash
-cd api && DATA_URL=/path/to/bucket-mirror SESSION_SECRET=dev DASHBOARD_PASSWORD=dev \
+cd api && DATA_DIR=/path/to/bucket-mirror SESSION_SECRET=dev DASHBOARD_PASSWORD=dev \
   uv run uvicorn tabmon_api.main:app --reload       # tests: uv run pytest
 cd web && npm install && npm run dev                # proxies /api to localhost:8000
 ```
 
-`DATA_URL` can be a local folder that mirrors the bucket layout
-(`data/preprocessed/dashboard/*.parquet`, `data/preprocessed/*.csv`).
+`DATA_DIR` points to a local folder mirroring the bucket key layout
+(`data/preprocessed/dashboard/*.parquet`, `data/preprocessed/*.csv`, photos under
+`data/`, and recordings at the exact keys in `clips.path`). When set, the API reads
+tables, photos, and recordings locally and does not require S3 credentials.
 
 ## Species media
 

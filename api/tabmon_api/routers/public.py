@@ -3,7 +3,7 @@
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 
 from .. import media, phenology
 from ..auth import current_user
@@ -327,7 +327,7 @@ def phenology_place(
 
 
 @router.get("/clips")
-def clips(
+async def clips(
     species: str | None = None,
     cluster_id: str | None = None,
     month: int | None = Query(None, ge=1, le=12),
@@ -345,12 +345,13 @@ def clips(
     if month:
         where.append("month(c.recorded_at) = ?")
         params.append(month)
-    return store.query(
+    rows = store.query(
         f"""
         SELECT c.clip_id, c.species, sp.common_en, c.cluster_id, cl.cluster,
                c.country, c.recorded_at::DATE AS recorded_on, c.confidence, c.validated,
                least(c.start_s, ?) AS window_start,
-               least(c.start_s, ?) + ? AS window_end
+               least(c.start_s, ?) + ? AS window_end,
+               c.path AS _path, c.start_s AS _start_s
         FROM clips c
         LEFT JOIN clusters cl USING (cluster_id)
         LEFT JOIN species sp USING (species)
@@ -365,6 +366,16 @@ def clips(
             *params,
         ],
     )
+    prefetch = [
+        {
+            "clip_id": row["clip_id"],
+            "path": row.pop("_path"),
+            "start_s": row.pop("_start_s"),
+        }
+        for row in rows
+    ]
+    media.schedule_prefetch(settings, prefetch)
+    return rows
 
 
 @clips_router.get("/{clip_id}.mp3")
@@ -376,9 +387,11 @@ async def clip_audio(
     row = store.one("SELECT path, start_s FROM clips WHERE clip_id = ?", [clip_id])
     if row is None:
         raise HTTPException(404, "Unknown clip")
-    path = await media.clip_file(settings, clip_id, row["path"], float(row["start_s"]))
-    return FileResponse(
-        path,
+    content = await media.clip_bytes(
+        settings, clip_id, row["path"], float(row["start_s"])
+    )
+    return Response(
+        content,
         media_type="audio/mpeg",
         headers={"Cache-Control": "public, max-age=604800, immutable"},
     )

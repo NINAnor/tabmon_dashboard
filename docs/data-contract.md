@@ -2,24 +2,34 @@
 
 The API is a reader; the
 [WP1-data-transfer pipeline](https://github.com/NINAnor/WP1-data-transfer) produces
-its inputs in steps 03–06. Step 05 writes the dashboard tables and step 06 writes
-pre-cut clips. The pipeline runs daily at 06:00 UTC.
+its inputs in steps 03–05. Step 05 writes the dashboard tables. The API reads these
+inputs directly from S3; clips are cut on demand from the original recordings. The
+pipeline runs daily at 06:00 UTC.
 
 ## Locations and requiredness
 
-With the default `DATA_URL`/`data_url` root (`http://rclone:8081/data`), the API reads:
+The API reads from the `bencretois-ns8129k-proj-tabmon` S3 bucket at
+`https://s3.nird.sigma2.no` (path-style requests, region `us-east-1`):
 
-| Input | Location relative to `data_url` | Requiredness |
+| Input | Bucket key | Requiredness |
 |---|---|---|
 | Dashboard Parquet tables | `data/preprocessed/dashboard/{deployments,effort,phenology,species,clips,photos,validations}.parquet` | All seven required; a missing file prevents loading. |
 | Species enrichment | `data/preprocessed/dashboard/species_info.parquet`, `species_ecology.parquet` | Optional; empty typed tables are created when absent. |
 | Legacy CSVs | `data/preprocessed/device_status.csv`, `all_device_stats.csv`, `dataset_stats.csv`, `recording_matrix.csv` | Loader attempts each and creates a placeholder table if absent. Team endpoints that query their columns need usable CSVs; some public summaries degrade gracefully. |
-| Pre-cut audio | `data/preprocessed/dashboard/clips/v3/{clip_id}.mp3` | Optional per clip; if missing, the API cuts on demand from the original recording. |
 | Species media override | `api/data/species_media.csv` (local to the API image, not the bucket) | Optional; an empty table is created if absent. |
-| Site photos and original audio | Object paths referenced by `photos.path` and `clips.path`, under bucket `data/` | Needed when those media are requested. |
+| Site photos | `data/{photos.path}` | Needed when a photo is requested. |
+| Original audio | Exact bucket key in `clips.path` | Needed when a clip is requested. |
 
 `tables_prefix` defaults to `data/preprocessed/dashboard`; `legacy_prefix` defaults
-to `data/preprocessed`. Both are configurable in `api/tabmon_api/config.py`.
+to `data/preprocessed`. Both are configurable in `api/tabmon_api/config.py`. For
+local development and tests, set `DATA_DIR` to a folder mirroring the bucket keys;
+when set, the API reads tables and media from that folder instead of S3.
+
+S3 credentials are read from `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`,
+`S3_ENDPOINT`, and `S3_BUCKET` when set. Otherwise the API reads `access_key_id`,
+`secret_access_key`, and `endpoint` from the `[nirds3]` section of the INI file at
+`RCLONE_CONFIG`. The default bucket, endpoint, and region are shown above. Secret
+values are never logged.
 
 ## Dashboard Parquet schemas
 
@@ -59,7 +69,7 @@ possible where input metadata is absent or a calculation has no result.
 | | `threshold_source` | VARCHAR | Calibration status (`calibrated`, `calibrated_low`, `default`, or `unreliable`). |
 | | `n_validated`, `n_correct` | BIGINT | Validation count and correct validations. |
 | | `precision_at_threshold` | DOUBLE | Validation precision at the selected threshold. |
-| `clips` | `clip_id` | VARCHAR | Stable ID used in the pre-cut clip filename. |
+| `clips` | `clip_id` | VARCHAR | Stable ID used by the on-demand clip endpoint and in-memory cache. |
 | | `species`, `site_id`, `cluster_id`, `country` | VARCHAR | Species and location keys/label. |
 | | `path` | VARCHAR | Bucket-relative path to the original recording. |
 | | `start_s` | INTEGER | Start of the BirdNET detection window in the recording, seconds. |
@@ -117,11 +127,13 @@ present and are passed through where the API returns the full row.
 
 ## Clip format and compatibility
 
-The `clips` row identifies the original MP3 and detection start. A pre-cut clip is
-stored as `data/preprocessed/dashboard/clips/v3/{clip_id}.mp3`. It is 5 seconds:
-1 second before + the 3-second BirdNET detection window + 1 second after (clipped at
-the recording boundary). If that object is missing, the API uses `clips.path` and
-`clips.start_s` to cut it on demand; `api/tabmon_api/mp3.py` implements that fallback.
+The `clips` row identifies the original MP3 and detection start. The API always cuts
+the clip on demand from the original recording at `clips.path`, using `clips.start_s`;
+there are no pre-cut clip objects. The default clip is 5 seconds: 1 second before +
+the 3-second BirdNET detection window + 1 second after (clipped at the recording
+boundary). `api/tabmon_api/mp3.py` reads only the needed byte ranges. Recently cut
+clips are held in a bounded in-memory LRU cache; listing clips starts best-effort
+prefetches and does not wait for them.
 
 Treat these schemas as a cross-repository contract: changing a column name, type, or
 meaning requires coordinated changes in both this API and

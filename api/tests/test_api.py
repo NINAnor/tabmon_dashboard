@@ -1,3 +1,5 @@
+import asyncio
+import threading
 from datetime import date, timedelta
 
 import duckdb
@@ -91,7 +93,7 @@ def data_dir(tmp_path):
 @pytest.fixture
 def client(data_dir):
     settings = Settings(
-        data_url=str(data_dir),
+        data_dir=data_dir,
         session_secret="test",
         dashboard_password="pw",
         species_media_csv=data_dir / "none.csv",
@@ -177,6 +179,105 @@ def test_clip_metadata_hides_bucket_path(client):
         "/api/public/clips", params={"species": "Cuculus canorus"}
     ).json()
     assert clips and all("path" not in c for c in clips)
+
+
+def test_clip_prefetch_runs_for_listed_ids(client, monkeypatch):
+    from tabmon_api import media
+
+    called = []
+    cut_done = threading.Event()
+
+    def fake_cut(settings, clip_id, path, start_s):
+        called.append(clip_id)
+        cut_done.set()
+        return b"mp3 bytes"
+
+    monkeypatch.setattr(media, "_cut_clip", fake_cut)
+    response = client.get("/api/public/clips", params={"species": "Cuculus canorus"})
+    listed_ids = [clip["clip_id"] for clip in response.json()]
+
+    assert response.status_code == 200
+    assert listed_ids
+    assert cut_done.wait(2)
+    assert called == listed_ids
+
+
+def test_clip_cache_lru_and_in_flight_deduplication():
+    from tabmon_api.media import ClipCache
+
+    async def exercise_cache():
+        cache = ClipCache(max_entries=2)
+
+        async def make(content):
+            async def producer():
+                return content
+
+            return await cache.get_or_create(content.decode(), producer)
+
+        await make(b"a")
+        await make(b"b")
+        assert cache.get("a") == b"a"  # refresh a's LRU position
+        await make(b"c")
+        assert len(cache) == 2
+        assert cache.contains("a")
+        assert not cache.contains("b")
+        assert cache.contains("c")
+
+        calls = 0
+
+        async def shared_producer():
+            nonlocal calls
+            calls += 1
+            await asyncio.sleep(0.01)
+            return b"shared"
+
+        results = await asyncio.gather(
+            cache.get_or_create("same", shared_producer),
+            cache.get_or_create("same", shared_producer),
+        )
+        assert results == [b"shared", b"shared"]
+        assert calls == 1
+
+    asyncio.run(exercise_cache())
+
+
+def test_s3_config_reads_rclone_and_env_overrides(tmp_path, monkeypatch):
+    config = tmp_path / "rclone.conf"
+    config.write_text(
+        "[nirds3]\n"
+        "type = s3\n"
+        "access_key_id = config-key\n"
+        "secret_access_key = config-secret%with%percent\n"
+        "endpoint = https://config.s3.example\n"
+    )
+    monkeypatch.setenv("RCLONE_CONFIG", str(config))
+    for name in (
+        "S3_ACCESS_KEY_ID",
+        "S3_SECRET_ACCESS_KEY",
+        "S3_ENDPOINT",
+        "S3_BUCKET",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    from_config = Settings()
+    assert from_config.s3_access_key_id == "config-key"
+    assert from_config.s3_secret_access_key == "config-secret%with%percent"
+    assert from_config.s3_endpoint == "https://config.s3.example"
+
+    monkeypatch.setenv("S3_ACCESS_KEY_ID", "env-key")
+    monkeypatch.setenv("S3_SECRET_ACCESS_KEY", "env-secret")
+    monkeypatch.setenv("S3_ENDPOINT", "https://env.s3.example")
+    monkeypatch.setenv("S3_BUCKET", "env-bucket")
+    from_env = Settings()
+    assert from_env.s3_access_key_id == "env-key"
+    assert from_env.s3_secret_access_key == "env-secret"
+    assert from_env.s3_endpoint == "https://env.s3.example"
+    assert from_env.s3_bucket == "env-bucket"
+
+    from tabmon_api.media import _endpoint_url
+
+    assert _endpoint_url("s3.nird.sigma2.no") == "https://s3.nird.sigma2.no"
+    assert _endpoint_url("https://s3.example") == "https://s3.example"
 
 
 def test_species_card(client):

@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 from contextlib import contextmanager
+from urllib.parse import urlsplit
 
 import duckdb
 
@@ -37,24 +38,58 @@ class DataStore:
         self.loaded_at: float | None = None
         self._cache: dict = {}
 
+    @staticmethod
+    def _sql_literal(value: str) -> str:
+        return "'" + value.replace("'", "''") + "'"
+
     def _url(self, prefix: str, name: str) -> str:
-        return f"{self.settings.data_url.rstrip('/')}/{prefix.strip('/')}/{name}"
+        key = f"{prefix.strip('/')}/{name}"
+        if self.settings.data_dir is not None:
+            return str(self.settings.data_dir / key)
+        return f"s3://{self.settings.s3_bucket}/{key}"
+
+    def _configure_s3(self, con: duckdb.DuckDBPyConnection) -> None:
+        settings = self.settings
+        if not settings.s3_access_key_id or not settings.s3_secret_access_key:
+            raise RuntimeError(
+                "S3 credentials are required (set S3_ACCESS_KEY_ID and "
+                "S3_SECRET_ACCESS_KEY, or configure [nirds3] in RCLONE_CONFIG)"
+            )
+
+        endpoint = settings.s3_endpoint or "https://s3.nird.sigma2.no"
+        parsed = urlsplit(endpoint if "://" in endpoint else f"https://{endpoint}")
+        endpoint = parsed.netloc or parsed.path
+        secret = (
+            "CREATE SECRET tabmon_s3 (TYPE S3, "
+            f"KEY_ID {self._sql_literal(settings.s3_access_key_id)}, "
+            f"SECRET {self._sql_literal(settings.s3_secret_access_key)}, "
+            f"REGION {self._sql_literal(settings.s3_region)}, "
+            f"ENDPOINT {self._sql_literal(endpoint)}, URL_STYLE 'path')"
+        )
+        try:
+            con.execute(secret)
+        except duckdb.Error:
+            # Do not let a SQL error echo the CREATE SECRET statement into logs.
+            raise RuntimeError("could not configure DuckDB S3 access") from None
 
     def _load(self) -> duckdb.DuckDBPyConnection:
         con = duckdb.connect()
         con.execute("SET TimeZone = 'UTC'")
-        if self.settings.data_url.startswith("http"):
+        if self.settings.data_dir is None:
             con.execute("INSTALL httpfs; LOAD httpfs;")
+            self._configure_s3(con)
 
         for table in PARQUET_TABLES:
             url = self._url(self.settings.tables_prefix, f"{table}.parquet")
-            con.execute(f"CREATE TABLE {table} AS SELECT * FROM read_parquet('{url}')")
+            con.execute(
+                f"CREATE TABLE {table} AS SELECT * FROM read_parquet({self._sql_literal(url)})"
+            )
 
         # Optional enrichment produced by the data-transfer pipeline.
         url = self._url(self.settings.tables_prefix, "species_info.parquet")
         try:
             con.execute(
-                f"CREATE TABLE species_info AS SELECT * FROM read_parquet('{url}')"
+                f"CREATE TABLE species_info AS SELECT * FROM read_parquet({self._sql_literal(url)})"
             )
         except duckdb.Error:
             log.warning("species_info.parquet not available")
@@ -68,7 +103,7 @@ class DataStore:
         url = self._url(self.settings.tables_prefix, "species_ecology.parquet")
         try:
             con.execute(
-                f"CREATE TABLE species_ecology AS SELECT * FROM read_parquet('{url}')"
+                f"CREATE TABLE species_ecology AS SELECT * FROM read_parquet({self._sql_literal(url)})"
             )
         except duckdb.Error:
             log.warning("species_ecology.parquet not available")
@@ -84,7 +119,7 @@ class DataStore:
             try:
                 con.execute(
                     f"CREATE TABLE {table} AS SELECT * FROM "
-                    f"read_csv('{url}', header = true, sample_size = -1)"
+                    f"read_csv({self._sql_literal(url)}, header = true, sample_size = -1)"
                 )
             except duckdb.Error as exc:
                 log.warning("could not load %s: %s", url, exc)

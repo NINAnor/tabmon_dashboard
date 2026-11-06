@@ -6,16 +6,16 @@ requires-python = ">=3.11"
 license = {text = "GPL-3.0+"}
 authors = [{name = "Benjamin Cretois", email = "benjamin.cretois@nina.no"}]
 dependencies = [
+  "boto3>=1.43.125",
   "duckdb>=1.2.0",
   "fastapi>=0.115",
-  "httpx>=0.28",
   "pydantic-settings>=2.6",
   "pytz>=2026.6",
   "uvicorn[standard]>=0.32",
 ]
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff"]
+dev = ["httpx2>=2.16.0", "pytest>=8", "ruff"]
 
 [tool.ruff]
 fix = true
