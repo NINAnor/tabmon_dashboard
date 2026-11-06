@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Map, { Layer, Popup, Source } from "react-map-gl/maplibre";
 import type { Device } from "@/lib/api";
 import { int, relativeDays } from "@/lib/format";
+import { mapLib } from "@/lib/maplibre";
 import { DARK_STYLE } from "../ClusterMap";
 
 export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height?: number }) {
@@ -27,6 +28,7 @@ export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10" style={{ height }}>
       <Map
+        mapLib={mapLib}
         initialViewState={{ longitude: 8, latitude: 55, zoom: 3.2 }}
         mapStyle={DARK_STYLE}
         interactiveLayerIds={["devices"]}

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Layer, Popup, Source, type MapLayerMouseEvent, type MapRef } from "react-map-gl/maplibre";
 import type { Cluster, SpeciesPhenology } from "@/lib/api";
 import { oceanRamp } from "@/lib/color";
+import { mapLib } from "@/lib/maplibre";
 import { compact, int, weekLabel } from "@/lib/format";
 import { useSize } from "@/lib/useSize";
 
@@ -139,6 +140,7 @@ export function ClusterMap({
   return (
     <div ref={wrapRef} className="relative overflow-hidden rounded-2xl border border-white/10" style={{ height }}>
       <Map
+        mapLib={mapLib}
         ref={mapRef}
         onLoad={fit}
         initialViewState={{ longitude: 8, latitude: 55, zoom: 3.1 }}
