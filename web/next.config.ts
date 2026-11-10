@@ -9,6 +9,10 @@ const config: NextConfig = {
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${apiUrl}/api/:path*` }];
   },
+  async redirects() {
+    // The project page became the landing page.
+    return [{ source: "/project", destination: "/", permanent: true }];
+  },
 };
 
 export default config;

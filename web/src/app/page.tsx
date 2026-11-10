@@ -1,18 +1,17 @@
-"use client";
-
-import useSWR from "swr";
-import { Hero } from "@/components/Hero";
-import { NetworkOverview, useNetwork } from "@/components/NetworkOverview";
+import type { Metadata } from "next";
+import { ProjectPage } from "@/components/ProjectPage";
 import { PublicShell } from "@/components/SiteHeader";
-import { fetcher, type Cluster } from "@/lib/api";
 
-export default function NetworkPage() {
-  const { data: clusters = [] } = useSWR<Cluster[]>("/api/public/clusters", fetcher);
-  const { data: network } = useNetwork();
+export const metadata: Metadata = {
+  title: "TABMON × BEAGLE · Listening to Europe's birds",
+  description:
+    "TABMON builds a transnational passive acoustic monitoring network for European birds, from the Arctic to the Mediterranean, continuing within the Horizon Europe project BEAGLE.",
+};
+
+export default function Home() {
   return (
     <PublicShell>
-      <Hero clipsChecked={network?.pipeline.clips_checked} validated={network?.pipeline.validated} />
-      <NetworkOverview clusters={clusters} />
+      <ProjectPage />
     </PublicShell>
   );
 }

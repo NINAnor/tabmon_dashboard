@@ -6,7 +6,9 @@ import { fetcher, type Overview } from "@/lib/api";
 import { compact, int } from "@/lib/format";
 import { SpectrogramBackdrop } from "./SpectrogramBackdrop";
 
-export function Hero({ clipsChecked, validated }: { clipsChecked?: number | null; validated?: number | null }) {
+type StatProps = { clipsChecked?: number | null; validated?: number | null };
+
+export function NetworkStats({ clipsChecked, validated }: StatProps) {
   const { data } = useSWR<Overview>("/api/public/overview", fetcher);
 
   const stats: [string, string, string][] = [
@@ -18,6 +20,24 @@ export function Hero({ clipsChecked, validated }: { clipsChecked?: number | null
       ? ["Clips checked", clipsChecked ? compact(clipsChecked) : "–", "by experts & citizens"]
       : ["Detections checked", compact(validated), "by experts & citizens"],
   ];
+
+  return (
+    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 md:grid-cols-5">
+      {stats.map(([label, value, sub]) => (
+        <div key={label} className="bg-ocean-900/80 px-5 py-3 backdrop-blur">
+          <dt className="eyebrow">{label}</dt>
+          <dd className="mt-1 flex items-baseline gap-2">
+            <span className="font-serif text-2xl tabular-nums">{value}</span>
+            <span className="text-[11px] text-white/45">{sub}</span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export function Hero({ clipsChecked, validated }: StatProps) {
+  const { data } = useSWR<Overview>("/api/public/overview", fetcher);
 
   return (
     <section className="relative overflow-hidden">
@@ -43,17 +63,9 @@ export function Hero({ clipsChecked, validated }: { clipsChecked?: number | null
           </Link>
         </div>
 
-        <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 md:grid-cols-5">
-          {stats.map(([label, value, sub]) => (
-            <div key={label} className="bg-ocean-900/80 px-5 py-3 backdrop-blur">
-              <dt className="eyebrow">{label}</dt>
-              <dd className="mt-1 flex items-baseline gap-2">
-                <span className="font-serif text-2xl tabular-nums">{value}</span>
-                <span className="text-[11px] text-white/45">{sub}</span>
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <div className="mt-8">
+          <NetworkStats clipsChecked={clipsChecked} validated={validated} />
+        </div>
       </div>
     </section>
   );

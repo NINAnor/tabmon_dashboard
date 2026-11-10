@@ -25,7 +25,7 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SiteHeader variant="ops" />
-      <main className="mx-auto max-w-[1500px] px-6 pb-24 pt-24">
+      <main className="mx-auto max-w-[1500px] px-6 pb-24 pt-36 md:pt-24">
         <div className="mb-6 flex items-center justify-end gap-3 text-xs text-white/45">
           Signed in as {data.user}
           <button

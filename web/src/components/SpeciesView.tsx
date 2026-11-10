@@ -154,7 +154,7 @@ export function SpeciesView({
 
       <div className="mt-6">
         {expanded ? (
-          <div ref={expandedRef} className="card scroll-mt-20 p-5">
+          <div ref={expandedRef} className="card scroll-mt-32 p-5 md:scroll-mt-20">
             {controls}
             <div className="grid gap-5 lg:grid-cols-[3fr_2fr]">
               <ClusterMap
