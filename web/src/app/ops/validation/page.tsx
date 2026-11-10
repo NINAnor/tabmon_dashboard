@@ -15,6 +15,8 @@ export default function ValidationPage() {
   const { data } = useSWR<Validations>("/api/ops/validations", fetcher);
   const total = data?.by_country.reduce((s, r) => s + r.n_validated, 0) ?? 0;
   const correct = data?.by_country.reduce((s, r) => s + r.n_correct, 0) ?? 0;
+  const clips = (source?: string) =>
+    data?.by_country.filter((r) => !source || r.source === source).reduce((s, r) => s + (r.n_clips ?? 0), 0);
   const countries = [...new Set(data?.by_country.map((r) => r.country))];
   const maxSpecies = Math.max(1, ...(data?.by_species ?? []).map((s) => s.n_validated));
 
@@ -23,11 +25,10 @@ export default function ValidationPage() {
       <PageTitle eyebrow="Validation" title="How many detections have been checked">
         Expert and citizen validations drive the per-species confidence thresholds used in every chart.
       </PageTitle>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat label="Validated clips" value={int(total)} />
-        <Stat label="Confirmed" value={pct(total ? correct / total : null)} sub="across all confidence levels" />
-        <Stat label="Expert" value={int(data?.by_country.filter((r) => r.source === "expert").reduce((s, r) => s + r.n_validated, 0))} />
-        <Stat label="Citizen" value={int(data?.by_country.filter((r) => r.source === "citizen").reduce((s, r) => s + r.n_validated, 0))} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Stat label="Clips checked" value={int(clips())} sub={`${int(clips("expert"))} expert · ${int(clips("citizen"))} citizen`} />
+        <Stat label="Detections checked" value={int(total)} sub="one per BirdNET species in a clip" />
+        <Stat label="Confirmed" value={pct(total ? correct / total : null)} sub="of detections, all confidence levels" />
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-4">
@@ -40,7 +41,8 @@ export default function ValidationPage() {
               </p>
               {rows.map((r) => (
                 <p key={r.source} className="mt-1 text-sm text-white/65">
-                  {r.source}: <b className="text-white">{int(r.n_validated)}</b> clips · {r.n_species} species
+                  {r.source}: {r.n_clips != null && <><b className="text-white">{int(r.n_clips)}</b> clips · </>}
+                  {int(r.n_validated)} detections · {r.n_species} species
                 </p>
               ))}
             </div>

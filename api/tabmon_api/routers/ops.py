@@ -220,9 +220,15 @@ async def photo(
 def validations(store: DataStore = Depends(get_store)):
     by_country = store.query(
         """
-        SELECT country, source, sum(n_validated)::BIGINT AS n_validated,
-               sum(n_correct)::BIGINT AS n_correct, count(DISTINCT species) AS n_species
-        FROM validations GROUP BY ALL ORDER BY country, source
+        WITH v AS (
+            SELECT country, source, sum(n_validated)::BIGINT AS n_validated,
+                   sum(n_correct)::BIGINT AS n_correct, count(DISTINCT species) AS n_species
+            FROM validations GROUP BY ALL
+        )
+        SELECT v.*, s.n_clips
+        FROM v LEFT JOIN validation_summary s
+          ON s.country IS NOT DISTINCT FROM v.country AND s.source = v.source
+        ORDER BY v.country, v.source
         """
     )
     by_species = store.query(

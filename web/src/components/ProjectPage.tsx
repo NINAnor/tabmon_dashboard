@@ -179,8 +179,8 @@ export function ProjectPage() {
                 {p && (
                   <p className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
                     <span>
-                      <span className="font-serif text-3xl text-amber">{compact(p.validated)}</span>
-                      <span className="ml-2 text-sm text-white/55">clips checked</span>
+                      <span className="font-serif text-3xl text-amber">{compact(p.clips_checked ?? p.validated)}</span>
+                      <span className="ml-2 text-sm text-white/55">{p.clips_checked ? "clips checked" : "detections checked"}</span>
                     </span>
                     <span>
                       <span className="font-serif text-3xl text-amber">{p.calibrated}</span>

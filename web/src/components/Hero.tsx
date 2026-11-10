@@ -6,7 +6,7 @@ import { fetcher, type Overview } from "@/lib/api";
 import { compact, int } from "@/lib/format";
 import { SpectrogramBackdrop } from "./SpectrogramBackdrop";
 
-export function Hero({ validated }: { validated?: number | null }) {
+export function Hero({ clipsChecked, validated }: { clipsChecked?: number | null; validated?: number | null }) {
   const { data } = useSWR<Overview>("/api/public/overview", fetcher);
 
   const stats: [string, string, string][] = [
@@ -14,7 +14,9 @@ export function Hero({ validated }: { validated?: number | null }) {
     ["Hours analysed", data ? compact(data.hours_recorded) : "–", "of soundscape"],
     ["Detections", data ? compact(data.n_detections) : "–", "BirdNET, calibrated"],
     ["Species", data ? int(data.n_species) : "–", `in ${data?.countries ?? "–"} countries`],
-    ["Clips validated", validated ? compact(validated) : "–", "by experts & citizens"],
+    clipsChecked || !validated
+      ? ["Clips checked", clipsChecked ? compact(clipsChecked) : "–", "by experts & citizens"]
+      : ["Detections checked", compact(validated), "by experts & citizens"],
   ];
 
   return (

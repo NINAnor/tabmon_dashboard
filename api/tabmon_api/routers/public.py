@@ -117,7 +117,12 @@ def network(store: DataStore = Depends(get_store)):
                    (SELECT sum(n_validated) FROM validations
                     WHERE source = 'citizen')::BIGINT AS citizen_validated,
                    (SELECT sum(n_validated) FROM validations
-                    WHERE source = 'expert')::BIGINT AS expert_validated
+                    WHERE source = 'expert')::BIGINT AS expert_validated,
+                   (SELECT sum(n_clips) FROM validation_summary)::BIGINT AS clips_checked,
+                   (SELECT sum(n_clips) FROM validation_summary
+                    WHERE source = 'citizen')::BIGINT AS citizen_clips,
+                   (SELECT sum(n_clips) FROM validation_summary
+                    WHERE source = 'expert')::BIGINT AS expert_clips
             """
         )
         totals = (

@@ -11,7 +11,7 @@ export default function NetworkPage() {
   const { data: network } = useNetwork();
   return (
     <PublicShell>
-      <Hero validated={network?.pipeline.validated} />
+      <Hero clipsChecked={network?.pipeline.clips_checked} validated={network?.pipeline.validated} />
       <NetworkOverview clusters={clusters} />
     </PublicShell>
   );

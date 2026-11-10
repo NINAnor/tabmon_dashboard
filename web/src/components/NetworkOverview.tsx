@@ -29,6 +29,10 @@ export type Network = {
     size_tb: number | null;
     citizen_validated: number | null;
     expert_validated: number | null;
+    // Clips listened to; one clip can check several BirdNET species (null with older data).
+    clips_checked: number | null;
+    citizen_clips: number | null;
+    expert_clips: number | null;
   };
 };
 
@@ -214,8 +218,14 @@ function HowItWorks({ pipeline }: { pipeline?: Network["pipeline"] }) {
     {
       icon: CheckCircle2,
       title: "Validate",
-      value: pipeline ? `${compact(pipeline.validated)} clips checked` : "–",
-      text: "Experts and citizen scientists listen to samples and confirm or reject BirdNET's suggestions.",
+      value: pipeline
+        ? pipeline.clips_checked
+          ? `${compact(pipeline.clips_checked)} clips checked`
+          : `${compact(pipeline.validated)} detections checked`
+        : "–",
+      text: pipeline?.clips_checked
+        ? `Experts and citizen scientists listen to short clips and confirm or reject each species BirdNET suggests: ${compact(pipeline.validated)} detections checked so far.`
+        : "Experts and citizen scientists listen to short clips and confirm or reject each species BirdNET suggests.",
     },
     {
       icon: SlidersHorizontal,

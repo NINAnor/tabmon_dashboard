@@ -303,6 +303,7 @@ export type Validations = {
     n_validated: number;
     n_correct: number;
     n_species: number;
+    n_clips: number | null;
   }[];
   by_species: {
     species: string;

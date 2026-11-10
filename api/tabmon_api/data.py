@@ -114,6 +114,18 @@ class DataStore:
                 "night_share DOUBLE, active_months VARCHAR)"
             )
 
+        url = self._url(self.settings.tables_prefix, "validation_summary.parquet")
+        try:
+            con.execute(
+                f"CREATE TABLE validation_summary AS SELECT * FROM read_parquet({self._sql_literal(url)})"
+            )
+        except duckdb.Error:
+            log.warning("validation_summary.parquet not available")
+            con.execute(
+                "CREATE TABLE validation_summary (country VARCHAR, source VARCHAR, "
+                "n_clips BIGINT)"
+            )
+
         for table, name in LEGACY_CSV.items():
             url = self._url(self.settings.legacy_prefix, name)
             try:

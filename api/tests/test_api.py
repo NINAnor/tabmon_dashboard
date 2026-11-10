@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tabmon_api.config import Settings, get_settings
+from tabmon_api.data import DataStore
 from tabmon_api.main import app
 
 TEST_PASSWORD = "pw"  # pragma: allowlist secret
@@ -77,8 +78,17 @@ def data_dir(tmp_path):
         "CREATE TABLE photos (path VARCHAR, name VARCHAR, device_id VARCHAR, picture_type VARCHAR)"
     )
     con.execute(
-        "CREATE TABLE validations (country VARCHAR, species VARCHAR, source VARCHAR, "
-        "n_validated BIGINT, n_correct BIGINT)"
+        "CREATE TABLE validations AS SELECT * FROM (VALUES "
+        "('Norway', 'Cuculus canorus', 'expert', 6::BIGINT, 5::BIGINT), "
+        "('Norway', 'Turdus merula', 'expert', 3::BIGINT, 1::BIGINT), "
+        "('Spain', 'Cuculus canorus', 'citizen', 2::BIGINT, 2::BIGINT)"
+        ") t(country, species, source, n_validated, n_correct)"
+    )
+    # One expert clip checks several species: 9 expert checks come from 4 clips.
+    con.execute(
+        "CREATE TABLE validation_summary AS SELECT * FROM (VALUES "
+        "('Norway', 'expert', 4::BIGINT), ('Spain', 'citizen', 2::BIGINT)"
+        ") t(country, source, n_clips)"
     )
     for t in (
         "deployments",
@@ -88,6 +98,7 @@ def data_dir(tmp_path):
         "clips",
         "photos",
         "validations",
+        "validation_summary",
     ):
         con.execute(f"COPY {t} TO '{tables}/{t}.parquet' (FORMAT parquet)")
     return tmp_path
@@ -399,6 +410,28 @@ def test_network_summary(client):
     assert data["monthly"] and data["pipeline"]["calibrated"] == 1
     top = client.get("/api/public/clusters/norway-north/species").json()
     assert top[0]["species"] == "Cuculus canorus" and top[0]["rate"] > 0
+
+
+def test_validation_counts_separate_clips_from_detection_checks(client):
+    p = client.get("/api/public/network").json()["pipeline"]
+    assert p["validated"] == 11 and p["expert_validated"] == 9
+    assert (
+        p["clips_checked"] == 6 and p["expert_clips"] == 4 and p["citizen_clips"] == 2
+    )
+
+    client.post("/api/auth/login", json=LOGIN)
+    rows = client.get("/api/ops/validations").json()["by_country"]
+    norway = next(r for r in rows if r["country"] == "Norway")
+    assert norway["n_validated"] == 9 and norway["n_clips"] == 4
+
+
+def test_validation_summary_is_optional(data_dir):
+    (data_dir / "data/preprocessed/dashboard/validation_summary.parquet").unlink()
+    store = DataStore(
+        Settings(data_dir=data_dir, species_media_csv=data_dir / "none.csv")
+    )
+    store.refresh()
+    assert store.one("SELECT count(*) AS n FROM validation_summary")["n"] == 0
 
 
 def test_most_wanted_endpoint(client):

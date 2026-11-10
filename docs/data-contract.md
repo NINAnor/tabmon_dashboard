@@ -15,6 +15,7 @@ The API reads from the `bencretois-ns8129k-proj-tabmon` S3 bucket at
 |---|---|---|
 | Dashboard Parquet tables | `data/preprocessed/dashboard/{deployments,effort,phenology,species,clips,photos,validations}.parquet` | All seven required; a missing file prevents loading. |
 | Species enrichment | `data/preprocessed/dashboard/species_info.parquet`, `species_ecology.parquet` | Optional; empty typed tables are created when absent. |
+| Validation summary | `data/preprocessed/dashboard/validation_summary.parquet` | Optional; when absent, clip counts are `null` and the site shows detection checks instead. |
 | Legacy CSVs | `data/preprocessed/device_status.csv`, `all_device_stats.csv`, `dataset_stats.csv`, `recording_matrix.csv` | Loader attempts each and creates a placeholder table if absent. Team endpoints that query their columns need usable CSVs; some public summaries degrade gracefully. |
 | Species media override | `api/data/species_media.csv` (local to the API image, not the bucket) | Optional; an empty table is created if absent. |
 | Site photos | `data/{photos.path}` | Needed when a photo is requested. |
@@ -81,12 +82,14 @@ possible where input metadata is absent or a calculation has no result.
 | | `device_id` | VARCHAR | Recorder ID associated with the photo. |
 | | `picture_type` | VARCHAR | Parsed photo type (defaults to `site`). |
 | `validations` | `country`, `species`, `source` | VARCHAR | Country, scientific species name, and validation source (`citizen` or `expert`). |
-| | `n_validated`, `n_correct` | BIGINT | Number of valid checks and checks marked correct. |
+| | `n_validated`, `n_correct` | BIGINT | Number of detection checks and checks marked correct. One expert clip checks every BirdNET species suggested in it, so this is larger than the number of clips. Only each reviewer's latest answer per clip counts. |
 
 ### Optional enrichment tables
 
 | Table | Column | Type | Meaning |
 |---|---|---|---|
+| `validation_summary` | `country`, `source` | VARCHAR | Country and validation source (`citizen` or `expert`). |
+| | `n_clips` | BIGINT | Distinct clips listened to (recording + start time). Summable across countries. |
 | `species_info` | `species` | VARCHAR | Scientific species name (join key). |
 | | `wiki_title` | VARCHAR | Wikipedia page title. |
 | | `wiki_url` | VARCHAR | Wikipedia page URL. |
