@@ -67,7 +67,12 @@ export function SpeciesPicker({
     const needle = q.trim().toLowerCase();
     if (!needle) return [];
     return data
-      .filter((d) => d.species.toLowerCase().includes(needle) || (d.common_en ?? "").toLowerCase().includes(needle))
+      .filter(
+        (d) =>
+          d.species.toLowerCase().includes(needle) ||
+          (d.common_en ?? "").toLowerCase().includes(needle) ||
+          displayName(d).toLowerCase().includes(needle),
+      )
       .slice(0, 30);
   }, [q, data]);
 

@@ -267,6 +267,78 @@ def species_list(
     )
 
 
+@router.get("/species-names")
+def species_names(store: DataStore = Depends(get_store)):
+    """Common names of every species in every available language."""
+
+    def compute():
+        rows = store.query(
+            """
+            SELECT n.species, n.lang, n.name FROM species_names n
+            SEMI JOIN species s USING (species)
+            ORDER BY n.species, n.lang
+            """
+        )
+        names: dict[str, dict[str, str]] = {}
+        for r in rows:
+            names.setdefault(r["species"], {})[r["lang"]] = r["name"]
+        langs = sorted({r["lang"] for r in rows}, key=lambda c: (c != "en", c))
+        return {"languages": langs, "names": names}
+
+    return store.cached(("species-names",), compute)
+
+
+@router.get("/species/{species}/calibration")
+def species_calibration(species: str, store: DataStore = Depends(get_store)):
+    """How the confidence threshold of a species was chosen (for the chart)."""
+
+    def compute():
+        sp = store.one(
+            """
+            SELECT species, common_en, threshold, threshold_source,
+                   precision_at_threshold, n_validated
+            FROM species WHERE species = ?
+            """,
+            [species],
+        )
+        if sp is None:
+            return None
+        curve = store.query(
+            """
+            SELECT confidence, p_correct, p_logistic, precision_above,
+                   naive_precision_above, n_validated_above, n_detections_above
+            FROM calibration WHERE species = ? AND kind = 'curve' ORDER BY confidence
+            """,
+            [species],
+        )
+        observed = store.query(
+            """
+            SELECT confidence, n_validated, n_correct
+            FROM calibration WHERE species = ? AND kind = 'observed' ORDER BY confidence
+            """,
+            [species],
+        )
+        method = None
+        if curve:
+            method = (
+                "logistic"
+                if any(c["p_logistic"] is not None for c in curve)
+                else "empirical"
+            )
+        return {
+            **sp,
+            "method": method,
+            "target": 0.9,
+            "curve": curve,
+            "observed": observed,
+        }
+
+    result = store.cached(("calibration", species), compute)
+    if result is None:
+        raise HTTPException(404, "Unknown species")
+    return result
+
+
 @router.get("/species/{species}")
 def species_detail(
     species: str,

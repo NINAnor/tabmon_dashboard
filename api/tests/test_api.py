@@ -59,8 +59,9 @@ def data_dir(tmp_path):
     con.execute(
         """
         CREATE TABLE species AS SELECT 'Cuculus canorus' AS species,
-            'Common Cuckoo' AS common_en, NULL AS common_fr, NULL AS common_es,
-            NULL AS common_nl, NULL AS common_no, 1120::BIGINT AS n_detections,
+            'Common Cuckoo' AS common_en, 'Coucou gris' AS common_fr,
+            NULL::VARCHAR AS common_es, NULL::VARCHAR AS common_nl,
+            NULL::VARCHAR AS common_no, 1120::BIGINT AS n_detections,
             2::BIGINT AS n_sites, 2::BIGINT AS n_countries, 0.45 AS threshold,
             'calibrated' AS threshold_source, 193::BIGINT AS n_validated,
             0.9 AS precision_at_threshold
@@ -432,6 +433,31 @@ def test_validation_summary_is_optional(data_dir):
     )
     store.refresh()
     assert store.one("SELECT count(*) AS n FROM validation_summary")["n"] == 0
+
+
+def test_weeks_follow_the_calendar_year(client):
+    # ISO weeks would put 29-31 December into week 1 of the same year.
+    d = client.get(
+        "/api/public/phenology/place", params={"id": "spain-south", "year": 2025}
+    ).json()
+    minutes_per_day = 2 * 60
+    assert d["effort_weeks"][0] == 7 * minutes_per_day
+    assert d["effort_weeks"][51] == 8 * minutes_per_day  # 24-31 December
+    assert d["effort_weeks"][52] == 0
+    assert d["week_starts"][0] == "2025-01-01" and d["week_starts"][51] == "2025-12-24"
+
+
+def test_species_names_fall_back_to_species_columns(client):
+    d = client.get("/api/public/species-names").json()
+    assert d["languages"][0] == "en" and "fr" in d["languages"]
+    assert d["names"]["Cuculus canorus"] == {"en": "Common Cuckoo", "fr": "Coucou gris"}
+
+
+def test_calibration_endpoint(client):
+    d = client.get("/api/public/species/Cuculus canorus/calibration").json()
+    # The fixture has no calibration table: the endpoint still answers.
+    assert d["threshold"] == 0.45 and d["curve"] == [] and d["method"] is None
+    assert client.get("/api/public/species/Nope nope/calibration").status_code == 404
 
 
 def test_most_wanted_endpoint(client):

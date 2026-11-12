@@ -228,7 +228,10 @@ export function SpeciesStats({ species }: { species: string }) {
             <p className="mt-1 text-xs text-white/50">
               {int(data.n_validated)} clips checked by experts and citizens. Only detections above BirdNET confidence{" "}
               {data.threshold.toFixed(2)} are counted
-              {data.threshold_source === "calibrated_low" ? " (best threshold available, below the 90% target)" : ""}.
+              {data.threshold_source === "calibrated_low" ? " (best threshold available, below the 90% target)" : ""}.{" "}
+              <a href="#calibration" className="text-teal hover:underline">
+                How this was set ↓
+              </a>
             </p>
           </>
         )}

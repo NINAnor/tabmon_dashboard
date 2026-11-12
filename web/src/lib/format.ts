@@ -1,4 +1,5 @@
 import { format } from "d3-format";
+import { localName } from "./names";
 
 export const COUNTRY_COLORS: Record<string, string> = {
   Norway: "#7fb8ff",
@@ -22,7 +23,7 @@ export const rate = (n: number | null | undefined) =>
   n === null || n === undefined ? "–" : n < 10 ? n.toFixed(2) : n.toFixed(1);
 
 export function displayName(s: { species: string; common_en?: string | null }) {
-  return s.common_en || s.species;
+  return localName(s.species) || s.common_en || s.species;
 }
 
 export function weekLabel(weekStarts: string[], week: number) {

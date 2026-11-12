@@ -16,6 +16,8 @@ The API reads from the `bencretois-ns8129k-proj-tabmon` S3 bucket at
 | Dashboard Parquet tables | `data/preprocessed/dashboard/{deployments,effort,phenology,species,clips,photos,validations}.parquet` | All seven required; a missing file prevents loading. |
 | Species enrichment | `data/preprocessed/dashboard/species_info.parquet`, `species_ecology.parquet` | Optional; empty typed tables are created when absent. |
 | Validation summary | `data/preprocessed/dashboard/validation_summary.parquet` | Optional; when absent, clip counts are `null` and the site shows detection checks instead. |
+| Calibration curves | `data/preprocessed/dashboard/calibration.parquet` | Optional; when absent, the species page shows no calibration chart. |
+| Species names | `data/preprocessed/dashboard/species_names.parquet` | Optional; when absent, names come from the `common_*` columns of `species`. |
 | Legacy CSVs | `data/preprocessed/device_status.csv`, `all_device_stats.csv`, `dataset_stats.csv`, `recording_matrix.csv` | Loader attempts each and creates a placeholder table if absent. Team endpoints that query their columns need usable CSVs; some public summaries degrade gracefully. |
 | Species media override | `api/data/species_media.csv` (local to the API image, not the bucket) | Optional; an empty table is created if absent. |
 | Site photos | `data/{photos.path}` | Needed when a photo is requested. |
@@ -61,7 +63,7 @@ possible where input metadata is absent or a calculation has no result.
 | `phenology` | `species`, `site_id` | VARCHAR | Scientific species name and site key. |
 | | `date` | DATE | Local detection date. |
 | | `hour` | TINYINT | Local detection hour (0–23). |
-| | `n_detections` | INTEGER | Number of retained detections in the species/site/date/hour group. |
+| | `n_detections` | INTEGER | Number of retained detections in the species/site/date/hour group. Only site-hours present in `effort` are included, so every detection has recording effort behind it. |
 | `species` | `species` | VARCHAR | Scientific species name (join key). |
 | | `common_en`, `common_fr`, `common_es`, `common_nl`, `common_no` | VARCHAR | Common names in English, French, Spanish, Dutch and Norwegian. |
 | | `n_detections` | BIGINT | Total retained detections. |
@@ -90,6 +92,13 @@ possible where input metadata is absent or a calculation has no result.
 |---|---|---|---|
 | `validation_summary` | `country`, `source` | VARCHAR | Country and validation source (`citizen` or `expert`). |
 | | `n_clips` | BIGINT | Distinct clips listened to (recording + start time). Summable across countries. |
+| `calibration` | `kind` | VARCHAR | `curve` (one row per threshold 0.10–0.99 in 0.01 steps) or `observed` (one row per 0.05-wide confidence bin). |
+| | `species`, `confidence` | VARCHAR, DOUBLE | Scientific name; threshold (`curve`) or bin centre (`observed`). |
+| | `p_correct`, `p_logistic` | DOUBLE | `curve`: probability that a detection at this score is correct (bin-adjusted logistic fit, and the plain fit). |
+| | `precision_above`, `naive_precision_above` | DOUBLE | `curve`: expected share correct among all detections at or above the threshold (used to pick the threshold), and the uncorrected share among checked clips. |
+| | `n_validated_above`, `n_detections_above` | BIGINT | `curve`: checked clips and all BirdNET detections at or above the threshold. |
+| | `n_validated`, `n_correct` | BIGINT | `observed`: checked clips and correct clips in the bin. |
+| `species_names` | `species`, `lang`, `name` | VARCHAR | Common name per species and language (ISO 639-1 code). One column per language in the names CSV of the pipeline; add a column to add a language. |
 | `species_info` | `species` | VARCHAR | Scientific species name (join key). |
 | | `wiki_title` | VARCHAR | Wikipedia page title. |
 | | `wiki_url` | VARCHAR | Wikipedia page URL. |
@@ -127,6 +136,13 @@ present and are passed through where the API returns the full row.
 | `all_device_stats.csv` | `device_id` (text; recorder ID), `full_device_name` (text; join/display name), `total_recordings` (number; file count), `total_size_gb` (number; data size), `avg_file_size_mb` (number; average file size), `earliest_recording`, `latest_recording` (date/time; recording bounds). |
 | `dataset_stats.csv` | `total_recordings` (number; dataset file count), `total_size_bytes` (number; dataset size), plus any additional columns returned by the team dataset endpoint. |
 | `recording_matrix.csv` | `Country`, `device` (text; row identifiers), plus date-named columns (counts, converted to integers by the API). |
+
+## Weeks
+
+Weekly charts number weeks within the calendar year: days 1–7 are week 1, and the
+last one or two days of the year join week 52 (`least((dayofyear(date) - 1) // 7 + 1, 52)`).
+ISO weeks are not used, because they put late December into week 1 (and some early
+January days into week 53) of the same calendar year.
 
 ## Clip format and compatibility
 

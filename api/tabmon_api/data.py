@@ -126,6 +126,40 @@ class DataStore:
                 "n_clips BIGINT)"
             )
 
+        url = self._url(self.settings.tables_prefix, "calibration.parquet")
+        try:
+            con.execute(
+                f"CREATE TABLE calibration AS SELECT * FROM read_parquet({self._sql_literal(url)})"
+            )
+        except duckdb.Error:
+            log.warning("calibration.parquet not available")
+            con.execute(
+                "CREATE TABLE calibration (kind VARCHAR, species VARCHAR, "
+                "confidence DOUBLE, p_correct DOUBLE, p_logistic DOUBLE, "
+                "precision_above DOUBLE, naive_precision_above DOUBLE, "
+                "n_validated_above BIGINT, n_detections_above BIGINT, "
+                "n_validated BIGINT, n_correct BIGINT)"
+            )
+
+        url = self._url(self.settings.tables_prefix, "species_names.parquet")
+        try:
+            con.execute(
+                f"CREATE TABLE species_names AS SELECT * FROM read_parquet({self._sql_literal(url)})"
+            )
+        except duckdb.Error:
+            log.warning("species_names.parquet not available, using species columns")
+            con.execute(
+                """
+                CREATE TABLE species_names AS
+                SELECT species, lang, name FROM (
+                    UNPIVOT (SELECT species, common_en AS en, common_fr AS fr,
+                                    common_es AS es, common_nl AS nl, common_no AS no
+                             FROM species)
+                    ON en, fr, es, nl, no INTO NAME lang VALUE name
+                ) WHERE name IS NOT NULL AND trim(name) <> ''
+                """
+            )
+
         for table, name in LEGACY_CSV.items():
             url = self._url(self.settings.legacy_prefix, name)
             try:

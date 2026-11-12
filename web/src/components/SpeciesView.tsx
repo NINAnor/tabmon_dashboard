@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { fetcher, qs, type Cluster, type SpeciesPhenology } from "@/lib/api";
 import { weekLabel } from "@/lib/format";
+import { CalibrationPanel } from "./CalibrationChart";
 import { ClipList } from "./ClipPlayer";
 import { ClusterMap } from "./ClusterMap";
 import { Segmented, YearToggle } from "./Controls";
@@ -235,6 +236,9 @@ export function SpeciesView({
           </div>
           <div className="mt-6">
             <SpeciesStats species={species} />
+          </div>
+          <div className="mt-6">
+            <CalibrationPanel species={species} />
           </div>
           <div className="mt-6">
             <ClipList species={species} clusterId={selected} title={sel ? `Listen · ${sel.label}` : "Listen"} limit={6} />

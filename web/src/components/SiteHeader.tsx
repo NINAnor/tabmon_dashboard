@@ -4,6 +4,7 @@ import { Headphones, Mail } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CONTACT_URL, labLink } from "@/lib/lab";
+import { LanguagePicker } from "./LanguageProvider";
 
 const PUBLIC_TABS = [
   ["/", "Project"],
@@ -72,6 +73,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
               </a>
             </>
           )}
+          <LanguagePicker />
           <Link href={variant === "public" ? "/ops" : "/"} className="pill">
             {variant === "public" ? "Team area" : "Public site"}
           </Link>

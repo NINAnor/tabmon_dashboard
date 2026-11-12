@@ -5,7 +5,7 @@ sum(detections) / (sum(recorded_minutes) / 60) over the sites in a group.
 """
 
 import math
-from datetime import date
+from datetime import date, timedelta
 
 from . import ecology
 from .config import Settings
@@ -22,9 +22,18 @@ def _year_clause(alias: str, year: int | None) -> str:
     return f"AND year({alias}.date) = {int(year)}" if year else ""
 
 
+def _week(col: str) -> str:
+    """Week of the calendar year: days 1-7 are week 1, and the last one or two days
+    of the year join week 52. ISO weeks would put late December into week 1 (and
+    early January into week 53) of the same calendar year."""
+    return f"least((dayofyear({col}) - 1) // 7 + 1, 52)"
+
+
 def week_start(week: int, year: int | None) -> str:
-    """Monday of an ISO week, using a reference year when none is given."""
-    return date.fromisocalendar(year or 2025, min(week, 52), 1).isoformat()
+    """First day of a calendar-year week, using a reference year when none is given."""
+    return (
+        date(year or 2025, 1, 1) + timedelta(days=7 * (min(week, 52) - 1))
+    ).isoformat()
 
 
 def available_years(store: DataStore) -> list[int]:
@@ -218,13 +227,13 @@ def species_phenology(
     rows = store.query(
         f"""
         WITH ef AS (
-            SELECT e.site_id, weekofyear(e.date) AS week,
+            SELECT e.site_id, {_week("e.date")} AS week,
                    sum(e.recorded_minutes) AS minutes
             FROM effort e WHERE true {_year_clause("e", year)}
             GROUP BY ALL
         ),
         ph AS (
-            SELECT p.site_id, weekofyear(p.date) AS week, sum(p.n_detections) AS n
+            SELECT p.site_id, {_week("p.date")} AS week, sum(p.n_detections) AS n
             FROM phenology p WHERE p.species = ? {_year_clause("p", year)}
             GROUP BY ALL
         )
@@ -328,7 +337,7 @@ def place_profile(
 
     effort_weeks = store.query(
         f"""
-        SELECT weekofyear(e.date) AS week, sum(e.recorded_minutes) AS minutes
+        SELECT {_week("e.date")} AS week, sum(e.recorded_minutes) AS minutes
         FROM effort e WHERE {where} {_year_clause("e", year)} GROUP BY ALL
         """,
         params,
@@ -338,7 +347,7 @@ def place_profile(
     grid = store.query(
         f"""
         WITH ph AS (
-            SELECT p.species, weekofyear(p.date) AS week, sum(p.n_detections) AS n
+            SELECT p.species, {_week("p.date")} AS week, sum(p.n_detections) AS n
             FROM phenology p WHERE {where} {_year_clause("p", year)}
             GROUP BY ALL
         ),
@@ -515,12 +524,12 @@ def species_summary(store: DataStore, settings: Settings, species: str) -> dict 
         f"""
         WITH occ_sites AS (SELECT DISTINCT site_id FROM phenology WHERE species = ?),
         ef AS (
-            SELECT site_id, year(date) AS y, weekofyear(date) AS w,
+            SELECT site_id, year(date) AS y, {_week("date")} AS w,
                    sum(recorded_minutes) AS m
             FROM effort WHERE site_id IN (SELECT site_id FROM occ_sites) GROUP BY ALL
         ),
         ph AS (
-            SELECT site_id, year(date) AS y, weekofyear(date) AS w,
+            SELECT site_id, year(date) AS y, {_week("date")} AS w,
                    sum(n_detections) AS n
             FROM phenology WHERE species = ? GROUP BY ALL
         ),
