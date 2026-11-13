@@ -309,17 +309,24 @@ def species_calibration(species: str, store: DataStore = Depends(get_store)):
         )
         if sp is None:
             return None
+
+        # Older pipeline runs wrote fewer columns: fill the missing ones with NULL.
+        def col(name: str) -> str:
+            return (
+                name if _has_column(store, "calibration", name) else f"NULL AS {name}"
+            )
+
         curve = store.query(
-            """
-            SELECT confidence, p_correct, p_lower, p_upper,
+            f"""
+            SELECT confidence, p_correct, {col("p_lower")}, {col("p_upper")},
                    n_validated_above, n_detections_above
             FROM calibration WHERE species = ? AND kind = 'curve' ORDER BY confidence
             """,
             [species],
         )
         observed = store.query(
-            """
-            SELECT confidence, n_validated, n_correct, p_lower, p_upper
+            f"""
+            SELECT confidence, n_validated, n_correct, {col("p_lower")}, {col("p_upper")}
             FROM calibration WHERE species = ? AND kind = 'observed' ORDER BY confidence
             """,
             [species],

@@ -460,6 +460,25 @@ def test_calibration_endpoint(client):
     assert client.get("/api/public/species/Nope nope/calibration").status_code == 404
 
 
+def test_calibration_tolerates_older_columns(data_dir):
+    import duckdb as ddb
+
+    tables = data_dir / "data/preprocessed/dashboard"
+    ddb.sql(
+        "COPY (SELECT 'curve' AS kind, 'Cuculus canorus' AS species, 0.1 AS confidence, "
+        "0.5 AS p_correct, 3::BIGINT AS n_validated_above, 9::BIGINT AS n_detections_above, "
+        "NULL::BIGINT AS n_validated, NULL::BIGINT AS n_correct) "
+        f"TO '{tables}/calibration.parquet' (FORMAT parquet)"
+    )
+    settings = Settings(data_dir=data_dir, species_media_csv=data_dir / "none.csv")
+    store = DataStore(settings)
+    store.refresh()
+    from tabmon_api.routers.public import species_calibration
+
+    d = species_calibration("Cuculus canorus", store)
+    assert d["curve"][0]["p_correct"] == 0.5 and d["curve"][0]["p_lower"] is None
+
+
 def test_most_wanted_endpoint(client):
     # The fixture's only species is calibrated, so nothing is "wanted".
     assert client.get("/api/public/most-wanted").json() == []
