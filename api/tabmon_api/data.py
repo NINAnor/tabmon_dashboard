@@ -135,8 +135,7 @@ class DataStore:
             log.warning("calibration.parquet not available")
             con.execute(
                 "CREATE TABLE calibration (kind VARCHAR, species VARCHAR, "
-                "confidence DOUBLE, p_correct DOUBLE, p_logistic DOUBLE, "
-                "precision_above DOUBLE, naive_precision_above DOUBLE, "
+                "confidence DOUBLE, p_correct DOUBLE, p_lower DOUBLE, p_upper DOUBLE, "
                 "n_validated_above BIGINT, n_detections_above BIGINT, "
                 "n_validated BIGINT, n_correct BIGINT)"
             )

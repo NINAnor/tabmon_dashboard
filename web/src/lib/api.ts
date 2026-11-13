@@ -70,6 +70,8 @@ export type SpeciesRow = {
   n_validated: number;
   n_correct: number;
   precision_at_threshold: number | null;
+  threshold_lower?: number | null;
+  threshold_upper?: number | null;
   calibrated: boolean;
 };
 

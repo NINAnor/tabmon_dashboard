@@ -456,7 +456,7 @@ def test_species_names_fall_back_to_species_columns(client):
 def test_calibration_endpoint(client):
     d = client.get("/api/public/species/Cuculus canorus/calibration").json()
     # The fixture has no calibration table: the endpoint still answers.
-    assert d["threshold"] == 0.45 and d["curve"] == [] and d["method"] is None
+    assert d["threshold"] == 0.45 and d["curve"] == [] and d["threshold_lower"] is None
     assert client.get("/api/public/species/Nope nope/calibration").status_code == 404
 
 

@@ -293,10 +293,16 @@ def species_calibration(species: str, store: DataStore = Depends(get_store)):
     """How the confidence threshold of a species was chosen (for the chart)."""
 
     def compute():
+        extra = [
+            c
+            for c in ("threshold_lower", "threshold_upper", "threshold_method")
+            if _has_column(store, "species", c)
+        ]
         sp = store.one(
-            """
+            f"""
             SELECT species, common_en, threshold, threshold_source,
-                   precision_at_threshold, n_validated
+                   precision_at_threshold, n_validated, n_detections
+                   {"".join(", " + c for c in extra)}
             FROM species WHERE species = ?
             """,
             [species],
@@ -305,30 +311,26 @@ def species_calibration(species: str, store: DataStore = Depends(get_store)):
             return None
         curve = store.query(
             """
-            SELECT confidence, p_correct, p_logistic, precision_above,
-                   naive_precision_above, n_validated_above, n_detections_above
+            SELECT confidence, p_correct, p_lower, p_upper,
+                   n_validated_above, n_detections_above
             FROM calibration WHERE species = ? AND kind = 'curve' ORDER BY confidence
             """,
             [species],
         )
         observed = store.query(
             """
-            SELECT confidence, n_validated, n_correct
+            SELECT confidence, n_validated, n_correct, p_lower, p_upper
             FROM calibration WHERE species = ? AND kind = 'observed' ORDER BY confidence
             """,
             [species],
         )
-        method = None
-        if curve:
-            method = (
-                "logistic"
-                if any(c["p_logistic"] is not None for c in curve)
-                else "empirical"
-            )
         return {
+            "threshold_lower": None,
+            "threshold_upper": None,
+            "threshold_method": None,
             **sp,
-            "method": method,
             "target": 0.9,
+            "fallback": 0.7,
             "curve": curve,
             "observed": observed,
         }

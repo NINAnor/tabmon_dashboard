@@ -223,12 +223,17 @@ export function SpeciesStats({ species }: { species: string }) {
         ) : (
           <>
             <p className="mt-1 font-serif text-2xl">
-              {pct(data.precision_at_threshold, 0)} <span className="text-base text-white/60">precise</span>
+              ≥ {data.threshold_source === "calibrated_low" ? "70" : "90"}%{" "}
+              <span className="text-base text-white/60">chance correct</span>
             </p>
             <p className="mt-1 text-xs text-white/50">
-              {int(data.n_validated)} clips checked by experts and citizens. Only detections above BirdNET confidence{" "}
-              {data.threshold.toFixed(2)} are counted
-              {data.threshold_source === "calibrated_low" ? " (best threshold available, below the 90% target)" : ""}.{" "}
+              {int(data.n_validated)} clips checked by experts and citizens. Only detections from BirdNET confidence{" "}
+              {data.threshold.toFixed(2)}
+              {data.threshold_lower != null && data.threshold_upper != null
+                ? ` (${data.threshold_lower.toFixed(2)}–${data.threshold_upper.toFixed(2)})`
+                : ""}{" "}
+              are counted, where each has at least that chance of being right
+              {data.threshold_source === "calibrated_low" ? " (the 90% target is never reached)" : ""}.{" "}
               <a href="#calibration" className="text-teal hover:underline">
                 How this was set ↓
               </a>

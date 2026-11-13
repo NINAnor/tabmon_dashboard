@@ -11,29 +11,40 @@ import { useSize } from "@/lib/useSize";
 type CurvePoint = {
   confidence: number;
   p_correct: number | null;
-  p_logistic: number | null;
-  precision_above: number | null;
-  naive_precision_above: number | null;
+  p_lower: number | null;
+  p_upper: number | null;
   n_validated_above: number;
   n_detections_above: number;
+};
+
+type ObservedBin = {
+  confidence: number;
+  n_validated: number;
+  n_correct: number;
+  p_lower: number | null;
+  p_upper: number | null;
 };
 
 type Calibration = {
   species: string;
   common_en: string | null;
   threshold: number;
+  threshold_lower: number | null;
+  threshold_upper: number | null;
+  threshold_method: string | null;
   threshold_source: string;
-  precision_at_threshold: number | null;
   n_validated: number;
-  method: "logistic" | "empirical" | null;
+  n_detections: number;
   target: number;
+  fallback: number;
   curve: CurvePoint[];
-  observed: { confidence: number; n_validated: number; n_correct: number }[];
+  observed: ObservedBin[];
 };
 
-const H = 260;
-const HIST_H = 46;
+const H = 250;
+const HIST_H = 42;
 const M = { top: 14, right: 16, bottom: 30, left: 44 };
+const BIN = 0.05;
 
 export function CalibrationPanel({ species }: { species: string }) {
   const { data } = useSWR<Calibration>(`/api/public/species/${encodeURIComponent(species)}/calibration`, fetcher);
@@ -53,11 +64,13 @@ function CalibrationChart({ data }: { data: Calibration }) {
   const [ref, { width }] = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<CurvePoint | null>(null);
   const plotW = Math.max(0, width - M.left - M.right);
+  const calibrated = data.threshold_source === "calibrated" || data.threshold_source === "calibrated_low";
+  const level = data.threshold_source === "calibrated_low" ? data.fallback : data.target;
 
   const x = useMemo(() => scaleLinear().domain([0.1, 1]).range([M.left, M.left + plotW]), [plotW]);
   const y = useMemo(() => scaleLinear().domain([0, 1]).range([M.top + H, M.top]), []);
 
-  // Detections per 0.01 score bin, from the cumulative counts above each threshold.
+  // Detections per 0.01 score bin, from the cumulative counts above each score.
   const hist = useMemo(
     () =>
       data.curve.map((c, i) => ({
@@ -70,16 +83,18 @@ function CalibrationChart({ data }: { data: Calibration }) {
     .domain([0, Math.max(1, ...hist.map((h) => h.n))])
     .range([0, HIST_H]);
   const histTop = M.top + H + M.bottom + 18;
-  const radius = scaleLinear()
-    .domain([0, Math.max(1, ...data.observed.map((o) => o.n_validated))])
-    .range([2, 9]);
 
-  const path = (key: keyof CurvePoint) =>
+  const fitted = data.curve.filter((c) => c.p_correct !== null);
+  const curvePath =
     line<CurvePoint>()
-      .defined((c) => c[key] !== null)
       .x((c) => x(c.confidence))
-      .y((c) => y(c[key] as number))(data.curve) ?? "";
-
+      .y((c) => y(c.p_correct!))(fitted) ?? "";
+  const bandPath =
+    area<CurvePoint>()
+      .defined((c) => c.p_lower !== null && c.p_upper !== null)
+      .x((c) => x(c.confidence))
+      .y0((c) => y(c.p_lower!))
+      .y1((c) => y(c.p_upper!))(data.curve) ?? "";
   const histPath =
     area<{ confidence: number; n: number }>()
       .curve(curveStepAfter)
@@ -87,7 +102,9 @@ function CalibrationChart({ data }: { data: Calibration }) {
       .y0(histTop + HIST_H)
       .y1((h) => histTop + HIST_H - histY(h.n))(hist) ?? "";
 
-  const thresholdX = x(data.threshold);
+  const tx = x(data.threshold);
+  const tLo = data.threshold_lower !== null ? x(data.threshold_lower) : null;
+  const tHi = x(data.threshold_upper ?? 1);
   const totalH = histTop + HIST_H + 18;
 
   return (
@@ -121,40 +138,61 @@ function CalibrationChart({ data }: { data: Calibration }) {
           <text x={M.left + plotW} y={M.top + H + 28} textAnchor="end" className="fill-white/35 text-[10px]">
             BirdNET confidence →
           </text>
+          <text x={M.left} y={M.top - 4} className="fill-white/35 text-[10px]">
+            Chance a detection is correct
+          </text>
 
-          {/* Target and kept range */}
-          <rect x={thresholdX} y={M.top} width={Math.max(0, M.left + plotW - thresholdX)} height={H} fill="rgba(78,205,196,0.05)" />
+          {/* Threshold and its uncertainty */}
+          {calibrated && (
+            <>
+              {tLo !== null && (
+                <rect x={tLo} y={M.top} width={Math.max(1, tHi - tLo)} height={H} fill="rgba(78,205,196,0.07)" />
+              )}
+              <line x1={tx} x2={tx} y1={M.top} y2={histTop + HIST_H} stroke="#4ecdc4" strokeWidth={1.5} />
+              <text x={tx + 5} y={M.top + 10} className="fill-teal text-[11px] font-medium">
+                threshold {data.threshold.toFixed(2)}
+              </text>
+            </>
+          )}
+
+          {/* Target levels */}
           <line x1={M.left} x2={M.left + plotW} y1={y(data.target)} y2={y(data.target)} stroke="#ff7a6b" strokeDasharray="4 4" opacity={0.7} />
-          <text x={M.left + 4} y={y(data.target) - 5} className="fill-coral text-[10px]">
+          <text x={M.left + plotW - 4} y={y(data.target) + 12} textAnchor="end" className="fill-coral text-[10px]">
             {pct(data.target, 0)} target
           </text>
+          {level !== data.target && (
+            <>
+              <line x1={M.left} x2={M.left + plotW} y1={y(level)} y2={y(level)} stroke="#f4b860" strokeDasharray="2 4" opacity={0.6} />
+              <text x={M.left + plotW - 4} y={y(level) + 12} textAnchor="end" className="fill-amber text-[10px]">
+                {pct(level, 0)} fallback
+              </text>
+            </>
+          )}
 
-          {/* Observed share correct per confidence bin */}
-          {data.observed.map((o) => (
-            <circle
-              key={o.confidence}
-              cx={x(o.confidence)}
-              cy={y(o.n_correct / o.n_validated)}
-              r={radius(o.n_validated)}
-              fill="rgba(255,255,255,0.18)"
-              stroke="rgba(255,255,255,0.45)"
-            >
-              <title>
-                {`${(o.confidence - 0.025).toFixed(2)}–${(o.confidence + 0.025).toFixed(2)}: ${o.n_correct} of ${o.n_validated} checked clips correct`}
-              </title>
-            </circle>
-          ))}
+          {/* Fitted curve with its 95% band */}
+          <path d={bandPath} fill="rgba(244,184,96,0.18)" />
+          <path d={curvePath} fill="none" stroke="#f4b860" strokeWidth={2.2} />
 
-          {/* Curves */}
-          <path d={path("naive_precision_above")} fill="none" stroke="rgba(255,255,255,0.35)" strokeDasharray="2 3" strokeWidth={1.2} />
-          {data.method === "logistic" && <path d={path("p_correct")} fill="none" stroke="#f4b860" strokeWidth={1.6} />}
-          <path d={path("precision_above")} fill="none" stroke="#4ecdc4" strokeWidth={2.6} />
-
-          {/* Threshold */}
-          <line x1={thresholdX} x2={thresholdX} y1={M.top} y2={histTop + HIST_H} stroke="#4ecdc4" strokeWidth={1.5} />
-          <text x={thresholdX + 5} y={M.top + 10} className="fill-teal text-[11px] font-medium">
-            threshold {data.threshold.toFixed(2)}
-          </text>
+          {/* Observed share correct per 0.05 bin, with 95% intervals */}
+          {data.observed.map((o) => {
+            const cx = x(o.confidence);
+            return (
+              <g key={o.confidence}>
+                {o.p_lower !== null && o.p_upper !== null && (
+                  <>
+                    <line x1={cx} x2={cx} y1={y(o.p_lower)} y2={y(o.p_upper)} stroke="rgba(255,255,255,0.55)" />
+                    <line x1={cx - 3} x2={cx + 3} y1={y(o.p_lower)} y2={y(o.p_lower)} stroke="rgba(255,255,255,0.55)" />
+                    <line x1={cx - 3} x2={cx + 3} y1={y(o.p_upper)} y2={y(o.p_upper)} stroke="rgba(255,255,255,0.55)" />
+                  </>
+                )}
+                <circle cx={cx} cy={y(o.n_correct / o.n_validated)} r={3.5} fill="#fff" fillOpacity={0.85}>
+                  <title>
+                    {`${(o.confidence - BIN / 2).toFixed(2)}–${(o.confidence + BIN / 2).toFixed(2)}: ${o.n_correct} of ${o.n_validated} checked clips correct (95% interval ${pct(o.p_lower, 0)}–${pct(o.p_upper, 0)})`}
+                  </title>
+                </circle>
+              </g>
+            );
+          })}
 
           {/* Distribution of all detections */}
           <path d={histPath} fill="rgba(127,184,255,0.35)" />
@@ -163,7 +201,7 @@ function CalibrationChart({ data }: { data: Calibration }) {
           </text>
 
           {hover && (
-            <line x1={x(hover.confidence)} x2={x(hover.confidence)} y1={M.top} y2={histTop + HIST_H} stroke="rgba(255,255,255,0.4)" />
+            <line x1={x(hover.confidence)} x2={x(hover.confidence)} y1={M.top} y2={histTop + HIST_H} stroke="rgba(255,255,255,0.35)" />
           )}
         </svg>
       )}
@@ -172,13 +210,20 @@ function CalibrationChart({ data }: { data: Calibration }) {
           className="pointer-events-none absolute z-10 w-56 rounded-lg border border-white/10 bg-ocean-950/95 p-3 text-xs shadow-xl"
           style={{ left: Math.min(x(hover.confidence) + 12, width - 232), top: M.top + 20 }}
         >
-          <p className="font-medium">Keeping detections ≥ {hover.confidence.toFixed(2)}</p>
-          <p className="mt-1 text-teal">{pct(hover.precision_above, 0)} of them correct</p>
-          {hover.p_correct !== null && data.method === "logistic" && (
-            <p className="text-amber">{pct(hover.p_correct, 0)} chance a detection at {hover.confidence.toFixed(2)} is correct</p>
+          <p className="font-medium">BirdNET confidence {hover.confidence.toFixed(2)}</p>
+          {hover.p_correct !== null && (
+            <p className="mt-1 text-amber">
+              {pct(hover.p_correct, 0)} chance a detection is correct
+              {hover.p_lower !== null && hover.p_upper !== null && (
+                <span className="text-white/45">
+                  {" "}
+                  ({pct(hover.p_lower, 0)}–{pct(hover.p_upper, 0)})
+                </span>
+              )}
+            </p>
           )}
           <p className="mt-1 text-white/50">
-            {compact(hover.n_detections_above)} detections kept · {int(hover.n_validated_above)} checked clips above
+            {compact(hover.n_detections_above)} detections at or above · {int(hover.n_validated_above)} checked
           </p>
         </div>
       )}
@@ -189,45 +234,40 @@ function CalibrationChart({ data }: { data: Calibration }) {
 function Explanation({ data }: { data: Calibration }) {
   const total = data.curve[0]?.n_detections_above ?? 0;
   const kept = data.curve.find((c) => Math.abs(c.confidence - data.threshold) < 0.001)?.n_detections_above;
+  const range =
+    data.threshold_lower !== null
+      ? data.threshold_upper !== null
+        ? ` (95% range ${data.threshold_lower.toFixed(2)}–${data.threshold_upper.toFixed(2)})`
+        : ` (95% range from ${data.threshold_lower.toFixed(2)} upwards)`
+      : "";
   return (
     <div className="space-y-3 text-sm text-white/65">
       <p>
-        <span className="text-white">{int(data.n_validated)} clips</span> were checked, spread evenly across BirdNET&rsquo;s
-        confidence scores. Dots show the share that were correct at each score (bigger dot, more checks).
+        <span className="text-white">{int(data.curve[0]?.n_validated_above)} clips</span> scoring 0.10 or more were checked
+        by experts and volunteers, spread evenly across BirdNET&rsquo;s confidence scores. Each dot is the share that were correct in a 0.05-wide score
+        band, with its 95% interval: long bars mean few checks.
       </p>
-      {data.method === "logistic" ? (
-        <p>
-          A logistic curve fitted to these checks, pulled towards the dots where many clips were checked, gives the{" "}
-          <span className="text-amber">chance that a single detection is correct</span>. Weighting it by the scores of
-          all {compact(total)} detections gives the{" "}
-          <span className="text-teal">share correct among everything kept above each threshold</span>.
-        </p>
-      ) : (
-        <p>
-          The <span className="text-teal">teal line</span> is the share of checked clips that were correct above each
-          threshold (no reliable curve could be fitted for this species).
-        </p>
-      )}
+      <p>
+        The <span className="text-amber">curve</span> is a logistic regression of correctness on the score
+        {data.threshold_method === "logistic_ceiling" ? ", allowing accuracy to level off below 100%" : ""}; the band shows
+        its uncertainty.
+      </p>
       <p>
         {data.threshold_source === "calibrated" ? (
           <>
-            The threshold is the lowest confidence where that reaches {pct(data.target, 0)}:{" "}
-            <span className="text-white">{data.threshold.toFixed(2)}</span>, keeping {compact(kept)} detections at about{" "}
-            {pct(data.precision_at_threshold, 0)} precision.
+            Following the BirdNET guidelines, the threshold is the score where a detection has a{" "}
+            {pct(data.target, 0)} chance of being correct: <span className="text-white">{data.threshold.toFixed(2)}</span>
+            {range}. Only detections at or above it are counted: {compact(kept)} of {compact(total)}.
           </>
         ) : data.threshold_source === "calibrated_low" ? (
           <>
-            {pct(data.target, 0)} is never reached, so the best available threshold is used:{" "}
-            <span className="text-white">{data.threshold.toFixed(2)}</span> (about {pct(data.precision_at_threshold, 0)}{" "}
-            precise). Treat patterns with some caution.
+            The curve never reaches {pct(data.target, 0)}, so the threshold is where it reaches {pct(data.fallback, 0)}:{" "}
+            <span className="text-white">{data.threshold.toFixed(2)}</span>
+            {range}, keeping {compact(kept)} of {compact(total)} detections. Treat patterns with caution.
           </>
         ) : (
-          <>Precision stays too low at every threshold, so this species is not shown in the charts.</>
+          <>The curve never reaches {pct(data.fallback, 0)}, so this species is not shown in the charts.</>
         )}
-      </p>
-      <p className="text-xs text-white/40">
-        The dotted line is the uncorrected share of checked clips above each threshold. It over-weights whichever scores
-        were checked more often than they occur, which is why it is not used.
       </p>
     </div>
   );
