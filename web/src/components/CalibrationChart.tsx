@@ -48,7 +48,8 @@ const BIN = 0.05;
 
 export function CalibrationPanel({ species }: { species: string }) {
   const { data } = useSWR<Calibration>(`/api/public/species/${encodeURIComponent(species)}/calibration`, fetcher);
-  if (!data || data.curve.length === 0) return null;
+  // Files from the old method have no intervals; their curve and threshold do not match.
+  if (!data || data.curve.length === 0 || data.observed.every((o) => o.p_lower === null)) return null;
   return (
     <div id="calibration" className="card scroll-mt-32 p-5 md:scroll-mt-20">
       <p className="eyebrow">How reliable is BirdNET for the {displayName(data)}?</p>

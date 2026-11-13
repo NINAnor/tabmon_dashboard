@@ -72,6 +72,7 @@ export type SpeciesRow = {
   precision_at_threshold: number | null;
   threshold_lower?: number | null;
   threshold_upper?: number | null;
+  threshold_method?: string | null;
   calibrated: boolean;
 };
 

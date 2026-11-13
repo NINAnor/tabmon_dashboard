@@ -234,9 +234,11 @@ export function SpeciesStats({ species }: { species: string }) {
                 : ""}{" "}
               are counted, where each has at least that chance of being right
               {data.threshold_source === "calibrated_low" ? " (the 90% target is never reached)" : ""}.{" "}
-              <a href="#calibration" className="text-teal hover:underline">
-                How this was set ↓
-              </a>
+              {data.threshold_method && (
+                <a href="#calibration" className="text-teal hover:underline">
+                  How this was set ↓
+                </a>
+              )}
             </p>
           </>
         )}
