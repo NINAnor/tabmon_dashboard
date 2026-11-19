@@ -25,6 +25,28 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Slow drift of the dawn-chorus spectrogram behind the heroes: transform only,
+   so the browser composites it without repainting. */
+@keyframes dawn-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% + 100vw));
+  }
+}
+
+.dawn-drift {
+  animation: dawn-drift 150s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dawn-drift {
+    animation: none;
+  }
+}
+
 @layer components {
   .eyebrow {
     @apply text-[11px] font-medium tracking-[0.2em] uppercase text-white/45;

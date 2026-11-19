@@ -24,7 +24,7 @@ import { fetcher } from "@/lib/api";
 import { compact, displayName, int } from "@/lib/format";
 import { CONTACT_URL, labLink } from "@/lib/lab";
 import { ClipList } from "./ClipPlayer";
-import { SpectrogramBackdrop } from "./SpectrogramBackdrop";
+import { DawnChorusBackdrop } from "./DawnChorusBackdrop";
 
 const BEAGLE_URL = "https://cordis.europa.eu/project/id/101288886";
 const TABMON_PAPER_URL = "https://doi.org/10.1111/2041-210x.70308";
@@ -143,7 +143,7 @@ export function ProjectPage() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_#123044_0%,_#07131c_60%)]" />
-        <SpectrogramBackdrop />
+        <DawnChorusBackdrop />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ocean-900 to-transparent" />
         <div className="relative mx-auto max-w-7xl px-6 pb-10 pt-20">
           <p className="eyebrow">TABMON × BEAGLE</p>

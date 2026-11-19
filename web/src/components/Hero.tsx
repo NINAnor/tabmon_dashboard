@@ -4,7 +4,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import { fetcher, type Overview } from "@/lib/api";
 import { compact, int } from "@/lib/format";
-import { SpectrogramBackdrop } from "./SpectrogramBackdrop";
+import { DawnChorusBackdrop } from "./DawnChorusBackdrop";
 
 type StatProps = { clipsChecked?: number | null; validated?: number | null };
 
@@ -42,7 +42,7 @@ export function Hero({ clipsChecked, validated }: StatProps) {
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#123044_0%,_#07131c_60%)]" />
-      <SpectrogramBackdrop />
+      <DawnChorusBackdrop />
       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ocean-900 to-transparent" />
 
       <div className="relative mx-auto w-full max-w-7xl px-6 pb-8 pt-12">
