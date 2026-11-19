@@ -59,7 +59,7 @@ export default function ActivityPage() {
       ctx.fillStyle = COUNTRY_COLORS[r.country] ?? "#fff";
       ctx.fillRect(4, y + 2, 3, ROW - 4);
       ctx.fillStyle = "rgba(255,255,255,0.75)";
-      const label = `${r.cluster ?? ""} · ${r.site ?? r.device_id}`;
+      const label = `${r.cluster ?? ""} · ${r.site ?? r.device_id ?? ""}`;
       ctx.fillText(label.length > 36 ? `${label.slice(0, 35)}…` : label, 12, y + ROW - 2);
       for (let i = 0; i < dates.length; i++) {
         const v = r.values[offset + i];
@@ -69,16 +69,30 @@ export default function ActivityPage() {
     });
   }, [data, width, height, days, cw, dates, offset, rows]);
 
+  const bySite = data?.by === "site";
   const total = rows.reduce((s, r) => s + r.values.slice(-days).reduce((a, b) => a + b, 0), 0);
-  const expected = rows.length * dates.length * FULL_DAY;
+  // Count expected files only on days the site was deployed (or, without
+  // deployment dates, from its first recording), so sites set up later or
+  // already removed do not look like downtime.
+  const expected = rows.reduce((s, r) => {
+    const first = r.values.findIndex((v) => v > 0);
+    if (first < 0) return s;
+    const from = r.active_from ?? data!.dates[first];
+    const to = r.active_to ?? data!.dates[data!.dates.length - 1];
+    const deployed = dates.filter((d) => d >= from && d <= to).length;
+    return s + deployed * FULL_DAY;
+  }, 0);
+  const devicesOn = (r: (typeof rows)[number], date: string) =>
+    (r.devices ?? []).filter((p) => p.first <= date && date <= p.last).map((p) => p.device);
 
   return (
     <>
-      <PageTitle eyebrow="Recording activity" title="Files uploaded per device per day">
+      <PageTitle eyebrow="Recording activity" title={bySite ? "Files uploaded per site per day" : "Files uploaded per device per day"}>
         A full day is {FULL_DAY} five-minute files. Gaps show power, SIM or hardware issues.
+        {bySite && " Recorders replaced at a site are merged into one row, and a moved recorder counts for the site it was at on each day."}
       </PageTitle>
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat label="Devices" value={rows.length} />
+        <Stat label={bySite ? "Sites" : "Devices"} value={rows.length} />
         <Stat label="Files in window" value={int(total)} />
         <Stat label="Uptime in window" value={expected ? `${Math.round((total / expected) * 100)}%` : "–"} />
         <div className="card flex items-center gap-2 px-5 py-4">
@@ -110,7 +124,9 @@ export default function ActivityPage() {
             <div className="font-medium text-white">
               {rows[hover.r].cluster} · {rows[hover.r].site}
             </div>
-            <div className="font-mono text-white/45">{rows[hover.r].device_id}</div>
+            <div className="font-mono text-white/45">
+              {bySite ? devicesOn(rows[hover.r], dates[hover.c]).join(", ") || "no recorder" : rows[hover.r].device_id}
+            </div>
             <div className="mt-1">
               {dates[hover.c]}: <span className="text-teal">{rows[hover.r].values[offset + hover.c]}</span> files
             </div>

@@ -234,13 +234,19 @@ export type Device = {
 };
 
 export type Activity = {
+  by?: "site" | "device";
   dates: string[];
   rows: {
     country: string;
-    device: string;
-    device_id: string;
+    device: string | null;
+    device_id: string | null;
+    site_id?: string;
     cluster: string | null;
     site: string | null;
+    // Recorders that uploaded for this site, with their first and last day.
+    devices?: { device: string; first: string; last: string }[];
+    active_from?: string | null;
+    active_to?: string | null;
     values: number[];
   }[];
 };

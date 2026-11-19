@@ -140,6 +140,18 @@ class DataStore:
                 "n_validated BIGINT, n_correct BIGINT)"
             )
 
+        url = self._url(self.settings.tables_prefix, "site_activity.parquet")
+        try:
+            con.execute(
+                f"CREATE TABLE site_activity AS SELECT * FROM read_parquet({self._sql_literal(url)})"
+            )
+        except duckdb.Error:
+            log.warning("site_activity.parquet not available, activity per device")
+            con.execute(
+                "CREATE TABLE site_activity (site_id VARCHAR, date DATE, "
+                "n_files INTEGER, devices VARCHAR[])"
+            )
+
         url = self._url(self.settings.tables_prefix, "species_names.parquet")
         try:
             con.execute(

@@ -63,39 +63,108 @@ def devices(store: DataStore = Depends(get_store)):
 @router.get("/activity")
 def activity(store: DataStore = Depends(get_store)):
     def compute():
-        with store.cursor() as cur:
-            rel = cur.execute("SELECT * FROM recording_matrix")
-            cols = [d[0] for d in rel.description]
-            rows = rel.fetchall()
-        if "device" not in cols:
-            return {"dates": [], "rows": []}
-        dates = [c for c in cols if c not in ("Country", "device")]
-        meta = {
-            r["device"]: r
-            for r in store.query(
-                "SELECT device, cluster, site_name AS site FROM device_status"
-            )
-        }
-        out = []
-        for row in rows:
-            rec = dict(zip(cols, row, strict=True))
-            m = meta.get(rec["device"], {})
-            out.append(
-                {
-                    "country": rec.get("Country"),
-                    "device": rec["device"],
-                    "device_id": rec["device"][-8:],
-                    "cluster": m.get("cluster"),
-                    "site": m.get("site"),
-                    "values": [int(rec[d] or 0) for d in dates],
-                }
-            )
-        out.sort(
-            key=lambda r: (r["country"] or "", r["cluster"] or "", r["site"] or "")
-        )
-        return {"dates": dates, "rows": out}
+        if store.one("SELECT count(*) AS n FROM site_activity")["n"]:
+            return _site_activity(store)
+        return _device_activity(store)
 
     return store.cached(("activity",), compute)
+
+
+def _site_activity(store: DataStore) -> dict:
+    """Files per site and day. Deployments at the same site are merged, and a
+    relocated recorder counts towards the site it was at on each day."""
+    span = store.one("SELECT min(date) AS first, max(date) AS last FROM site_activity")
+    dates = [
+        r["d"]
+        for r in store.query(
+            "SELECT strftime(d, '%Y-%m-%d') AS d "
+            "FROM range(?::DATE, ?::DATE + 1, INTERVAL 1 DAY) t(d)",
+            [span["first"], span["last"]],
+        )
+    ]
+    index = {d: i for i, d in enumerate(dates)}
+    sites = store.query(
+        """
+        WITH spans AS (
+            SELECT site_id, strftime(min(begin_ts), '%Y-%m-%d') AS active_from,
+                   CASE WHEN bool_or(end_ts IS NULL) THEN NULL
+                        ELSE strftime(max(end_ts), '%Y-%m-%d') END AS active_to
+            FROM deployments GROUP BY site_id
+        )
+        SELECT s.site_id, s.site, s.cluster, s.country, sp.active_from, sp.active_to
+        FROM sites s LEFT JOIN spans sp USING (site_id)
+        WHERE s.site_id IN (SELECT DISTINCT site_id FROM site_activity)
+        ORDER BY s.country, s.cluster, s.site
+        """
+    )
+    values = {s["site_id"]: [0] * len(dates) for s in sites}
+    for r in store.query(
+        "SELECT site_id, strftime(date, '%Y-%m-%d') AS d, n_files FROM site_activity"
+    ):
+        if r["site_id"] in values:
+            values[r["site_id"]][index[r["d"]]] = int(r["n_files"])
+    periods: dict[str, list] = {}
+    for r in store.query(
+        """
+        SELECT site_id, device, strftime(min(date), '%Y-%m-%d') AS first,
+               strftime(max(date), '%Y-%m-%d') AS last
+        FROM (SELECT site_id, date, unnest(devices) AS device FROM site_activity)
+        GROUP BY ALL ORDER BY site_id, first
+        """
+    ):
+        periods.setdefault(r["site_id"], []).append(
+            {"device": r["device"], "first": r["first"], "last": r["last"]}
+        )
+    rows = [
+        {
+            "country": s["country"],
+            "cluster": s["cluster"],
+            "site": s["site"],
+            "site_id": s["site_id"],
+            "device": None,
+            "device_id": None,
+            "devices": periods.get(s["site_id"], []),
+            # Deployment span, so uptime is only measured while the site is deployed.
+            "active_from": s["active_from"],
+            "active_to": s["active_to"],
+            "values": values[s["site_id"]],
+        }
+        for s in sites
+    ]
+    return {"by": "site", "dates": dates, "rows": rows}
+
+
+def _device_activity(store: DataStore) -> dict:
+    """Legacy: files per Bugg folder and day, from recording_matrix.csv."""
+    with store.cursor() as cur:
+        rel = cur.execute("SELECT * FROM recording_matrix")
+        cols = [d[0] for d in rel.description]
+        rows = rel.fetchall()
+    if "device" not in cols:
+        return {"dates": [], "rows": []}
+    dates = [c for c in cols if c not in ("Country", "device")]
+    meta = {
+        r["device"]: r
+        for r in store.query(
+            "SELECT device, cluster, site_name AS site FROM device_status"
+        )
+    }
+    out = []
+    for row in rows:
+        rec = dict(zip(cols, row, strict=True))
+        m = meta.get(rec["device"], {})
+        out.append(
+            {
+                "country": rec.get("Country"),
+                "device": rec["device"],
+                "device_id": rec["device"][-8:],
+                "cluster": m.get("cluster"),
+                "site": m.get("site"),
+                "values": [int(rec[d] or 0) for d in dates],
+            }
+        )
+    out.sort(key=lambda r: (r["country"] or "", r["cluster"] or "", r["site"] or ""))
+    return {"by": "device", "dates": dates, "rows": out}
 
 
 @router.get("/dataset")

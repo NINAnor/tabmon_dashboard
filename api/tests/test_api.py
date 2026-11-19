@@ -479,6 +479,41 @@ def test_calibration_tolerates_older_columns(data_dir):
     assert d["curve"][0]["p_correct"] == 0.5 and d["curve"][0]["p_lower"] is None
 
 
+def test_activity_is_per_site_and_merges_deployments(data_dir):
+    import duckdb as ddb
+
+    tables = data_dir / "data/preprocessed/dashboard"
+    # Two recorders at the same site, one replacing the other on 2025-03-02.
+    con = ddb.connect()
+    con.execute(
+        "CREATE TABLE a AS SELECT * FROM (VALUES "
+        "('spain-south-site-s', DATE '2025-03-01', 288, ['0000aaaa']), "
+        "('spain-south-site-s', DATE '2025-03-02', 300, ['0000aaaa', '0000bbbb']), "
+        "('spain-south-site-s', DATE '2025-03-04', 288, ['0000bbbb']), "
+        "('norway-north-site-n', DATE '2025-03-03', 10, ['0000cccc'])"
+        ") t(site_id, date, n_files, devices)"
+    )
+    con.execute(f"COPY a TO '{tables}/site_activity.parquet' (FORMAT parquet)")
+    store = DataStore(
+        Settings(data_dir=data_dir, species_media_csv=data_dir / "none.csv")
+    )
+    store.refresh()
+    from tabmon_api.routers.ops import activity
+
+    d = activity(store)
+    assert d["by"] == "site"
+    assert d["dates"] == ["2025-03-01", "2025-03-02", "2025-03-03", "2025-03-04"]
+    spain = next(r for r in d["rows"] if r["site_id"] == "spain-south-site-s")
+    assert spain["values"] == [288, 300, 0, 288]
+    assert [p["device"] for p in spain["devices"]] == ["0000aaaa", "0000bbbb"]
+    assert spain["devices"][1] == {
+        "device": "0000bbbb",
+        "first": "2025-03-02",
+        "last": "2025-03-04",
+    }
+    assert len(d["rows"]) == 2
+
+
 def test_most_wanted_endpoint(client):
     # The fixture's only species is calibrated, so nothing is "wanted".
     assert client.get("/api/public/most-wanted").json() == []
