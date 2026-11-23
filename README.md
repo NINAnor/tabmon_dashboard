@@ -1,13 +1,13 @@
 # TABMON Dashboard
 
-Public dashboard and team area for [TABMON](https://www.nina.no/english/TABMON), a
+Public dashboard and team area for [TABMON](https://doi.org/10.1111/2041-210x.70308), a
 transnational passive acoustic monitoring network for European birds, from Spain to
 Arctic Norway. The network continues from October 2026 within
 [BEAGLE](https://cordis.europa.eu/project/id/101288886) (Horizon Europe).
 
 | Path | What | Stack |
 |---|---|---|
-| `web/` | Public site (Network · Sites · Species · Project) and team area (`/ops`) | Next.js, React, Tailwind, MapLibre, d3, wavesurfer.js |
+| `web/` | Public site (Project · Network · Sites · Species) and team area (`/ops`) | Next.js, React, Tailwind, MapLibre, d3, wavesurfer.js |
 | `api/` | Data API, team login, and clip serving | FastAPI, DuckDB, ffmpeg |
 
 ```
@@ -17,6 +17,9 @@ Arctic Norway. The network continues from October 2026 within
                                    │
      data_transfer (daily 06:00 UTC; step 05) ──► data/preprocessed/dashboard/
 ```
+
+For the whole system (recorders, pipeline, BirdNET classification, Listening Lab,
+deployment) see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Public site
 
