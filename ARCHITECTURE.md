@@ -16,7 +16,7 @@ Netherlands, France and Spain. The network continues within
 | Google Cloud Storage | – | Google Cloud | Bugg platform | Landing bucket for uploads (`tabmon_data`) |
 | NIRD S3 bucket | – | NIRD (Sigma2) | NINA | Single store for audio, metadata, predictions, validations and derived tables |
 | Data pipeline | [`NINAnor/WP1-data-transfer`](https://github.com/NINAnor/WP1-data-transfer) | NINA workstation (for now), Docker, daily 06:00 UTC | NINA | Moves audio to NIRD, indexes it, builds the dashboard tables |
-| BirdNET classification | `NINAnor/TABMON-classification-pipeline` | Partner server in France | French partners | Runs BirdNET on the recordings, writes the predictions to NIRD |
+| BirdNET classification | `NINAnor/TABMON-classification-pipeline` | Partner server in France | French partners | Runs BirdNET on the recordings, writes the predictions to NIRD (`tabmon_predictions*/`) |
 | Listening Lab (citizen and expert) | [`NINAnor/tabmon_species_api`](https://github.com/NINAnor/tabmon_species_api) | `t2lepdocker01` (Portainer) | NINA | Validation of BirdNET detections by volunteers and experts |
 | Dashboard (web and API) | [`NINAnor/tabmon_dashboard`](https://github.com/NINAnor/tabmon_dashboard) (this repo) | `t2lepdocker01` (Portainer) | NINA | Public sound map and team area |
 | Deployment configuration | `NINAnor/miljodata-infrastructure` | – | NINA | Portainer stacks, pinned image digests |
@@ -45,7 +45,7 @@ flowchart LR
   end
   subgraph C4["NIRD S3 · derived data"]
     direction TB
-    P[("Predictions")]
+    P[("Predictions<br/>tabmon_predictions/")]
     V[("Validations")]
     D[("Dashboard tables<br/>team CSVs · index")]
   end
@@ -92,14 +92,16 @@ step 05 still runs and the run is reported as failed at the end. Logs:
 container).
 
 ### 3. BirdNET classification
-Partners in France run BirdNET on the recordings on their own server and write the
-results to `tabmon_predictions/merged_predictions_light/` (one Parquet file per device
-and month; detections with confidence ≥ 0.10). This is **not** part of the daily
-pipeline: the dashboard can only show months that have been classified. As of
-November 2026 the predictions run until 31 May 2026.
+Partners in France run BirdNET on the recordings on their own server and upload each
+run to the bucket as a complete dataset (see [The S3 bucket](#the-s3-bucket)). The
+dashboard and the Listening Lab read
+`tabmon_predictions/merged_predictions_light/` (detections with confidence ≥ 0.10,
+one Parquet file per recorder and month), which covers January 2025 to May 2026. A
+newer run, `tabmon_predictions_2026_10/` (to October 2026), was uploaded on
+20 November 2026 and is not read yet.
 
-`tabmon_predictions/merged_predictions/` is the full version (confidence ≥ 0.01, up
-to March 2026); the dashboard does not use it.
+Classification is **not** part of the daily pipeline: the dashboard can only show
+months that have been classified.
 
 ### 4. Validation (Listening Lab)
 Two Streamlit apps built from the same image read predictions and audio from NIRD:
@@ -131,22 +133,98 @@ flowchart LR
   API -->|"team area"| PH[("NIRD: data/pictures/")]
 ```
 
-## NIRD bucket layout
+## The S3 bucket
 
-Bucket `bencretois-ns8129k-proj-tabmon` on `s3.nird.sigma2.no` (rclone remote
-`nirds3`).
+Everything is stored in one bucket on NIRD (Sigma2):
 
-| Path | Content | Written by | Read by |
-|---|---|---|---|
-| `proj_tabmon_NINA[_NL\|_FR\|_ES]/bugg_RPiID-<id>/…/<UTC time>.mp3` | Recordings (5 min each) | Pipeline step 01 | Steps 02, BirdNET, Listening Lab, dashboard clips |
-| `index.parquet` | One row per audio file (path, name, size, device) | Step 02 | Steps 03 and 05 |
-| `site_info.csv` | Deployments: device, site, cluster, coordinates, start and end dates (form export) | Field teams (form) | Steps 03 and 05, Listening Lab |
-| `site_info_backups/` | Copies made before manual edits | Manual | – |
-| `tabmon_predictions/merged_predictions_light/country=<C>/device_id=<id>/<YYYY-MM>_<id>.parquet` | BirdNET detections (confidence ≥ 0.10) | Classification (France) | Step 05, Listening Lab |
-| `validations/`, `validations_expert/`, `validation_dataset/` | Validation sessions and expert annotation sets | Listening Lab | Step 05, Listening Lab |
-| `data/pictures/` | Deployment photos | Field teams | Step 05, dashboard team area |
-| `data/preprocessed/*.csv` | Device status, device and dataset statistics, activity matrix | Steps 03–04 | Dashboard API (team area) |
-| `data/preprocessed/dashboard/*.parquet` | Dashboard tables (see [data contract](docs/data-contract.md)) | Step 05 | Dashboard API |
+- **Bucket:** `bencretois-ns8129k-proj-tabmon`
+- **Endpoint:** `https://s3.nird.sigma2.no` (path-style requests, region `us-east-1`)
+- **rclone remote:** `nirds3` (e.g. `rclone lsf nirds3:bencretois-ns8129k-proj-tabmon/`)
+
+Listing the recording folders is slow (tens of thousands of files per recorder);
+use `index.parquet` to find files instead.
+
+### Layout
+
+Sizes and counts as of November 2026.
+
+```
+bencretois-ns8129k-proj-tabmon/
+│
+│  ── Recordings ───────────────────────────────────────────────────────────────
+├── proj_tabmon_NINA/                  Norway        65 recorders · 2.1 M files ·  9.7 TB
+├── proj_tabmon_NINA_NL/               Netherlands   18 recorders · 2.1 M files · 10.3 TB
+├── proj_tabmon_NINA_FR/               France        25 recorders · 2.4 M files · 11.2 TB
+├── proj_tabmon_NINA_ES/               Spain         18 recorders · 2.4 M files · 11.8 TB
+│   └── bugg_RPiID-<16 hex digits>/          one folder per recorder; the ID is the last 8
+│       │                                    characters (e.g. bugg_RPiID-1000000002550e55)
+│       └── conf_<YYYYMMDD>[<SIM>]_TABMON/   one folder per Bugg configuration
+│           └── <YYYY-MM-DD>T<HH_MM_SS.mmm>Z.mp3   5-minute recording, start time in UTC
+├── proj_tabmon_NINA_ES_test/          test recordings (ignored)
+│
+│  ── Metadata ─────────────────────────────────────────────────────────────────
+├── index.parquet                      one row per audio file: Path, Name, Size, ModTime,
+│                                      country, device (rebuilt daily by pipeline step 02)
+├── site_info.csv                      deployments (export of the deployment form): DeploymentID,
+│                                      DeviceID, Country, Cluster, Site, coordinates, begin/end dates
+├── site_info_backups/                 copies of site_info.csv taken before manual edits
+│
+│  ── BirdNET predictions (written by the partners in France) ────────────────────
+├── tabmon_predictions/                run covering Jan 2025 – May 2026  ◄ READ TODAY
+│   ├── merged_predictions_light/      confidence ≥ 0.10, one file per recorder and month  ◄ USED
+│   │   └── country=<Country>/device_id=<id>/<YYYY-MM>_<id>.parquet
+│   ├── merged_predictions/            confidence ≥ 0.01, same layout, until Mar 2026 (not used)
+│   ├── tabmon_predictions_<Country>.parquet   the same data, one file per country (not used)
+│   ├── tabmon_predictions_light.parquet       (not used)
+│   └── index_light.parquet                    (not used)
+├── tabmon_predictions_2026_10/        newer run covering Jan 2025 – Oct 2026 (uploaded 20 Nov 2026),
+│                                      same layout incl. merged_predictions_light/ (not read yet)
+│
+│  ── Validation (Listening Lab) ─────────────────────────────────────────────────
+├── validations/                       citizen checks: session_<id>.csv
+├── validations_expert/                expert checks: <dataset>_session_<id>.csv
+├── validation_dataset/                expert annotation sets offered in the expert app (*.parquet)
+├── completed_validation_dataset/      finished expert annotation sets
+│
+│  ── Site photos and derived tables ─────────────────────────────────────────────
+├── data/
+│   ├── pictures/<Country>/Pictures/<Site>/<…>_<device>_<view>.jpg   deployment photos
+│   ├── pictures/<Country>/*.xlsx      deployment forms (some countries)
+│   ├── pictures_mapping.csv           (legacy, not used)
+│   └── preprocessed/
+│       ├── device_status.csv          ┐
+│       ├── all_device_stats.csv       │ team-area files, written by pipeline steps 03–04
+│       ├── dataset_stats.csv          │
+│       ├── recording_matrix.csv       ┘
+│       ├── image_mapping.csv          (legacy, not used)
+│       └── dashboard/                 13 Parquet tables written by pipeline step 05,
+│                                      read by the dashboard API (see docs/data-contract.md)
+│
+│  ── Other material (not used by the dashboard) ─────────────────────────────────
+├── tabmon_annotation/                 annotation packages for annotators (guide, audio zips, tables)
+├── acoustic_indices_NL/               acoustic indices per recorder and period (Netherlands)
+├── birdvalidator_demo/                demo audio and BirdNET results
+└── ARCHIVE/                           archived Listening Lab data
+```
+
+### Who reads and writes what
+
+| Path | Written by | Read by |
+|---|---|---|
+| `proj_tabmon_NINA*/` | Pipeline step 01 (moved from Google Cloud) | Step 02, BirdNET (France), Listening Lab, dashboard API (clips) |
+| `index.parquet` | Pipeline step 02 | Pipeline steps 03 and 05 |
+| `site_info.csv` | Field teams (deployment form); manual fixes | Pipeline steps 03 and 05, Listening Lab |
+| `tabmon_predictions/merged_predictions_light/` | BirdNET (France) | Pipeline step 05 (`PREDICTIONS_GLOB` in `build_tables.py`), Listening Lab (`PREDICTIONS_S3_PREFIX`) |
+| `tabmon_predictions_2026_10/` | BirdNET (France) | Nothing yet |
+| `validations/`, `validations_expert/` | Listening Lab | Pipeline step 05 (thresholds), Listening Lab |
+| `validation_dataset/` | Validation coordinators | Listening Lab (expert) |
+| `data/pictures/` | Field teams | Pipeline step 05 (`photos.parquet`), dashboard API (team area) |
+| `data/preprocessed/*.csv` | Pipeline steps 03–04 | Dashboard API (team area) |
+| `data/preprocessed/dashboard/` | Pipeline step 05 | Dashboard API |
+
+The newest BirdNET run, `tabmon_predictions_2026_10/`, is a complete dataset (every
+month since January 2025) in a new folder next to the previous run. The dashboard
+and the Listening Lab only see a run once their prediction path points to it.
 
 ## Build and deployment
 
@@ -212,7 +290,8 @@ These rules span several repositories; keep them consistent when changing any pa
 ## Known limitations
 
 - **Predictions lag behind recordings:** months appear in the dashboard only after the
-  French partners have classified them (currently up to 31 May 2026).
+  French partners have classified them and the prediction path points to that run
+  (read today: up to 31 May 2026; available: up to 31 October 2026).
 - **The pipeline runs on a workstation:** if it is off at 06:00 UTC, that day's run is
   skipped and the data waits for the next run.
 - **Listening Lab and relocations:** its site list maps one recorder per site name,
