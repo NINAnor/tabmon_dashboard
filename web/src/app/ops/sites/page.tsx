@@ -38,7 +38,7 @@ export default function SitesPage() {
                   <div key={cl} className={`card p-4 ${offline ? "border-coral/30" : ""}`}>
                     <div className="mb-3 flex items-center justify-between">
                       <p className="eyebrow">{cl}</p>
-                      {offline > 0 && <span className="text-[11px] text-coral">{offline} offline</span>}
+                      {offline > 0 && <span className="text-[12px] text-coral">{offline} offline</span>}
                     </div>
                     <ul className="space-y-1">
                       {clusterSites.map((s) => (

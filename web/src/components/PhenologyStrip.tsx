@@ -44,7 +44,7 @@ export function PhenologyStrip({
             </pattern>
           </defs>
           {MONTHS.map((m, i) => (
-            <text key={m} x={LABEL_W + ((i * 365) / 12 / 7) * cw + 1} y={11} fontSize={9} fill="rgba(255,255,255,0.4)">
+            <text key={m} x={LABEL_W + ((i * 365) / 12 / 7) * cw + 1} y={11} fontSize={11} fill="rgba(255,255,255,0.4)">
               {m}
             </text>
           ))}
@@ -54,7 +54,7 @@ export function PhenologyStrip({
             return (
               <g key={g.id} opacity={g.sparse ? 0.35 : 1}>
                 <rect x={0} y={y + 3} width={2.5} height={ROW - 6} fill={COUNTRY_COLORS[g.country ?? ""] ?? "#fff"} />
-                <text x={6} y={y + ROW - 4} fontSize={10.5} fill="rgba(255,255,255,0.75)">
+                <text x={6} y={y + ROW - 4} fontSize={12} fill="rgba(255,255,255,0.75)">
                   {g.label.length > 19 ? `${g.label.slice(0, 18)}…` : g.label}
                 </text>
                 {g.weeks.map((w) => (

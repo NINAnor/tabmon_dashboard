@@ -66,17 +66,17 @@ export function DielClock({
                 x={Math.sin(a) * r}
                 y={-Math.cos(a) * r + 4}
                 textAnchor="middle"
-                fontSize={11}
+                fontSize={12}
                 fill="rgba(255,255,255,0.5)"
               >
                 {String(h).padStart(2, "0")}:00
               </text>
             );
           })}
-          <text textAnchor="middle" y={-4} fontSize={10} fill="rgba(255,255,255,0.45)">
+          <text textAnchor="middle" y={-4} fontSize={11.5} fill="rgba(255,255,255,0.45)">
             {hover ? MONTHS[hover.m] : "Jan"}
           </text>
-          <text textAnchor="middle" y={10} fontSize={10} fill="rgba(255,255,255,0.45)">
+          <text textAnchor="middle" y={10} fontSize={11.5} fill="rgba(255,255,255,0.45)">
             {hover ? `${String(hover.h).padStart(2, "0")}:00` : "inside"}
           </text>
         </g>

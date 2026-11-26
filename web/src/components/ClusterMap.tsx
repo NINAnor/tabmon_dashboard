@@ -214,7 +214,7 @@ export function ClusterMap({
           </Popup>
         )}
       </Map>
-      <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-ocean-950/80 px-3 py-2 text-[11px] text-white/60">
+      <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-ocean-950/80 px-3 py-2 text-[12px] text-white/60">
         {phenology && week
           ? mode === "shape"
             ? "Size & colour: this week vs each cluster's own peak"
@@ -233,7 +233,7 @@ export function ClusterMap({
                     className="rounded-full border border-white/20"
                     style={{ width: r * 2 * 0.6, height: r * 2 * 0.6, background: oceanRamp(0.25 + 0.75 * Math.sqrt(t)) }}
                   />
-                  <span className="text-[10px] text-white/45">
+                  <span className="text-[12px] text-white/45">
                     {t === 1 ? "peak" : `${Math.round(t * 100)}%`}
                   </span>
                 </span>
@@ -241,7 +241,7 @@ export function ClusterMap({
             })}
             <span className="flex flex-col items-center gap-1">
               <span className="h-2.5 w-2.5 rounded-full bg-[#26323c]" />
-              <span className="text-[10px] text-white/45">no data</span>
+              <span className="text-[12px] text-white/45">no data</span>
             </span>
           </div>
         )}

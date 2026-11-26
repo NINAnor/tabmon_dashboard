@@ -84,7 +84,7 @@ export function MigrationSpeed({ data }: { data: SpeciesPhenology }) {
                   ? `Season starts ≈ ${Math.round(migration.spring.km_per_day)} km/day northward (${migration.spring.days_per_degree.toFixed(1)} days later per degree north)`
                   : "No clear spring wave"}
               </p>
-              <p className="text-[10px] text-white/40">{fitSummary(migration.spring)}</p>
+              <p className="text-[12px] text-white/40">{fitSummary(migration.spring)}</p>
             </div>
             <div>
               <p className="text-sm text-white/85">
@@ -93,7 +93,7 @@ export function MigrationSpeed({ data }: { data: SpeciesPhenology }) {
                   ? `Falls silent ${Math.abs(migration.autumn.days_per_degree).toFixed(1)} days earlier per degree north`
                   : "No clear autumn wave"}
               </p>
-              <p className="text-[10px] text-white/40">{fitSummary(migration.autumn)}</p>
+              <p className="text-[12px] text-white/40">{fitSummary(migration.autumn)}</p>
             </div>
           </div>
           {canChart && (() => {
@@ -114,13 +114,13 @@ export function MigrationSpeed({ data }: { data: SpeciesPhenology }) {
                 {y.ticks(4).map((tick) => (
                   <g key={tick}>
                     <line x1={pad.l} x2={W - pad.r} y1={y(tick)} y2={y(tick)} stroke="rgba(255,255,255,0.06)" />
-                    <text x={pad.l - 6} y={y(tick) + 3} fontSize={9} textAnchor="end" fill="rgba(255,255,255,0.4)">
+                    <text x={pad.l - 6} y={y(tick) + 3} fontSize={11} textAnchor="end" fill="rgba(255,255,255,0.4)">
                       {tick}°N
                     </text>
                   </g>
                 ))}
                 {x.ticks(4).map((tick) => (
-                  <text key={tick} x={x(tick)} y={H - 7} fontSize={9} textAnchor="middle" fill="rgba(255,255,255,0.4)">
+                  <text key={tick} x={x(tick)} y={H - 7} fontSize={11} textAnchor="middle" fill="rgba(255,255,255,0.4)">
                     {dateLabel(start, tick)}
                   </text>
                 ))}
@@ -139,7 +139,7 @@ export function MigrationSpeed({ data }: { data: SpeciesPhenology }) {
               </svg>
             );
           })()}
-          <p className="mt-2 text-[11px] text-white/45">
+          <p className="mt-2 text-[12px] text-white/45">
             Recordings show when birds fall silent, which can be weeks before they leave.
           </p>
         </>

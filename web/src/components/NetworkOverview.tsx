@@ -81,7 +81,7 @@ function MonthlyHours({ rows }: { rows: Network["monthly"] }) {
           {y.ticks(3).map((t) => (
             <g key={t}>
               <line x1={PAD_L} x2={width} y1={y(t)} y2={y(t)} stroke="rgba(255,255,255,0.06)" />
-              <text x={PAD_L - 6} y={y(t) + 3} fontSize={9} textAnchor="end" fill="rgba(255,255,255,0.4)">
+              <text x={PAD_L - 6} y={y(t) + 3} fontSize={11} textAnchor="end" fill="rgba(255,255,255,0.4)">
                 {compact(t)}
               </text>
             </g>
@@ -108,7 +108,7 @@ function MonthlyHours({ rows }: { rows: Network["monthly"] }) {
                   );
                 })}
                 {(m.endsWith("-01") || m.endsWith("-07")) && (
-                  <text x={0} y={H - 4} fontSize={9} fill="rgba(255,255,255,0.45)">
+                  <text x={0} y={H - 4} fontSize={11} fill="rgba(255,255,255,0.45)">
                     {m.endsWith("-01") ? m.slice(0, 4) : "Jul"}
                   </text>
                 )}
@@ -183,7 +183,7 @@ export function NetworkOverview({ clusters }: { clusters: Cluster[] }) {
                     />
                   </div>
                   {c.top_species && (
-                    <p className="mt-1 text-[11px] text-white/40">Most detected: {c.top_species}</p>
+                    <p className="mt-1 text-[12px] text-white/40">Most detected: {c.top_species}</p>
                   )}
                 </li>
               ))}

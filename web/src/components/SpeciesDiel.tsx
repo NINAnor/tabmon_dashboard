@@ -20,7 +20,7 @@ export type SpeciesDiel = {
 };
 
 const H = 220;
-const PAD = { l: 40, r: 12, t: 14, b: 26 };
+const PAD = { l: 40, r: 12, t: 22, b: 26 };
 const NIGHT: [number, number][] = [
   [0, 4],
   [23, 24],
@@ -63,13 +63,13 @@ function AverageDay({ data, byCountry }: { data: SpeciesDiel; byCountry: boolean
           {y.ticks(4).map((t) => (
             <g key={t}>
               <line x1={PAD.l} x2={width - PAD.r} y1={y(t)} y2={y(t)} stroke="rgba(255,255,255,0.06)" />
-              <text x={PAD.l - 6} y={y(t) + 3} fontSize={10} textAnchor="end" fill="rgba(255,255,255,0.4)">
+              <text x={PAD.l - 6} y={y(t) + 3} fontSize={11.5} textAnchor="end" fill="rgba(255,255,255,0.4)">
                 {rate(t)}
               </text>
             </g>
           ))}
           {[0, 3, 6, 9, 12, 15, 18, 21].map((h) => (
-            <text key={h} x={x(h)} y={H - 8} fontSize={10} textAnchor="middle" fill="rgba(255,255,255,0.45)">
+            <text key={h} x={x(h)} y={H - 8} fontSize={11.5} textAnchor="middle" fill="rgba(255,255,255,0.45)">
               {String(h).padStart(2, "0")}:00
             </text>
           ))}
@@ -107,7 +107,7 @@ function AverageDay({ data, byCountry }: { data: SpeciesDiel; byCountry: boolean
               <text
                 x={x(data.peak_hour)}
                 y={y(data.overall[data.peak_hour]!) - 9}
-                fontSize={10}
+                fontSize={11.5}
                 textAnchor="middle"
                 fill="#f4b860"
               >

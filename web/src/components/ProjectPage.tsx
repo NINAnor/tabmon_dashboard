@@ -438,7 +438,7 @@ export function ProjectPage() {
                 >
                   <span className="font-serif text-2xl group-hover:text-teal">{short}</span>
                   <span className="mt-1 text-xs text-white/55">{name}</span>
-                  <span className="mt-auto pt-2 text-[11px] uppercase tracking-wider text-white/35">{country}</span>
+                  <span className="mt-auto pt-2 text-[12px] uppercase tracking-wider text-white/35">{country}</span>
                 </a>
               </li>
             ))}

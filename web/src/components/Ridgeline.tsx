@@ -100,7 +100,7 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
           {monthTicks.map(({ m, week }) => (
             <g key={m}>
               <line x1={x(week)} x2={x(week)} y1={TOP - 8} y2={height - 24} stroke="rgba(255,255,255,0.06)" />
-              <text x={x(week) + 4} y={TOP - 14} fill="rgba(255,255,255,0.45)" fontSize={11}>
+              <text x={x(week) + 4} y={TOP - 14} fill="rgba(255,255,255,0.45)" fontSize={12}>
                 {m}
               </text>
             </g>
@@ -136,7 +136,7 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
                   <line x1={8} x2={LABEL_W + plotW} y1={base - ROW + 6} y2={base - ROW + 6} stroke="rgba(255,255,255,0.12)" />
                 )}
                 {newCountry && (
-                  <text x={8} y={base - ROW + 20} fontSize={10} letterSpacing={2} fill={COUNTRY_COLORS[g.country ?? ""] ?? "#fff"}>
+                  <text x={8} y={base - ROW + 20} fontSize={11} letterSpacing={1} fill={COUNTRY_COLORS[g.country ?? ""] ?? "#fff"}>
                     {(g.country ?? "").toUpperCase()}
                   </text>
                 )}
@@ -160,12 +160,12 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
                   {g.label.length > 22 ? `${g.label.slice(0, 21)}…` : g.label}
                 </text>
                 {empty && (
-                  <text x={LABEL_W + 8} y={base - 4} fontSize={10} fill="rgba(255,255,255,0.3)">
+                  <text x={LABEL_W + 8} y={base - 4} fontSize={11.5} fill="rgba(255,255,255,0.3)">
                     not detected
                   </text>
                 )}
                 {faint && (
-                  <text x={LABEL_W + plotW - 4} y={base - 4} textAnchor="end" fontSize={10} fill="rgba(255,255,255,0.4)">
+                  <text x={LABEL_W + plotW - 4} y={base - 4} textAnchor="end" fontSize={11.5} fill="rgba(255,255,255,0.4)">
                     few detections · {int(g.total)}
                     {g.peak_week !== null ? ` · peak ${weekLabel(data.week_starts, g.peak_week)}` : ""}
                   </text>

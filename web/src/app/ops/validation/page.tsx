@@ -6,8 +6,8 @@ import { fetcher, type Validations } from "@/lib/api";
 import { COUNTRY_COLORS, displayName, int, pct } from "@/lib/format";
 
 const SOURCE_LABEL: Record<string, string> = {
-  calibrated: "Calibrated (≥90% precise)",
-  calibrated_low: "Calibrated (best available)",
+  calibrated: "Calibrated (≥90% chance correct)",
+  calibrated_low: "Calibrated (≥70% only)",
   default: "Default threshold",
 };
 

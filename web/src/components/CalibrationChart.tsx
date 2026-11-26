@@ -127,20 +127,20 @@ function CalibrationChart({ data }: { data: Calibration }) {
           {[0, 0.25, 0.5, 0.75, 1].map((v) => (
             <g key={v}>
               <line x1={M.left} x2={M.left + plotW} y1={y(v)} y2={y(v)} stroke="rgba(255,255,255,0.07)" />
-              <text x={M.left - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-white/40 text-[10px]">
+              <text x={M.left - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-white/40 text-[12px]">
                 {v * 100}%
               </text>
             </g>
           ))}
           {[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map((v) => (
-            <text key={v} x={x(v)} y={M.top + H + 16} textAnchor="middle" className="fill-white/40 text-[10px]">
+            <text key={v} x={x(v)} y={M.top + H + 16} textAnchor="middle" className="fill-white/40 text-[12px]">
               {v.toFixed(1)}
             </text>
           ))}
-          <text x={M.left + plotW} y={M.top + H + 28} textAnchor="end" className="fill-white/35 text-[10px]">
+          <text x={M.left + plotW} y={M.top + H + 28} textAnchor="end" className="fill-white/35 text-[12px]">
             BirdNET confidence →
           </text>
-          <text x={M.left} y={M.top - 4} className="fill-white/35 text-[10px]">
+          <text x={M.left} y={M.top - 4} className="fill-white/35 text-[12px]">
             Chance a detection is correct
           </text>
 
@@ -151,7 +151,7 @@ function CalibrationChart({ data }: { data: Calibration }) {
                 <rect x={tLo} y={M.top} width={Math.max(1, tHi - tLo)} height={H} fill={tealAlpha(0.07)} />
               )}
               <line x1={tx} x2={tx} y1={M.top} y2={histTop + HIST_H} stroke={TEAL} strokeWidth={1.5} />
-              <text x={tx + 5} y={M.top + 10} className="fill-teal text-[11px] font-medium">
+              <text x={tx + 5} y={M.top + 10} className="fill-teal text-[12px] font-medium">
                 threshold {data.threshold.toFixed(2)}
               </text>
             </>
@@ -159,13 +159,13 @@ function CalibrationChart({ data }: { data: Calibration }) {
 
           {/* Target levels */}
           <line x1={M.left} x2={M.left + plotW} y1={y(data.target)} y2={y(data.target)} stroke="#ff7a6b" strokeDasharray="4 4" opacity={0.7} />
-          <text x={M.left + plotW - 4} y={y(data.target) + 12} textAnchor="end" className="fill-coral text-[10px]">
+          <text x={M.left + plotW - 4} y={y(data.target) + 12} textAnchor="end" className="fill-coral text-[12px]">
             {pct(data.target, 0)} target
           </text>
           {level !== data.target && (
             <>
               <line x1={M.left} x2={M.left + plotW} y1={y(level)} y2={y(level)} stroke="#f4b860" strokeDasharray="2 4" opacity={0.6} />
-              <text x={M.left + plotW - 4} y={y(level) + 12} textAnchor="end" className="fill-amber text-[10px]">
+              <text x={M.left + plotW - 4} y={y(level) + 12} textAnchor="end" className="fill-amber text-[12px]">
                 {pct(level, 0)} fallback
               </text>
             </>
@@ -198,7 +198,7 @@ function CalibrationChart({ data }: { data: Calibration }) {
 
           {/* Distribution of all detections */}
           <path d={histPath} fill="rgba(127,184,255,0.35)" />
-          <text x={M.left} y={histTop - 4} className="fill-white/40 text-[10px]">
+          <text x={M.left} y={histTop - 4} className="fill-white/40 text-[12px]">
             All BirdNET detections by confidence
           </text>
 

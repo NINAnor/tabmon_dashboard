@@ -20,7 +20,7 @@ export function IucnBadge({ ecology }: { ecology: Ecology | null }) {
       target="_blank"
       rel="noreferrer"
       title={`Global IUCN Red List: ${ecology.iucn_label}`}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[12px] font-medium ${
         IUCN_STYLE[ecology.iucn] ?? IUCN_STYLE.DD
       }`}
     >
@@ -42,7 +42,7 @@ export function EcologyChips({ ecology }: { ecology: Ecology | null }) {
       {chips.map((c) => (
         <span
           key={c.label}
-          className={`rounded-full px-2.5 py-0.5 text-[11px] ${
+          className={`rounded-full px-2.5 py-0.5 text-[12px] ${
             c.strong ? "bg-teal/15 text-teal" : "bg-white/5 text-white/65"
           }`}
         >
@@ -66,7 +66,7 @@ export function HowToRead({ ecology }: { ecology: Ecology | null }) {
         </p>
       ))}
       {ecology.trait_source && (
-        <p className="mt-2 text-[10px] text-white/35">
+        <p className="mt-2 text-[12px] text-white/35">
           Traits: {ecology.trait_source} · Status: IUCN via Wikidata · Patterns: TABMON recordings
         </p>
       )}

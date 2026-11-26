@@ -93,7 +93,7 @@ export default function SitePage({ params }: { params: Promise<{ id: string }> }
                   loading="lazy"
                   className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
                 />
-                <span className="absolute bottom-1 left-1 rounded bg-ocean-950/80 px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
+                <span className="absolute bottom-1 left-1 rounded bg-ocean-950/80 px-1.5 py-0.5 text-[12px] uppercase tracking-wider">
                   {p.picture_type}
                 </span>
               </button>

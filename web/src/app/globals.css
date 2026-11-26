@@ -14,6 +14,11 @@
   /* BEAGLE uses Arial; Liberation Sans has the same metrics where Arial is missing. */
   --font-sans: Arial, Helvetica, "Liberation Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+  /* Arial has a smaller x-height than Inter: the two smallest sizes are one step larger. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.125 / 0.8125);
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: calc(1.375 / 0.9375);
 }
 
 html {
@@ -51,7 +56,7 @@ body {
 
 @layer components {
   .eyebrow {
-    @apply text-[11px] font-medium tracking-[0.2em] uppercase text-white/45;
+    @apply text-[12px] font-medium tracking-[0.18em] uppercase text-white/50;
   }
 
   .card {

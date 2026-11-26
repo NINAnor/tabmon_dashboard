@@ -33,13 +33,13 @@ export function NetworkStats({ clipsChecked, validated }: StatProps) {
             <dt className="eyebrow">{label}</dt>
             <dd className="mt-1 flex items-baseline gap-2">
               <span className="font-serif text-2xl tabular-nums">{value}</span>
-              <span className="text-[11px] text-white/45">{sub}</span>
+              <span className="text-[12px] text-white/45">{sub}</span>
             </dd>
           </div>
         ))}
       </dl>
       {until && (
-        <p className="mt-2 text-right text-[11px] text-white/40">
+        <p className="mt-2 text-right text-[12px] text-white/40">
           BirdNET results up to {until}; later recordings are still being analysed.
         </p>
       )}

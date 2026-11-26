@@ -41,7 +41,7 @@ function SpeciesMedia({ data, compact }: { data: SpeciesDetail; compact: boolean
           allowFullScreen
           title="Macaulay Library photo"
         />
-        <figcaption className="mt-1 text-[10px] text-white/40">
+        <figcaption className="mt-1 text-[12px] text-white/40">
           {media.photo_credit ? `© ${media.photo_credit} / ` : ""}
           <a
             className="hover:text-white"
@@ -64,7 +64,7 @@ function SpeciesMedia({ data, compact }: { data: SpeciesDetail; compact: boolean
           loading="lazy"
           className={`${aspect} w-full rounded-xl object-cover`}
         />
-        <figcaption className="mt-1 truncate text-[10px] text-white/40">
+        <figcaption className="mt-1 truncate text-[12px] text-white/40">
           Photo:{" "}
           <a className="hover:text-white" href={info.image_page ?? undefined} target="_blank" rel="noreferrer">
             {info.image_artist ?? "Wikimedia Commons"}
@@ -98,7 +98,7 @@ function SpeciesDescription({ data, compact }: { data: SpeciesDetail; compact: b
   return (
     <div className="mt-4">
       <p className={`text-sm leading-relaxed text-white/70 ${compact ? "line-clamp-4" : ""}`}>{info.extract}</p>
-      <p className="mt-1 text-[10px] text-white/40">
+      <p className="mt-1 text-[12px] text-white/40">
         From{" "}
         <a className="hover:text-white" href={info.wiki_url ?? undefined} target="_blank" rel="noreferrer">
           Wikipedia
@@ -134,7 +134,7 @@ export function SpeciesHeader({ species }: { species: string }) {
             <TrendBadge trend={data.trend} />
             {data.threshold_source === "default" && (
               <span
-                className="inline-flex items-center gap-1 rounded-full border border-coral/40 bg-coral/10 px-2 py-0.5 text-[11px] text-coral"
+                className="inline-flex items-center gap-1 rounded-full border border-coral/40 bg-coral/10 px-2 py-0.5 text-[12px] text-coral"
                 title="Too few expert/citizen checks to calibrate BirdNET for this species. Some detections may be false positives."
               >
                 <AlertTriangle className="h-3 w-3" /> Not yet validated · treat with caution
@@ -179,7 +179,7 @@ export function SpeciesStats({ species }: { species: string }) {
             style={{ left: `${Math.min(100, data.hour_share * 100)}%` }}
           />
         </div>
-        <p className="mt-1 text-[11px] text-white/40">
+        <p className="mt-1 text-[12px] text-white/40">
           Middle half of sites: {pct(lo)}–{pct(hi)}
         </p>
       </div>

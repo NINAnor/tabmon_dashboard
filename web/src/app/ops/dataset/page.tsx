@@ -32,7 +32,7 @@ function MonthlyHours({ rows }: { rows: Dataset["monthly_hours"] }) {
                 </rect>;
               })}
               {(i % 2 === 0 || bw > 40) && (
-                <text x={bw / 2} y={H - 5} fontSize={10} textAnchor="middle" fill="rgba(255,255,255,0.45)">
+                <text x={bw / 2} y={H - 5} fontSize={11.5} textAnchor="middle" fill="rgba(255,255,255,0.45)">
                   {new Date(m).toLocaleDateString("en-GB", { month: "short", year: "2-digit" })}
                 </text>
               )}
@@ -40,7 +40,7 @@ function MonthlyHours({ rows }: { rows: Dataset["monthly_hours"] }) {
           );
         })}
         {y.ticks(4).map((t) => (
-          <text key={t} x={34} y={H - 20 - y(t) + 3} fontSize={10} textAnchor="end" fill="rgba(255,255,255,0.4)">
+          <text key={t} x={34} y={H - 20 - y(t) + 3} fontSize={11.5} textAnchor="end" fill="rgba(255,255,255,0.4)">
             {compact(t)}
           </text>
         ))}

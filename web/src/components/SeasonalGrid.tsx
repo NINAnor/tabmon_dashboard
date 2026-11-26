@@ -38,7 +38,7 @@ export function SeasonalGrid({
               <line x1="0" y1="0" x2="0" y2="4" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
             </pattern>
           </defs>
-          <text x={LABEL_W - 10} y={EFFORT_H - 6} textAnchor="end" fontSize={10} fill="rgba(255,255,255,0.4)">
+          <text x={LABEL_W - 10} y={EFFORT_H - 6} textAnchor="end" fontSize={11.5} fill="rgba(255,255,255,0.4)">
             Hours recorded
           </text>
           {data.effort_weeks.map((m, i) => (
@@ -54,7 +54,7 @@ export function SeasonalGrid({
           {MONTHS.map((m, i) => {
             const week = 1 + (i * 365) / 12 / 7;
             return (
-              <text key={m} x={LABEL_W + (week - 1) * cw + 2} y={top - 6} fontSize={10} fill="rgba(255,255,255,0.45)">
+              <text key={m} x={LABEL_W + (week - 1) * cw + 2} y={top - 6} fontSize={11.5} fill="rgba(255,255,255,0.45)">
                 {m}
               </text>
             );
@@ -74,7 +74,7 @@ export function SeasonalGrid({
                   x={LABEL_W - 10}
                   y={y + ROW / 2 + 3}
                   textAnchor="end"
-                  fontSize={11.5}
+                  fontSize={12.5}
                   fill={isSel ? TEAL : "rgba(255,255,255,0.8)"}
                 >
                   {displayName(s).slice(0, 28)}

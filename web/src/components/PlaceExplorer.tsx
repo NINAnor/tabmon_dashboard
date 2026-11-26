@@ -141,7 +141,7 @@ function TopSpeciesList({ clusterId }: { clusterId: string }) {
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-[10px] text-white/35">Coloured dots: near threatened or worse on the IUCN Red List.</p>
+      <p className="mt-2 text-[12px] text-white/35">Coloured dots: near threatened or worse on the IUCN Red List.</p>
     </div>
   );
 }

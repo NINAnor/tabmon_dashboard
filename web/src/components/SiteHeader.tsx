@@ -51,7 +51,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
             </span>
           </Link>
           {variant === "ops" && (
-            <span className="rounded-full bg-amber/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-amber">
+            <span className="rounded-full bg-amber/15 px-2 py-0.5 text-[12px] font-semibold uppercase tracking-widest text-amber">
               Team
             </span>
           )}
@@ -102,10 +102,15 @@ function Footer() {
   return (
     <footer className="border-t border-white/10 py-10">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          {/* The positive EU emblem needs a white background. */}
-          <div className="shrink-0 self-start rounded-md bg-white p-2">
-            <img src="/brand/eu-funded-by-the-eu-small.png" alt="Funded by the European Union" className="h-28 w-auto" />
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
+          {/* EU emblem, horizontal version for dark backgrounds: white border, white statement in Arial. */}
+          <div className="flex shrink-0 items-center gap-3">
+            <img src="/brand/eu-flag.png" alt="" className="h-12 w-auto ring-1 ring-white" />
+            <p className="text-[15px] font-bold leading-tight text-white">
+              Funded by
+              <br />
+              the European Union
+            </p>
           </div>
           <div className="space-y-2 text-xs leading-relaxed text-white/50">
             <p>
