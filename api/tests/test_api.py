@@ -514,6 +514,11 @@ def test_activity_is_per_site_and_merges_deployments(data_dir):
     assert len(d["rows"]) == 2
 
 
+def test_overview_reports_last_analysed_day(client):
+    d = client.get("/api/public/overview").json()
+    assert d["analysed_until"] == "2025-12-31"
+
+
 def test_most_wanted_endpoint(client):
     # The fixture's only species is calibrated, so nothing is "wanted".
     assert client.get("/api/public/most-wanted").json() == []

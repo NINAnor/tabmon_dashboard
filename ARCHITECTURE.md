@@ -45,7 +45,7 @@ flowchart LR
   end
   subgraph C4["NIRD S3 · derived data"]
     direction TB
-    P[("Predictions<br/>tabmon_predictions/")]
+    P[("Predictions<br/>tabmon_predictions*/")]
     V[("Validations")]
     D[("Dashboard tables<br/>team CSVs · index")]
   end
@@ -93,12 +93,17 @@ container).
 
 ### 3. BirdNET classification
 Partners in France run BirdNET on the recordings on their own server and upload each
-run to the bucket as a complete dataset (see [The S3 bucket](#the-s3-bucket)). The
-dashboard and the Listening Lab read
-`tabmon_predictions/merged_predictions_light/` (detections with confidence ≥ 0.10,
-one Parquet file per recorder and month), which covers January 2025 to May 2026. A
-newer run, `tabmon_predictions_2026_10/` (to October 2026), was uploaded on
-20 November 2026 and is not read yet.
+run to the bucket as a complete dataset in its own folder (see
+[The S3 bucket](#the-s3-bucket)). Each reader is pointed at one run:
+
+- **Dashboard pipeline:** `PREDICTIONS_PREFIX` (environment variable of step 05),
+  default `tabmon_predictions_2026_10/merged_predictions_light`: January 2025 to
+  October 2026.
+- **Listening Lab:** `PREDICTIONS_S3_PREFIX` (Portainer stack variable).
+
+Both read the `merged_predictions_light/` part (detections with confidence ≥ 0.10,
+one Parquet file per recorder and month). When a new run arrives, change the
+prefix, rerun step 05 and redeploy the Listening Lab stacks.
 
 Classification is **not** part of the daily pipeline: the dashboard can only show
 months that have been classified.
@@ -170,15 +175,17 @@ bencretois-ns8129k-proj-tabmon/
 ├── site_info_backups/                 copies of site_info.csv taken before manual edits
 │
 │  ── BirdNET predictions (written by the partners in France) ────────────────────
-├── tabmon_predictions/                run covering Jan 2025 – May 2026  ◄ READ TODAY
-│   ├── merged_predictions_light/      confidence ≥ 0.10, one file per recorder and month  ◄ USED
+├── tabmon_predictions/                earlier run: Jan 2025 – May 2026 (superseded)
+│   ├── merged_predictions_light/      confidence ≥ 0.10, one file per recorder and month
 │   │   └── country=<Country>/device_id=<id>/<YYYY-MM>_<id>.parquet
 │   ├── merged_predictions/            confidence ≥ 0.01, same layout, until Mar 2026 (not used)
 │   ├── tabmon_predictions_<Country>.parquet   the same data, one file per country (not used)
 │   ├── tabmon_predictions_light.parquet       (not used)
 │   └── index_light.parquet                    (not used)
-├── tabmon_predictions_2026_10/        newer run covering Jan 2025 – Oct 2026 (uploaded 20 Nov 2026),
-│                                      same layout incl. merged_predictions_light/ (not read yet)
+├── tabmon_predictions_2026_10/        latest run: Jan 2025 – Oct 2026 (uploaded 20 Nov 2026)  ◄ USED
+│   ├── merged_predictions_light/      ◄ read by the dashboard pipeline and the Listening Lab
+│   ├── merged_predictions/            confidence ≥ 0.01 (not used)
+│   └── tabmon_predictions_<Country>[_light].parquet   one file per country (not used)
 │
 │  ── Validation (Listening Lab) ─────────────────────────────────────────────────
 ├── validations/                       citizen checks: session_<id>.csv
@@ -214,17 +221,17 @@ bencretois-ns8129k-proj-tabmon/
 | `proj_tabmon_NINA*/` | Pipeline step 01 (moved from Google Cloud) | Step 02, BirdNET (France), Listening Lab, dashboard API (clips) |
 | `index.parquet` | Pipeline step 02 | Pipeline steps 03 and 05 |
 | `site_info.csv` | Field teams (deployment form); manual fixes | Pipeline steps 03 and 05, Listening Lab |
-| `tabmon_predictions/merged_predictions_light/` | BirdNET (France) | Pipeline step 05 (`PREDICTIONS_GLOB` in `build_tables.py`), Listening Lab (`PREDICTIONS_S3_PREFIX`) |
-| `tabmon_predictions_2026_10/` | BirdNET (France) | Nothing yet |
+| `tabmon_predictions_2026_10/merged_predictions_light/` | BirdNET (France) | Pipeline step 05 (`PREDICTIONS_PREFIX`), Listening Lab (`PREDICTIONS_S3_PREFIX`) |
+| `tabmon_predictions/` | BirdNET (France), earlier run | Nothing (superseded) |
 | `validations/`, `validations_expert/` | Listening Lab | Pipeline step 05 (thresholds), Listening Lab |
 | `validation_dataset/` | Validation coordinators | Listening Lab (expert) |
 | `data/pictures/` | Field teams | Pipeline step 05 (`photos.parquet`), dashboard API (team area) |
 | `data/preprocessed/*.csv` | Pipeline steps 03–04 | Dashboard API (team area) |
 | `data/preprocessed/dashboard/` | Pipeline step 05 | Dashboard API |
 
-The newest BirdNET run, `tabmon_predictions_2026_10/`, is a complete dataset (every
-month since January 2025) in a new folder next to the previous run. The dashboard
-and the Listening Lab only see a run once their prediction path points to it.
+Each BirdNET run is a complete dataset (every month since January 2025) in a new
+folder next to the previous one. The dashboard and the Listening Lab only see a run
+once their prediction prefix points to it.
 
 ## Build and deployment
 
@@ -291,7 +298,8 @@ These rules span several repositories; keep them consistent when changing any pa
 
 - **Predictions lag behind recordings:** months appear in the dashboard only after the
   French partners have classified them and the prediction path points to that run
-  (read today: up to 31 May 2026; available: up to 31 October 2026).
+  (currently up to 31 October 2026). The site states the last analysed day under
+  its headline numbers.
 - **The pipeline runs on a workstation:** if it is off at 06:00 UTC, that day's run is
   skipped and the data waits for the next run.
 - **Listening Lab and relocations:** its site list maps one recorder per site name,

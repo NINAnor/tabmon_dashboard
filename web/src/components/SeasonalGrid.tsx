@@ -3,7 +3,7 @@
 import { scaleLinear } from "d3-scale";
 import { useState } from "react";
 import type { PlaceProfile } from "@/lib/api";
-import { oceanRamp } from "@/lib/color";
+import { oceanRamp, TEAL, tealAlpha } from "@/lib/color";
 import { MONTHS, displayName, rate, weekLabel } from "@/lib/format";
 import { useSize } from "@/lib/useSize";
 
@@ -69,13 +69,13 @@ export function SeasonalGrid({
                 className="cursor-pointer"
                 onClick={() => onSelect(isSel ? null : s.species)}
               >
-                <rect x={0} y={y} width={LABEL_W - 4} height={ROW - 2} fill={isSel ? "rgba(78,205,196,0.15)" : "transparent"} rx={4} />
+                <rect x={0} y={y} width={LABEL_W - 4} height={ROW - 2} fill={isSel ? tealAlpha(0.15) : "transparent"} rx={4} />
                 <text
                   x={LABEL_W - 10}
                   y={y + ROW / 2 + 3}
                   textAnchor="end"
                   fontSize={11.5}
-                  fill={isSel ? "#4ecdc4" : "rgba(255,255,255,0.8)"}
+                  fill={isSel ? TEAL : "rgba(255,255,255,0.8)"}
                 >
                   {displayName(s).slice(0, 28)}
                 </text>

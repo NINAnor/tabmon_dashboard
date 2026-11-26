@@ -1,5 +1,10 @@
 // Small colour helpers shared by the heatmap-style charts.
 
+/** BEAGLE teal (RGB 89 168 172), the site's accent colour. Keep in sync with
+ * --color-teal in globals.css; canvas, SVG and map styles cannot read CSS variables. */
+export const TEAL = "#59a8ac";
+export const tealAlpha = (a: number) => `rgba(89,168,172,${a})`;
+
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];

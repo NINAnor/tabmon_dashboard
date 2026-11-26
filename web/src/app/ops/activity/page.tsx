@@ -36,7 +36,7 @@ export default function ActivityPage() {
     const ctx = el.getContext("2d")!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
-    ctx.font = "10px var(--font-inter), sans-serif";
+    ctx.font = "10px Arial, Helvetica, sans-serif";
 
     // Month labels
     ctx.fillStyle = "rgba(255,255,255,0.45)";

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import type { MigrationFit, PhenologyGroup, SpeciesPhenology } from "@/lib/api";
 import { COUNTRY_COLORS, MONTHS, int, rate, weekLabel } from "@/lib/format";
 import { useSize } from "@/lib/useSize";
+import { TEAL } from "@/lib/color";
 
 const ROW = 30;
 const LABEL_W = 190;
@@ -91,8 +92,8 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
               <line x1="0" y1="0" x2="0" y2="5" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
             </pattern>
             <linearGradient id="ridge" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#4ecdc4" stopOpacity="0.95" />
-              <stop offset="100%" stopColor="#4ecdc4" stopOpacity="0.15" />
+              <stop offset="0%" stopColor={TEAL} stopOpacity="0.95" />
+              <stop offset="100%" stopColor={TEAL} stopOpacity="0.15" />
             </linearGradient>
           </defs>
 
@@ -154,7 +155,7 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
                   y={base - 4}
                   textAnchor="end"
                   fontSize={12}
-                  fill={empty || faint ? "rgba(255,255,255,0.35)" : isSel ? "#4ecdc4" : "rgba(255,255,255,0.85)"}
+                  fill={empty || faint ? "rgba(255,255,255,0.35)" : isSel ? TEAL : "rgba(255,255,255,0.85)"}
                 >
                   {g.label.length > 22 ? `${g.label.slice(0, 21)}…` : g.label}
                 </text>

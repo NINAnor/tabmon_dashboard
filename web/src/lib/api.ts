@@ -33,6 +33,7 @@ export type Overview = {
   devices_online: number;
   hours_recorded: number;
   recording_since: string;
+  analysed_until?: string | null;
   n_species: number;
   n_detections: number;
   countries: number;

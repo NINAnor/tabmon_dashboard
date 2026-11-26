@@ -21,18 +21,29 @@ export function NetworkStats({ clipsChecked, validated }: StatProps) {
       : ["Detections checked", compact(validated), "by experts & citizens"],
   ];
 
+  const until = data?.analysed_until
+    ? new Date(data.analysed_until).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : null;
+
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 md:grid-cols-5">
-      {stats.map(([label, value, sub]) => (
-        <div key={label} className="bg-ocean-900/80 px-5 py-3 backdrop-blur">
-          <dt className="eyebrow">{label}</dt>
-          <dd className="mt-1 flex items-baseline gap-2">
-            <span className="font-serif text-2xl tabular-nums">{value}</span>
-            <span className="text-[11px] text-white/45">{sub}</span>
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <div>
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 md:grid-cols-5">
+        {stats.map(([label, value, sub]) => (
+          <div key={label} className="bg-ocean-900/80 px-5 py-3 backdrop-blur">
+            <dt className="eyebrow">{label}</dt>
+            <dd className="mt-1 flex items-baseline gap-2">
+              <span className="font-serif text-2xl tabular-nums">{value}</span>
+              <span className="text-[11px] text-white/45">{sub}</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {until && (
+        <p className="mt-2 text-right text-[11px] text-white/40">
+          BirdNET results up to {until}; later recordings are still being analysed.
+        </p>
+      )}
+    </div>
   );
 }
 

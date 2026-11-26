@@ -9,6 +9,7 @@ import { COUNTRY_COLORS, pct, rate } from "@/lib/format";
 import { useSize } from "@/lib/useSize";
 import { Segmented } from "./Controls";
 import { DielClock } from "./DielClock";
+import { TEAL, tealAlpha } from "@/lib/color";
 
 export type SpeciesDiel = {
   overall: (number | null)[];
@@ -30,7 +31,7 @@ function AverageDay({ data, byCountry }: { data: SpeciesDiel; byCountry: boolean
   const [hover, setHover] = useState<number | null>(null);
   const series: [string, (number | null)[], string][] = byCountry
     ? Object.entries(data.countries).map(([c, v]) => [c, v, COUNTRY_COLORS[c] ?? "#fff"])
-    : [["All countries", data.overall, "#4ecdc4"]];
+    : [["All countries", data.overall, TEAL]];
   const max = Math.max(1e-9, ...series.flatMap(([, v]) => v.map((x) => x ?? 0)));
   const x = scaleLinear().domain([0, 23]).range([PAD.l, Math.max(PAD.l + 10, width - PAD.r)]);
   const y = scaleLinear().domain([0, max]).nice().range([H - PAD.b, PAD.t]);
@@ -82,7 +83,7 @@ function AverageDay({ data, byCountry }: { data: SpeciesDiel; byCountry: boolean
                   .y1((d) => y(d[1] ?? 0))
                   .curve(curveMonotoneX)(pts(data.overall)) ?? ""
               }
-              fill="rgba(78,205,196,0.18)"
+              fill={tealAlpha(0.18)}
             />
           )}
           {series.map(([name, v, color]) => (

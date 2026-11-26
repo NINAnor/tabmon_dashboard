@@ -54,7 +54,7 @@ export default function SitesPage() {
                                 <span
                                   className={`h-1.5 w-1.5 rounded-full ${
                                     s.status === "Online"
-                                      ? "bg-teal shadow-[0_0_6px_#4ecdc4]"
+                                      ? "bg-teal shadow-[0_0_6px_var(--color-teal)]"
                                       : s.status === "Offline"
                                         ? "bg-coral"
                                         : "bg-white/25"

@@ -6,7 +6,7 @@ import useSWR from "swr";
 import WaveSurfer from "wavesurfer.js";
 import Spectrogram from "wavesurfer.js/dist/plugins/spectrogram.esm.js";
 import { fetcher, qs, type Clip } from "@/lib/api";
-import { spectrogramColorMap } from "@/lib/color";
+import { spectrogramColorMap, TEAL, tealAlpha } from "@/lib/color";
 import { displayName } from "@/lib/format";
 import { labLink } from "@/lib/lab";
 
@@ -66,8 +66,8 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
       container: wave.current,
       url: `/api/clips/${clip.clip_id}.mp3`,
       height: 28,
-      waveColor: "rgba(78,205,196,0.35)",
-      progressColor: "#4ecdc4",
+      waveColor: tealAlpha(0.35),
+      progressColor: TEAL,
       cursorColor: "#f4b860",
       cursorWidth: 1,
       barWidth: 2,

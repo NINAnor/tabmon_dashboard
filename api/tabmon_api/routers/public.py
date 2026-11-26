@@ -33,7 +33,8 @@ def overview(store: DataStore = Depends(get_store)):
             else {"n": 0, "online": 0}
         )
         effort = store.one(
-            "SELECT sum(recorded_minutes) / 60 AS hours, min(date) AS since FROM effort"
+            "SELECT sum(recorded_minutes) / 60 AS hours, min(date) AS since, "
+            "max(date) AS until FROM effort"
         )
         species = store.one(
             "SELECT count(*) AS n_species, sum(n_detections)::BIGINT AS n_detections "
@@ -48,6 +49,9 @@ def overview(store: DataStore = Depends(get_store)):
             "devices_online": devices["online"],
             "hours_recorded": float(effort["hours"] or 0),
             "recording_since": effort["since"],
+            # Effort only counts days BirdNET has analysed, so this is the last
+            # day with results (the classification runs behind the recordings).
+            "analysed_until": effort["until"],
             **species,
             **geo,
             "updated_at": store.loaded_at,

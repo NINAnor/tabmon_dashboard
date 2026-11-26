@@ -6,11 +6,13 @@
   --color-ocean-800: #0c1d2a;
   --color-ocean-700: #123044;
   --color-ocean-600: #1b4560;
-  --color-teal: #4ecdc4;
-  --color-teal-dim: #2a8f89;
+  /* BEAGLE teal (RGB 89 168 172); keep in sync with TEAL in lib/color.ts */
+  --color-teal: #59a8ac;
+  --color-teal-dim: #3d7c80;
   --color-amber: #f4b860;
   --color-coral: #ff7a6b;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* BEAGLE uses Arial; Liberation Sans has the same metrics where Arial is missing. */
+  --font-sans: Arial, Helvetica, "Liberation Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
 }
 

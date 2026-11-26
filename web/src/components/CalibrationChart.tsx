@@ -7,6 +7,7 @@ import useSWR from "swr";
 import { fetcher } from "@/lib/api";
 import { compact, displayName, int, pct } from "@/lib/format";
 import { useSize } from "@/lib/useSize";
+import { TEAL, tealAlpha } from "@/lib/color";
 
 type CurvePoint = {
   confidence: number;
@@ -147,9 +148,9 @@ function CalibrationChart({ data }: { data: Calibration }) {
           {calibrated && (
             <>
               {tLo !== null && (
-                <rect x={tLo} y={M.top} width={Math.max(1, tHi - tLo)} height={H} fill="rgba(78,205,196,0.07)" />
+                <rect x={tLo} y={M.top} width={Math.max(1, tHi - tLo)} height={H} fill={tealAlpha(0.07)} />
               )}
-              <line x1={tx} x2={tx} y1={M.top} y2={histTop + HIST_H} stroke="#4ecdc4" strokeWidth={1.5} />
+              <line x1={tx} x2={tx} y1={M.top} y2={histTop + HIST_H} stroke={TEAL} strokeWidth={1.5} />
               <text x={tx + 5} y={M.top + 10} className="fill-teal text-[11px] font-medium">
                 threshold {data.threshold.toFixed(2)}
               </text>

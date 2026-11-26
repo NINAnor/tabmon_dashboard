@@ -6,6 +6,7 @@ import type { Device } from "@/lib/api";
 import { int, relativeDays } from "@/lib/format";
 import { mapLib } from "@/lib/maplibre";
 import { DARK_STYLE } from "../ClusterMap";
+import { TEAL } from "@/lib/color";
 
 export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height?: number }) {
   const [hover, setHover] = useState<Device | null>(null);
@@ -42,7 +43,7 @@ export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height
             type="circle"
             paint={{
               "circle-radius": 14,
-              "circle-color": ["case", ["==", ["get", "online"], 1], "#4ecdc4", "#ff7a6b"],
+              "circle-color": ["case", ["==", ["get", "online"], 1], TEAL, "#ff7a6b"],
               "circle-opacity": 0.15,
               "circle-blur": 1,
             }}
@@ -52,7 +53,7 @@ export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height
             type="circle"
             paint={{
               "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 4, 10, 8],
-              "circle-color": ["case", ["==", ["get", "online"], 1], "#4ecdc4", "#ff7a6b"],
+              "circle-color": ["case", ["==", ["get", "online"], 1], TEAL, "#ff7a6b"],
               "circle-stroke-color": "#07131c",
               "circle-stroke-width": 1.5,
             }}

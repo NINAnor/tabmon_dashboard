@@ -26,7 +26,7 @@ export function StatusDot({ status }: { status: string }) {
   const online = status === "Online";
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={`h-2 w-2 rounded-full ${online ? "bg-teal shadow-[0_0_8px_#4ecdc4]" : "bg-coral"}`} />
+      <span className={`h-2 w-2 rounded-full ${online ? "bg-teal shadow-[0_0_8px_var(--color-teal)]" : "bg-coral"}`} />
       {status}
     </span>
   );
