@@ -194,6 +194,16 @@ class DataStore:
                 "ml_audio_asset VARCHAR, photo_credit VARCHAR, audio_credit VARCHAR)"
             )
 
+        rare_max = int(self.settings.rare_max_detections)
+        con.execute(
+            f"""
+            CREATE OR REPLACE TABLE species AS
+            SELECT *, threshold_source NOT IN ('calibrated', 'calibrated_low')
+                      AND (n_detections < {rare_max} OR n_sites < 2) AS rare_unverified
+            FROM species
+            """
+        )
+
         # One row per site (a site can have several deployments over time).
         con.execute(
             """

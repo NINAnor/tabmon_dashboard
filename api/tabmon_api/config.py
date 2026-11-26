@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     public_coord_grid: float = 0.1
     # Weeks with less recording than this (minutes) are flagged as low effort.
     min_week_effort_minutes: float = 120.0
+    # Species without a calibrated threshold, detected fewer times than this or at
+    # a single site, are labelled "rare, unverified" (often BirdNET errors).
+    rare_max_detections: int = 10
     min_hour_effort_minutes: float = 30.0
 
     clip_cache_max_entries: int = 500

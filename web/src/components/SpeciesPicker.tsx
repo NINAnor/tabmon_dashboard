@@ -36,11 +36,17 @@ function Row({ s, onPick }: { s: SpeciesRow; onPick: () => void }) {
             {displayName(s)} <span className="italic text-beagle-mint/40">{s.species}</span>
           </span>
         </span>
-        <span className="shrink-0 text-xs tabular-nums text-beagle-mint/40">
-          {s.calibrated && s.precision_at_threshold !== null
-            ? `${pct(s.precision_at_threshold, 0)} precise`
-            : compact(s.n_detections)}
-        </span>
+        {s.rare_unverified ? (
+          <span className="shrink-0 rounded-full bg-coral/10 px-2 py-0.5 text-xs text-coral/90" title="Few detections and no expert checks: possibly a BirdNET error">
+            rare, unverified
+          </span>
+        ) : (
+          <span className="shrink-0 text-xs tabular-nums text-beagle-mint/40">
+            {s.calibrated && s.precision_at_threshold !== null
+              ? `≥${pct(s.precision_at_threshold, 0)} correct`
+              : compact(s.n_detections)}
+          </span>
+        )}
       </button>
     </li>
   );

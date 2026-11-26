@@ -30,7 +30,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
     href === "/" || href === "/ops" ? pathname === href : pathname.startsWith(href);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-beagle-mint/5 bg-beagle-navy/80 backdrop-blur-md">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-beagle-mint/5 bg-ocean-900/80 backdrop-blur-md">
       <nav className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-2 md:h-16 md:flex-nowrap md:py-0">
         <div className="flex shrink-0 items-center gap-3">
           <Link href="/" className="flex items-center gap-3">
@@ -100,7 +100,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
 
 function Footer() {
   return (
-    <footer className="border-t border-beagle-mint/10 bg-beagle-navy/45 py-10">
+    <footer className="border-t border-beagle-mint/10 py-10">
       <div className="mx-auto max-w-7xl px-6">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
           {/* EU emblem, horizontal version for dark backgrounds: white border, white statement in Arial. */}

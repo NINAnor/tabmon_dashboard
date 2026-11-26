@@ -519,6 +519,30 @@ def test_overview_reports_last_analysed_day(client):
     assert d["analysed_until"] == "2025-12-31"
 
 
+def test_rare_unverified_flag(data_dir):
+    import duckdb as ddb
+
+    tables = data_dir / "data/preprocessed/dashboard"
+    # Add an uncalibrated species seen twice at one site next to the calibrated cuckoo.
+    con = ddb.connect()
+    con.execute(f"CREATE TABLE s AS FROM '{tables}/species.parquet'")
+    con.execute(
+        "INSERT INTO s BY NAME SELECT 'Hydrobates monorhis' AS species, "
+        "'Swinhoe''s Storm-Petrel' AS common_en, 2::BIGINT AS n_detections, "
+        "1::BIGINT AS n_sites, 1::BIGINT AS n_countries, 0.7 AS threshold, "
+        "'default' AS threshold_source, 0::BIGINT AS n_validated"
+    )
+    con.execute(f"COPY s TO '{tables}/species.parquet' (FORMAT parquet)")
+    store = DataStore(
+        Settings(data_dir=data_dir, species_media_csv=data_dir / "none.csv")
+    )
+    store.refresh()
+    rows = {
+        r["species"]: r["rare_unverified"] for r in store.query("SELECT * FROM species")
+    }
+    assert rows == {"Cuculus canorus": False, "Hydrobates monorhis": True}
+
+
 def test_most_wanted_endpoint(client):
     # The fixture's only species is calibrated, so nothing is "wanted".
     assert client.get("/api/public/most-wanted").json() == []

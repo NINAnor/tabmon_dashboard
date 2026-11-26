@@ -128,11 +128,23 @@ export function SpeciesHeader({ species }: { species: string }) {
           <div>
             <h2 className="font-serif text-4xl leading-tight">{displayName(data)}</h2>
             <p className="italic text-beagle-mint/45">{data.species}</p>
+            {data.rare_unverified && (
+              <p className="mt-2 max-w-xl text-sm text-coral/90">
+                Only {int(data.n_detections)} detection{data.n_detections === 1 ? "" : "s"} at {data.n_sites} site
+                {data.n_sites === 1 ? "" : "s"}, not yet checked by experts or volunteers. This may be a BirdNET error
+                rather than a real record.
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-end gap-1.5">
             <IucnBadge ecology={data.ecology} />
-            <TrendBadge trend={data.trend} />
-            {data.threshold_source === "default" && (
+            {/* A trend from a handful of detections means nothing. */}
+            {!data.rare_unverified && <TrendBadge trend={data.trend} />}
+            {data.rare_unverified ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-coral/50 bg-coral/15 px-2 py-0.5 text-[12px] font-medium text-coral">
+                <AlertTriangle className="h-3 w-3" /> Rare, unverified
+              </span>
+            ) : data.threshold_source === "default" && (
               <span
                 className="inline-flex items-center gap-1 rounded-full border border-coral/40 bg-coral/10 px-2 py-0.5 text-[12px] text-coral"
                 title="Too few expert/citizen checks to calibrate BirdNET for this species. Some detections may be false positives."

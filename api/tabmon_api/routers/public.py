@@ -262,7 +262,7 @@ def species_list(
         f"""
         SELECT species, common_en, common_fr, common_es, common_nl, common_no,
                n_detections, n_sites, n_countries, threshold, threshold_source,
-               n_validated, n_correct, precision_at_threshold,
+               n_validated, n_correct, precision_at_threshold, rare_unverified,
                threshold_source IN ('calibrated', 'calibrated_low') AS calibrated
         FROM species {where}
         ORDER BY calibrated DESC, n_detections DESC LIMIT {int(limit)}

@@ -72,6 +72,8 @@ export type SpeciesRow = {
   n_correct: number;
   precision_at_threshold: number | null;
   threshold_lower?: number | null;
+  // Uncalibrated and seen fewer than 10 times or at a single site.
+  rare_unverified?: boolean;
   threshold_upper?: number | null;
   threshold_method?: string | null;
   calibrated: boolean;

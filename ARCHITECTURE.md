@@ -280,6 +280,9 @@ These rules span several repositories; keep them consistent when changing any pa
   better), and the threshold is the lowest score where it reaches 90% (70% as a
   fallback). Species whose curve never reaches 70% are hidden; species without enough
   checks use 0.7.
+- **Rare, unverified:** species without a calibrated threshold that were detected fewer
+  than 10 times or at a single site are labelled "rare, unverified" on the site
+  (often BirdNET errors); the API computes this when it loads `species.parquet`.
 - **Weeks** are calendar-year weeks (days 1–7 are week 1), not ISO weeks.
 - **Times:** file names are UTC; charts use local time per country.
 
