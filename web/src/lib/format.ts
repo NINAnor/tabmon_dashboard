@@ -2,7 +2,7 @@ import { format } from "d3-format";
 import { localName } from "./names";
 
 export const COUNTRY_COLORS: Record<string, string> = {
-  Norway: "#7fb8ff",
+  Norway: "#2d99e2",
   Netherlands: "#f4b860",
   France: "#c39bff",
   Spain: "#ff7a6b",

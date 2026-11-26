@@ -102,7 +102,7 @@ export function SeasonalGrid({
       {hover && (
         <div className="tooltip" style={{ left: Math.min(hover.x + 12, width - 200), top: hover.y + 14, width: 190 }}>
           <div className="font-medium text-white">{displayName(data.species[hover.s])}</div>
-          <div className="text-white/50">Week of {weekLabel(data.week_starts, hover.w + 1)}</div>
+          <div className="text-beagle-mint/50">Week of {weekLabel(data.week_starts, hover.w + 1)}</div>
           <div className="mt-1">
             {data.species[hover.s].cells[hover.w] === null ? (
               <span className="text-amber">Too little recording</span>

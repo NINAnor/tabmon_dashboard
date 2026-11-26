@@ -247,7 +247,7 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
             style={{ left: Math.min(hover.x + 14, width - 220), top: hover.y + 12, width: 205 }}
           >
             <div className="font-medium text-white">{hover.g.label}</div>
-            <div className="text-white/50">Week of {weekLabel(data.week_starts, hover.week)}</div>
+            <div className="text-beagle-mint/50">Week of {weekLabel(data.week_starts, hover.week)}</div>
             <div className="mt-1.5 flex justify-between">
               <span>Detections / hour</span>
               <span className="tabular-nums text-teal">{w.low_effort ? "–" : rate(w.rate)}</span>
@@ -270,7 +270,7 @@ export function Ridgeline({ data, mode, selected, onSelect, cursorWeek }: Props)
 
 export function RidgelineLegend({ showWaves }: { showWaves: boolean }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-white/55">
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-beagle-mint/55">
       <span className="flex items-center gap-1.5">
         <span className="h-2.5 w-2.5 rounded-full bg-amber" /> Onset (10% of activity)
       </span>
@@ -301,7 +301,7 @@ export function RidgelineLegend({ showWaves }: { showWaves: boolean }) {
         </svg>
         Not enough recording
       </span>
-      <span className="flex items-center gap-1.5 text-white/40">
+      <span className="flex items-center gap-1.5 text-beagle-mint/40">
         <span className="h-2 w-4 rounded-sm bg-teal/30" /> Faded: few detections
         {showWaves ? ", not used for the waves" : ""}
       </span>

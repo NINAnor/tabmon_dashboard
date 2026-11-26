@@ -27,19 +27,19 @@ export function NetworkStats({ clipsChecked, validated }: StatProps) {
 
   return (
     <div>
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 md:grid-cols-5">
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-beagle-mint/10 bg-white/10 md:grid-cols-5">
         {stats.map(([label, value, sub]) => (
           <div key={label} className="bg-ocean-900/80 px-5 py-3 backdrop-blur">
             <dt className="eyebrow">{label}</dt>
             <dd className="mt-1 flex items-baseline gap-2">
               <span className="font-serif text-2xl tabular-nums">{value}</span>
-              <span className="text-[12px] text-white/45">{sub}</span>
+              <span className="text-[12px] text-beagle-mint/45">{sub}</span>
             </dd>
           </div>
         ))}
       </dl>
       {until && (
-        <p className="mt-2 text-right text-[12px] text-white/40">
+        <p className="mt-2 text-right text-[12px] text-beagle-mint/40">
           BirdNET results up to {until}; later recordings are still being analysed.
         </p>
       )}
@@ -61,7 +61,7 @@ export function Hero({ clipsChecked, validated }: StatProps) {
         <h1 className="max-w-4xl font-serif text-4xl leading-[1.08] md:text-5xl">
           Listening to Europe&rsquo;s birds, <span className="italic text-teal">from Spain to the Arctic.</span>
         </h1>
-        <p className="mt-4 max-w-2xl text-white/65">
+        <p className="mt-4 max-w-2xl text-beagle-mint/65">
           Autonomous recorders in {data?.clusters ?? "–"} clusters across Spain, France, the Netherlands and
           Norway listen around the clock. Together they show when birds arrive, sing and leave.
         </p>
@@ -69,7 +69,7 @@ export function Hero({ clipsChecked, validated }: StatProps) {
           <Link href="/species" className="rounded-full bg-teal px-5 py-2.5 text-sm font-medium text-ocean-950 hover:bg-teal/90">
             Follow a species →
           </Link>
-          <Link href="/sites" className="rounded-full border border-white/30 px-5 py-2.5 text-sm hover:bg-white/10">
+          <Link href="/sites" className="rounded-full border border-beagle-mint/30 px-5 py-2.5 text-sm hover:bg-white/10">
             Explore a cluster
           </Link>
         </div>

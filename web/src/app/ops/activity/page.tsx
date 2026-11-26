@@ -124,7 +124,7 @@ export default function ActivityPage() {
             <div className="font-medium text-white">
               {rows[hover.r].cluster} · {rows[hover.r].site}
             </div>
-            <div className="font-mono text-white/45">
+            <div className="font-mono text-beagle-mint/45">
               {bySite ? devicesOn(rows[hover.r], dates[hover.c]).join(", ") || "no recorder" : rows[hover.r].device_id}
             </div>
             <div className="mt-1">

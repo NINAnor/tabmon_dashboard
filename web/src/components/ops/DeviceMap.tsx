@@ -6,7 +6,7 @@ import type { Device } from "@/lib/api";
 import { int, relativeDays } from "@/lib/format";
 import { mapLib } from "@/lib/maplibre";
 import { DARK_STYLE } from "../ClusterMap";
-import { TEAL } from "@/lib/color";
+import { GREEN } from "@/lib/color";
 
 export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height?: number }) {
   const [hover, setHover] = useState<Device | null>(null);
@@ -27,7 +27,7 @@ export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10" style={{ height }}>
+    <div className="overflow-hidden rounded-2xl border border-beagle-mint/10" style={{ height }}>
       <Map
         mapLib={mapLib}
         initialViewState={{ longitude: 8, latitude: 55, zoom: 3.2 }}
@@ -43,7 +43,7 @@ export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height
             type="circle"
             paint={{
               "circle-radius": 14,
-              "circle-color": ["case", ["==", ["get", "online"], 1], TEAL, "#ff7a6b"],
+              "circle-color": ["case", ["==", ["get", "online"], 1], GREEN, "#ff7a6b"],
               "circle-opacity": 0.15,
               "circle-blur": 1,
             }}
@@ -53,7 +53,7 @@ export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height
             type="circle"
             paint={{
               "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 4, 10, 8],
-              "circle-color": ["case", ["==", ["get", "online"], 1], TEAL, "#ff7a6b"],
+              "circle-color": ["case", ["==", ["get", "online"], 1], GREEN, "#ff7a6b"],
               "circle-stroke-color": "#07131c",
               "circle-stroke-width": 1.5,
             }}
@@ -65,12 +65,12 @@ export function DeviceMap({ devices, height = 520 }: { devices: Device[]; height
               <div className="font-serif text-sm text-white">
                 {hover.cluster} · {hover.site}
               </div>
-              <div className="text-white/50">{hover.deployment_id}</div>
-              <div className={hover.status === "Online" ? "text-teal" : "text-coral"}>
+              <div className="text-beagle-mint/50">{hover.deployment_id}</div>
+              <div className={hover.status === "Online" ? "text-beagle-green" : "text-coral"}>
                 {hover.status} · last file {relativeDays(hover.days_since_last)}
               </div>
               <div>{int(hover.total_recordings)} recordings</div>
-              <div className="text-white/40">
+              <div className="text-beagle-mint/40">
                 {hover.lat.toFixed(5)}, {hover.lon.toFixed(5)}
               </div>
             </div>

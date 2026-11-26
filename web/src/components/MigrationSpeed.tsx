@@ -69,7 +69,7 @@ export function MigrationSpeed({ data }: { data: SpeciesPhenology }) {
         <Navigation className="h-3 w-3" /> Spring &amp; autumn waves
       </p>
       {!migration.show_waves ? (
-        <p className="mt-2 text-sm text-white/60">
+        <p className="mt-2 text-sm text-beagle-mint/60">
           {migration.reason
             ? `${migration.reason.charAt(0).toUpperCase()}${migration.reason.slice(1)}: ${NO_WAVE[migration.kind ?? ""] ?? "no clear seasonal wave is expected."}`
             : `${KIND_LABEL[migration.kind ?? ""] ?? "Seasonal pattern"}: ${NO_WAVE[migration.kind ?? ""] ?? "no clear seasonal wave is expected."}`}
@@ -78,22 +78,22 @@ export function MigrationSpeed({ data }: { data: SpeciesPhenology }) {
         <>
           <div className="mt-2 space-y-2">
             <div>
-              <p className="text-sm text-white/85">
+              <p className="text-sm text-beagle-mint/85">
                 <span className="text-amber">Spring:</span>{" "}
                 {migration.spring.clear && typeof migration.spring.km_per_day === "number" && typeof migration.spring.days_per_degree === "number"
                   ? `Season starts ≈ ${Math.round(migration.spring.km_per_day)} km/day northward (${migration.spring.days_per_degree.toFixed(1)} days later per degree north)`
                   : "No clear spring wave"}
               </p>
-              <p className="text-[12px] text-white/40">{fitSummary(migration.spring)}</p>
+              <p className="text-[12px] text-beagle-mint/40">{fitSummary(migration.spring)}</p>
             </div>
             <div>
-              <p className="text-sm text-white/85">
+              <p className="text-sm text-beagle-mint/85">
                 <span className="text-coral">Autumn:</span>{" "}
                 {migration.autumn.clear && typeof migration.autumn.days_per_degree === "number"
                   ? `Falls silent ${Math.abs(migration.autumn.days_per_degree).toFixed(1)} days earlier per degree north`
                   : "No clear autumn wave"}
               </p>
-              <p className="text-[12px] text-white/40">{fitSummary(migration.autumn)}</p>
+              <p className="text-[12px] text-beagle-mint/40">{fitSummary(migration.autumn)}</p>
             </div>
           </div>
           {canChart && (() => {
@@ -139,7 +139,7 @@ export function MigrationSpeed({ data }: { data: SpeciesPhenology }) {
               </svg>
             );
           })()}
-          <p className="mt-2 text-[12px] text-white/45">
+          <p className="mt-2 text-[12px] text-beagle-mint/45">
             Recordings show when birds fall silent, which can be weeks before they leave.
           </p>
         </>

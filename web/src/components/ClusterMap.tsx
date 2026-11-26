@@ -138,7 +138,7 @@ export function ClusterMap({
   const hoveredPhen = hover ? phen[hover.id] : null;
 
   return (
-    <div ref={wrapRef} className="relative overflow-hidden rounded-2xl border border-white/10" style={{ height }}>
+    <div ref={wrapRef} className="relative overflow-hidden rounded-2xl border border-beagle-mint/10" style={{ height }}>
       <Map
         mapLib={mapLib}
         ref={mapRef}
@@ -186,7 +186,7 @@ export function ClusterMap({
           <Popup longitude={hovered.lon} latitude={hovered.lat} closeButton={false} offset={14} maxWidth="260px">
             <div className="text-xs">
               <div className="font-serif text-sm text-white">{hovered.label}</div>
-              <div className="text-white/50">{hovered.country}</div>
+              <div className="text-beagle-mint/50">{hovered.country}</div>
               {phenology && hoveredPhen ? (
                 hoveredPhen.total > 0 ? (
                   <div className="mt-1.5 space-y-0.5">
@@ -202,7 +202,7 @@ export function ClusterMap({
                     <div>{int(hoveredPhen.total)} detections</div>
                   </div>
                 ) : (
-                  <div className="mt-1.5 text-white/50">Not detected</div>
+                  <div className="mt-1.5 text-beagle-mint/50">Not detected</div>
                 )
               ) : (
                 <div className="mt-1.5 space-y-0.5">
@@ -214,7 +214,7 @@ export function ClusterMap({
           </Popup>
         )}
       </Map>
-      <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-ocean-950/80 px-3 py-2 text-[12px] text-white/60">
+      <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-ocean-950/80 px-3 py-2 text-[12px] text-beagle-mint/60">
         {phenology && week
           ? mode === "shape"
             ? "Size & colour: this week vs each cluster's own peak"
@@ -222,7 +222,7 @@ export function ClusterMap({
           : phenology
             ? "Colour: start of the vocal season (early → late) · Size: peak activity"
             : "Colour: species richness · Size: hours recorded"}
-        <div className="text-white/35">Locations are generalised to ~10 km</div>
+        <div className="text-beagle-mint/35">Locations are generalised to ~10 km</div>
         {phenology && week && (
           <div className="mt-2 flex items-end gap-3">
             {[0.15, 0.5, 1].map((t) => {
@@ -230,10 +230,10 @@ export function ClusterMap({
               return (
                 <span key={t} className="flex flex-col items-center gap-1">
                   <span
-                    className="rounded-full border border-white/20"
+                    className="rounded-full border border-beagle-mint/20"
                     style={{ width: r * 2 * 0.6, height: r * 2 * 0.6, background: oceanRamp(0.25 + 0.75 * Math.sqrt(t)) }}
                   />
-                  <span className="text-[12px] text-white/45">
+                  <span className="text-[12px] text-beagle-mint/45">
                     {t === 1 ? "peak" : `${Math.round(t * 100)}%`}
                   </span>
                 </span>
@@ -241,7 +241,7 @@ export function ClusterMap({
             })}
             <span className="flex flex-col items-center gap-1">
               <span className="h-2.5 w-2.5 rounded-full bg-[#26323c]" />
-              <span className="text-[12px] text-white/45">no data</span>
+              <span className="text-[12px] text-beagle-mint/45">no data</span>
             </span>
           </div>
         )}

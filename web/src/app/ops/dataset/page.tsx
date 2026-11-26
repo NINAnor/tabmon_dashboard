@@ -45,7 +45,7 @@ function MonthlyHours({ rows }: { rows: Dataset["monthly_hours"] }) {
           </text>
         ))}
       </svg>
-      <div className="mt-2 flex gap-4 text-xs text-white/60">
+      <div className="mt-2 flex gap-4 text-xs text-beagle-mint/60">
         {countries.map((c) => (
           <span key={c} className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm" style={{ background: COUNTRY_COLORS[c] }} /> {c}
@@ -78,7 +78,7 @@ export default function DatasetPage() {
 
       <div className="card mt-6 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-white/[0.03] text-left text-xs text-white/50">
+          <thead className="bg-white/[0.03] text-left text-xs text-beagle-mint/50">
             <tr>
               <th className="px-3 py-2 font-medium">Device</th>
               <th className="px-3 py-2 font-medium">Site</th>
@@ -90,11 +90,11 @@ export default function DatasetPage() {
           </thead>
           <tbody>
             {data?.devices.map((d) => (
-              <tr key={d.device} className="border-t border-white/5">
-                <td className="px-3 py-2 font-mono text-xs text-white/60">{d.device_id}</td>
+              <tr key={d.device} className="border-t border-beagle-mint/5">
+                <td className="px-3 py-2 font-mono text-xs text-beagle-mint/60">{d.device_id}</td>
                 <td className="px-3 py-2">
                   <span style={{ color: COUNTRY_COLORS[d.country ?? ""] }}>{d.country ?? "–"}</span>{" "}
-                  <span className="text-white/60">
+                  <span className="text-beagle-mint/60">
                     {d.cluster} · {d.site}
                   </span>
                 </td>
@@ -105,7 +105,7 @@ export default function DatasetPage() {
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{int(d.total_recordings)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{d.total_size_gb.toFixed(0)} GB</td>
-                <td className="px-3 py-2 text-xs text-white/50">
+                <td className="px-3 py-2 text-xs text-beagle-mint/50">
                   {d.earliest_recording?.slice(0, 10)} → {d.latest_recording?.slice(0, 10)}
                 </td>
               </tr>

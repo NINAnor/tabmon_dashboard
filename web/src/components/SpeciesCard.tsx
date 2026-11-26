@@ -9,10 +9,10 @@ import { COUNTRY_COLORS, compact, displayName, int, pct } from "@/lib/format";
 
 function TrendBadge({ trend }: { trend: Trend }) {
   const map = {
-    rising: ["Rising", ArrowUpRight, "text-teal bg-teal/10"],
+    rising: ["Rising", ArrowUpRight, "text-beagle-green bg-beagle-green/10"],
     falling: ["Falling", ArrowDownRight, "text-coral bg-coral/10"],
-    steady: ["Steady", ArrowRight, "text-white/80 bg-white/10"],
-    uncertain: ["Uncertain", HelpCircle, "text-white/50 bg-white/5"],
+    steady: ["Steady", ArrowRight, "text-beagle-mint/80 bg-white/10"],
+    uncertain: ["Uncertain", HelpCircle, "text-beagle-mint/50 bg-white/5"],
   } as const;
   const [label, Icon, cls] = map[trend.label];
   const title =
@@ -41,7 +41,7 @@ function SpeciesMedia({ data, compact }: { data: SpeciesDetail; compact: boolean
           allowFullScreen
           title="Macaulay Library photo"
         />
-        <figcaption className="mt-1 text-[12px] text-white/40">
+        <figcaption className="mt-1 text-[12px] text-beagle-mint/40">
           {media.photo_credit ? `© ${media.photo_credit} / ` : ""}
           <a
             className="hover:text-white"
@@ -64,7 +64,7 @@ function SpeciesMedia({ data, compact }: { data: SpeciesDetail; compact: boolean
           loading="lazy"
           className={`${aspect} w-full rounded-xl object-cover`}
         />
-        <figcaption className="mt-1 truncate text-[12px] text-white/40">
+        <figcaption className="mt-1 truncate text-[12px] text-beagle-mint/40">
           Photo:{" "}
           <a className="hover:text-white" href={info.image_page ?? undefined} target="_blank" rel="noreferrer">
             {info.image_artist ?? "Wikimedia Commons"}
@@ -86,7 +86,7 @@ function SpeciesMedia({ data, compact }: { data: SpeciesDetail; compact: boolean
     );
   }
   return compact ? null : (
-    <div className={`flex ${aspect} items-center justify-center rounded-xl bg-gradient-to-br from-ocean-700 to-ocean-950 text-xs text-white/30`}>
+    <div className={`flex ${aspect} items-center justify-center rounded-xl bg-gradient-to-br from-ocean-700 to-ocean-950 text-xs text-beagle-mint/30`}>
       No photo available
     </div>
   );
@@ -97,8 +97,8 @@ function SpeciesDescription({ data, compact }: { data: SpeciesDetail; compact: b
   if (!info?.extract) return null;
   return (
     <div className="mt-4">
-      <p className={`text-sm leading-relaxed text-white/70 ${compact ? "line-clamp-4" : ""}`}>{info.extract}</p>
-      <p className="mt-1 text-[12px] text-white/40">
+      <p className={`text-sm leading-relaxed text-beagle-mint/70 ${compact ? "line-clamp-4" : ""}`}>{info.extract}</p>
+      <p className="mt-1 text-[12px] text-beagle-mint/40">
         From{" "}
         <a className="hover:text-white" href={info.wiki_url ?? undefined} target="_blank" rel="noreferrer">
           Wikipedia
@@ -127,7 +127,7 @@ export function SpeciesHeader({ species }: { species: string }) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-serif text-4xl leading-tight">{displayName(data)}</h2>
-            <p className="italic text-white/45">{data.species}</p>
+            <p className="italic text-beagle-mint/45">{data.species}</p>
           </div>
           <div className="flex flex-col items-end gap-1.5">
             <IucnBadge ecology={data.ecology} />
@@ -164,11 +164,11 @@ export function SpeciesStats({ species }: { species: string }) {
   const maxCountry = Math.max(1, ...data.by_country.map((c) => c.n));
 
   return (
-    <div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-3">
+    <div className="grid gap-px overflow-hidden rounded-2xl border border-beagle-mint/10 bg-white/10 md:grid-cols-3">
       <div className="bg-ocean-900 p-5">
         <p className="eyebrow">Heard in</p>
         <p className="mt-1 font-serif text-4xl tabular-nums">{pct(data.hour_share)}</p>
-        <p className="text-xs text-white/50">of recorded hours at the {data.n_sites_occupied} sites where it occurs</p>
+        <p className="text-xs text-beagle-mint/50">of recorded hours at the {data.n_sites_occupied} sites where it occurs</p>
         <div className="relative mt-3 h-1.5 rounded-full bg-white/10">
           <div
             className="absolute h-full rounded-full bg-teal/40"
@@ -179,7 +179,7 @@ export function SpeciesStats({ species }: { species: string }) {
             style={{ left: `${Math.min(100, data.hour_share * 100)}%` }}
           />
         </div>
-        <p className="mt-1 text-[12px] text-white/40">
+        <p className="mt-1 text-[12px] text-beagle-mint/40">
           Middle half of sites: {pct(lo)}–{pct(hi)}
         </p>
       </div>
@@ -189,14 +189,14 @@ export function SpeciesStats({ species }: { species: string }) {
         <div className="space-y-1.5">
           {data.by_country.map((c) => (
             <div key={c.country} className="flex items-center gap-2 text-xs">
-              <span className="w-20 text-white/60">{c.country}</span>
+              <span className="w-20 text-beagle-mint/60">{c.country}</span>
               <div className="h-1.5 flex-1 rounded-full bg-white/5">
                 <div
                   className="h-full rounded-full"
                   style={{ width: `${(c.n / maxCountry) * 100}%`, background: COUNTRY_COLORS[c.country] ?? "#fff" }}
                 />
               </div>
-              <span className="w-14 text-right tabular-nums text-white/50">{compact(c.n)}</span>
+              <span className="w-14 text-right tabular-nums text-beagle-mint/50">{compact(c.n)}</span>
             </div>
           ))}
         </div>
@@ -215,7 +215,7 @@ export function SpeciesStats({ species }: { species: string }) {
                 style={{ width: `${Math.min(100, (data.n_validated / MIN_VALIDATIONS) * 100)}%` }}
               />
             </div>
-            <p className="mt-1 text-xs text-white/50">
+            <p className="mt-1 text-xs text-beagle-mint/50">
               {Math.max(0, MIN_VALIDATIONS - data.n_validated)} more checks needed to calibrate. Until then a
               conservative confidence threshold of {data.threshold.toFixed(2)} is used, so treat patterns with caution.
             </p>
@@ -224,9 +224,9 @@ export function SpeciesStats({ species }: { species: string }) {
           <>
             <p className="mt-1 font-serif text-2xl">
               ≥ {data.threshold_source === "calibrated_low" ? "70" : "90"}%{" "}
-              <span className="text-base text-white/60">chance correct</span>
+              <span className="text-base text-beagle-mint/60">chance correct</span>
             </p>
-            <p className="mt-1 text-xs text-white/50">
+            <p className="mt-1 text-xs text-beagle-mint/50">
               {int(data.n_validated)} clips checked by experts and citizens. Only detections from BirdNET confidence{" "}
               {data.threshold.toFixed(2)}
               {data.threshold_lower != null && data.threshold_upper != null
@@ -246,7 +246,7 @@ export function SpeciesStats({ species }: { species: string }) {
           href={labLink({ country: data.by_country[0]?.country, species: data.species })}
           target="_blank"
           rel="noreferrer"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber/15 px-3 py-1.5 text-xs font-medium text-amber hover:bg-amber/25"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-beagle-green/15 px-3 py-1.5 text-xs font-medium text-beagle-green hover:bg-beagle-green/25"
         >
           <Headphones className="h-3.5 w-3.5" />
           {data.threshold_source === "default" ? `Help validate the ${displayName(data)}` : "Check more clips"} →

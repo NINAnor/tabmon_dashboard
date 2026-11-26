@@ -34,9 +34,9 @@ export function ClipList({
   return (
     <div>
       <p className="eyebrow mb-3">{title}</p>
-      {isLoading && <p className="text-sm text-white/40">Loading recordings…</p>}
+      {isLoading && <p className="text-sm text-beagle-mint/40">Loading recordings…</p>}
       {data && data.length === 0 && (
-        <p className="text-sm text-white/40">No example recordings for this selection yet.</p>
+        <p className="text-sm text-beagle-mint/40">No example recordings for this selection yet.</p>
       )}
       <ul className="space-y-2">
         {data?.map((c) => (
@@ -112,7 +112,7 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
   const meta = (
     <>
       <p className="truncate text-sm">{displayName(clip)}</p>
-      <p className="truncate text-xs text-white/45">
+      <p className="truncate text-xs text-beagle-mint/45">
         {clip.cluster ?? clip.cluster_id} · {clip.country} ·{" "}
         {new Date(clip.recorded_on).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
       </p>
@@ -131,11 +131,11 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
         </button>
         <div className="min-w-0 flex-1">{meta}</div>
         {clip.validated ? (
-          <span title="Checked by a validator" className="flex items-center gap-1 text-[12px] text-teal">
+          <span title="Checked by a validator" className="flex items-center gap-1 text-[12px] text-beagle-green">
             <CheckCircle2 className="h-3.5 w-3.5" /> checked
           </span>
         ) : (
-          <span title="BirdNET confidence" className="text-[12px] tabular-nums text-white/40">
+          <span title="BirdNET confidence" className="text-[12px] tabular-nums text-beagle-mint/40">
             {Math.round(clip.confidence * 100)}%
           </span>
         )}
@@ -143,7 +143,7 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
 
       {active && (
         <div className="mt-3">
-          {loading && <p className="mb-1 text-xs text-white/45">Fetching recording…</p>}
+          {loading && <p className="mb-1 text-xs text-beagle-mint/45">Fetching recording…</p>}
           {error && <p className="text-xs text-coral">Recording unavailable</p>}
           <div className={`relative ${error ? "hidden" : ""}`}>
             <div ref={wave} />
@@ -159,7 +159,7 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
             )}
           </div>
           {duration > 0 && (
-            <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[12px] text-white/45">
+            <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[12px] text-beagle-mint/45">
               <span className="flex items-center gap-1.5">
                 <span className="inline-block h-2 w-3 rounded-sm border-x border-amber/80 bg-amber/20" />
                 BirdNET detection · {clip.window_start.toFixed(0)}–{clip.window_end.toFixed(0)} s of {duration.toFixed(0)} s
@@ -168,7 +168,7 @@ function ClipRow({ clip, active, onPlay }: { clip: Clip; active: boolean; onPlay
                 href={labLink({ country: clip.country, cluster: clip.cluster, species: clip.species })}
                 target="_blank"
                 rel="noreferrer"
-                className="text-amber hover:underline"
+                className="text-beagle-green hover:underline"
               >
                 Does this sound right? Check more clips like this →
               </a>

@@ -28,15 +28,15 @@ function Row({ s, onPick }: { s: SpeciesRow; onPick: () => void }) {
       >
         <span className="flex min-w-0 items-center gap-2">
           {s.calibrated ? (
-            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-teal" />
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-beagle-green" />
           ) : (
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-coral/60" aria-label="Not yet validated" />
           )}
           <span className="truncate">
-            {displayName(s)} <span className="italic text-white/40">{s.species}</span>
+            {displayName(s)} <span className="italic text-beagle-mint/40">{s.species}</span>
           </span>
         </span>
-        <span className="shrink-0 text-xs tabular-nums text-white/40">
+        <span className="shrink-0 text-xs tabular-nums text-beagle-mint/40">
           {s.calibrated && s.precision_at_threshold !== null
             ? `${pct(s.precision_at_threshold, 0)} precise`
             : compact(s.n_detections)}
@@ -85,7 +85,7 @@ export function SpeciesPicker({
   return (
     <div className="flex flex-col gap-3">
       <div className="relative max-w-md">
-        <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-white/40" />
+        <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-beagle-mint/40" />
         <input
           className="input pl-9"
           placeholder={`Search ${data.length || ""} species…`}
@@ -98,12 +98,12 @@ export function SpeciesPicker({
           onBlur={() => setTimeout(() => setOpen(false), 150)}
         />
         {open && (
-          <ul className="absolute z-40 mt-1 max-h-96 w-full overflow-auto rounded-xl border border-white/15 bg-ocean-950/95 py-1 shadow-2xl backdrop-blur">
+          <ul className="absolute z-40 mt-1 max-h-96 w-full overflow-auto rounded-xl border border-beagle-mint/15 bg-ocean-950/95 py-1 shadow-2xl backdrop-blur">
             {q.trim() ? (
               matches.length ? (
                 matches.map((s) => <Row key={s.species} s={s} onPick={() => pick(s.species)} />)
               ) : (
-                <li className="px-3 py-2 text-sm text-white/40">No species found</li>
+                <li className="px-3 py-2 text-sm text-beagle-mint/40">No species found</li>
               )
             ) : (
               <>
@@ -113,7 +113,7 @@ export function SpeciesPicker({
                 {validated.map((s) => (
                   <Row key={s.species} s={s} onPick={() => pick(s.species)} />
                 ))}
-                <li className="px-3 py-2 text-xs text-white/40">
+                <li className="px-3 py-2 text-xs text-beagle-mint/40">
                   Type to search all {data.length} species ·{" "}
                   <AlertTriangle className="inline h-3 w-3 text-coral/60" /> = not yet validated, treat with caution
                 </li>

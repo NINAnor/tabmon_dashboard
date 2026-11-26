@@ -18,7 +18,7 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
 
   if (!data?.user) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-white/40">Checking access…</div>
+      <div className="flex min-h-screen items-center justify-center text-sm text-beagle-mint/40">Checking access…</div>
     );
   }
 
@@ -26,7 +26,7 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
     <>
       <SiteHeader variant="ops" />
       <main className="mx-auto max-w-[1500px] px-6 pb-24 pt-36 md:pt-24">
-        <div className="mb-6 flex items-center justify-end gap-3 text-xs text-white/45">
+        <div className="mb-6 flex items-center justify-end gap-3 text-xs text-beagle-mint/45">
           Signed in as {data.user}
           <button
             className="pill"

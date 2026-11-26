@@ -51,7 +51,7 @@ export default function SitePage({ params }: { params: Promise<{ id: string }> }
       <div className="card mt-6 overflow-x-auto">
         <p className="eyebrow p-4 pb-2">Deployments</p>
         <table className="w-full text-sm">
-          <thead className="text-left text-xs text-white/50">
+          <thead className="text-left text-xs text-beagle-mint/50">
             <tr>
               {["Deployment", "Device", "Period", "Microphone", "GPS accuracy", "Comments"].map((h) => (
                 <th key={h} className="px-4 py-2 font-medium">
@@ -62,9 +62,9 @@ export default function SitePage({ params }: { params: Promise<{ id: string }> }
           </thead>
           <tbody>
             {data.deployments.map((d) => (
-              <tr key={d.deployment_id} className="border-t border-white/5 align-top">
+              <tr key={d.deployment_id} className="border-t border-beagle-mint/5 align-top">
                 <td className="px-4 py-2 font-mono text-xs">{d.deployment_id}</td>
-                <td className="px-4 py-2 font-mono text-xs text-white/60">{d.device_id}</td>
+                <td className="px-4 py-2 font-mono text-xs text-beagle-mint/60">{d.device_id}</td>
                 <td className="px-4 py-2 text-xs">
                   {fmtDate(d.begin_ts)} → {d.end_ts ? fmtDate(d.end_ts) : "ongoing"}
                 </td>
@@ -72,7 +72,7 @@ export default function SitePage({ params }: { params: Promise<{ id: string }> }
                   {d.mic_height_cm ? `${d.mic_height_cm} cm` : "–"} · {d.mic_direction ?? "–"}
                 </td>
                 <td className="px-4 py-2 text-xs">{d.coord_uncertainty_m ? `${d.coord_uncertainty_m} m` : "–"}</td>
-                <td className="max-w-md px-4 py-2 text-xs text-white/60">{d.comments}</td>
+                <td className="max-w-md px-4 py-2 text-xs text-beagle-mint/60">{d.comments}</td>
               </tr>
             ))}
           </tbody>
@@ -82,7 +82,7 @@ export default function SitePage({ params }: { params: Promise<{ id: string }> }
       <div className="mt-6">
         <p className="eyebrow mb-3">Field photos</p>
         {data.photos.length === 0 ? (
-          <p className="text-sm text-white/40">No photos for this site.</p>
+          <p className="text-sm text-beagle-mint/40">No photos for this site.</p>
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
             {data.photos.map((p) => (
@@ -108,7 +108,7 @@ export default function SitePage({ params }: { params: Promise<{ id: string }> }
 
       {zoom && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-6" onClick={() => setZoom(null)}>
-          <button className="absolute right-6 top-6 text-white/70 hover:text-white" aria-label="Close">
+          <button className="absolute right-6 top-6 text-beagle-mint/70 hover:text-white" aria-label="Close">
             <X className="h-6 w-6" />
           </button>
           <img src={`/api/ops/photos/${zoom}`} alt="" className="max-h-full max-w-full rounded-xl" />

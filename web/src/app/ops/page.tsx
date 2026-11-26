@@ -71,12 +71,12 @@ export default function DevicesPage() {
               <button key={c.country} className="block w-full text-left" onClick={() => setCountry(country === c.country ? "" : c.country)}>
                 <div className="mb-1 flex justify-between text-sm">
                   <span style={{ color: COUNTRY_COLORS[c.country] }}>{c.country}</span>
-                  <span className="tabular-nums text-white/60">
+                  <span className="tabular-nums text-beagle-mint/60">
                     {c.online}/{c.total}
                   </span>
                 </div>
                 <div className="flex h-2.5 overflow-hidden rounded-full bg-coral/60">
-                  <div className="bg-teal" style={{ width: `${(c.online / Math.max(1, c.total)) * 100}%` }} />
+                  <div className="bg-beagle-green" style={{ width: `${(c.online / Math.max(1, c.total)) * 100}%` }} />
                 </div>
               </button>
             ))}
@@ -85,7 +85,7 @@ export default function DevicesPage() {
       </div>
 
       <div className="card mt-6 overflow-hidden">
-        <div className="flex flex-wrap gap-3 border-b border-white/10 p-4">
+        <div className="flex flex-wrap gap-3 border-b border-beagle-mint/10 p-4">
           <input className="input max-w-xs" placeholder="Search site, cluster, device…" value={q} onChange={(e) => setQ(e.target.value)} />
           <select className="input max-w-[180px]" value={country} onChange={(e) => setCountry(e.target.value)}>
             <option value="">All countries</option>
@@ -101,7 +101,7 @@ export default function DevicesPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-white/[0.03] text-left text-xs text-white/50">
+            <thead className="bg-white/[0.03] text-left text-xs text-beagle-mint/50">
               <tr>
                 {header("status", "Status")}
                 {header("country", "Country")}
@@ -115,13 +115,13 @@ export default function DevicesPage() {
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-white/40">
+                  <td colSpan={7} className="px-3 py-6 text-center text-beagle-mint/40">
                     Loading…
                   </td>
                 </tr>
               )}
               {filtered.map((d) => (
-                <tr key={d.device + d.deployment_id} className="border-t border-white/5 hover:bg-white/[0.03]">
+                <tr key={d.device + d.deployment_id} className="border-t border-beagle-mint/5 hover:bg-white/[0.03]">
                   <td className="px-3 py-2">
                     <StatusDot status={d.status} />
                   </td>
@@ -138,8 +138,8 @@ export default function DevicesPage() {
                       d.site
                     )}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs text-white/60">{d.device_id}</td>
-                  <td className="px-3 py-2 text-white/70" title={d.last_file ?? ""}>
+                  <td className="px-3 py-2 font-mono text-xs text-beagle-mint/60">{d.device_id}</td>
+                  <td className="px-3 py-2 text-beagle-mint/70" title={d.last_file ?? ""}>
                     {relativeDays(d.days_since_last)}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">{int(d.total_recordings)}</td>

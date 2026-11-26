@@ -32,7 +32,7 @@ function LoginForm() {
       <div>
         <p className="eyebrow">TABMON team</p>
         <h1 className="mt-2 font-serif text-3xl">Sign in</h1>
-        <p className="mt-2 text-sm text-white/50">
+        <p className="mt-2 text-sm text-beagle-mint/50">
           The team area shows exact device locations, health and deployment photos.
         </p>
       </div>

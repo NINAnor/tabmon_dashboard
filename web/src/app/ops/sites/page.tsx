@@ -54,7 +54,7 @@ export default function SitesPage() {
                                 <span
                                   className={`h-1.5 w-1.5 rounded-full ${
                                     s.status === "Online"
-                                      ? "bg-teal shadow-[0_0_6px_var(--color-teal)]"
+                                      ? "bg-beagle-green shadow-[0_0_6px_var(--color-beagle-green)]"
                                       : s.status === "Offline"
                                         ? "bg-coral"
                                         : "bg-white/25"
@@ -62,7 +62,7 @@ export default function SitesPage() {
                                 />
                                 {s.site}
                               </span>
-                              <span className="flex items-center gap-3 text-xs text-white/40">
+                              <span className="flex items-center gap-3 text-xs text-beagle-mint/40">
                                 {s.status === "Offline" && (
                                   <span className="text-coral/80">
                                     {s.days_since_last === null ? "no files yet" : `last file ${relativeDays(s.days_since_last)}`}

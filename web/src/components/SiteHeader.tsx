@@ -30,7 +30,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
     href === "/" || href === "/ops" ? pathname === href : pathname.startsWith(href);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-ocean-900/80 backdrop-blur-md">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-beagle-mint/5 bg-beagle-navy/80 backdrop-blur-md">
       <nav className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-2 md:h-16 md:flex-nowrap md:py-0">
         <div className="flex shrink-0 items-center gap-3">
           <Link href="/" className="flex items-center gap-3">
@@ -47,7 +47,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
           </a>
           <Link href="/" className="hidden items-center gap-3 lg:flex">
             <span className="font-serif text-lg tracking-wide">
-              TABMON <span className="text-white/40">×</span> BEAGLE
+              TABMON <span className="text-beagle-mint/40">×</span> BEAGLE
             </span>
           </Link>
           {variant === "ops" && (
@@ -57,13 +57,13 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
           )}
         </div>
 
-        <div className="order-last flex w-full min-w-0 items-center justify-between gap-1 overflow-x-auto rounded-full border border-white/10 bg-white/[0.03] p-1 text-sm md:order-none md:w-auto md:justify-start">
+        <div className="order-last flex w-full min-w-0 items-center justify-between gap-1 overflow-x-auto rounded-full border border-beagle-mint/10 bg-white/[0.03] p-1 text-sm md:order-none md:w-auto md:justify-start">
           {links.map(([href, label]) => (
             <Link
               key={href}
               href={href}
               className={`flex-1 whitespace-nowrap rounded-full px-3 py-1.5 text-center transition-colors md:flex-none md:px-4 ${
-                isActive(href) ? "bg-teal text-ocean-950" : "text-white/70 hover:text-white"
+                isActive(href) ? "bg-teal text-ocean-950" : "text-beagle-mint/70 hover:text-white"
               }`}
             >
               {label}
@@ -78,7 +78,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
                 href={labLink()}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-amber px-2.5 py-1.5 text-xs font-medium text-ocean-950 hover:bg-amber/90 md:px-3.5"
+                className="inline-flex items-center gap-1.5 rounded-full bg-beagle-green px-2.5 py-1.5 text-xs font-medium text-ocean-950 hover:bg-beagle-green/90 md:px-3.5"
                 title="Listen to recordings and confirm what BirdNET heard"
               >
                 <Headphones className="h-3.5 w-3.5" /> <span className="hidden md:inline">Help identify birds</span>
@@ -100,7 +100,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
 
 function Footer() {
   return (
-    <footer className="border-t border-white/10 py-10">
+    <footer className="border-t border-beagle-mint/10 bg-beagle-navy/45 py-10">
       <div className="mx-auto max-w-7xl px-6">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
           {/* EU emblem, horizontal version for dark backgrounds: white border, white statement in Arial. */}
@@ -112,21 +112,21 @@ function Footer() {
               the European Union
             </p>
           </div>
-          <div className="space-y-2 text-xs leading-relaxed text-white/50">
+          <div className="space-y-2 text-xs leading-relaxed text-beagle-mint/50">
             <p>
               BEAGLE has received funding from the European Union&rsquo;s Horizon Europe research and innovation
               programme under grant agreement No 101288886. TABMON was funded through Biodiversa+, the European
               Biodiversity Partnership co-funded by the European Union (grant agreement No 101052342), and national
               funding agencies.
             </p>
-            <p className="text-white/35">
+            <p className="text-beagle-mint/35">
               Views and opinions expressed are those of the authors only and do not necessarily reflect those of the
               European Union or the granting authority. Neither the European Union nor the granting authority can be
               held responsible for them.
             </p>
           </div>
         </div>
-        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-sm text-white/40 md:flex-row">
+        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-beagle-mint/10 pt-6 text-sm text-beagle-mint/40 md:flex-row">
           <p>
             TABMON · Towards a Transnational Acoustic Biodiversity Monitoring Network ·{" "}
             <a className="hover:text-white" href="https://www.nina.no/">

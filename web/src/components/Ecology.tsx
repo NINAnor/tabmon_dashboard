@@ -9,7 +9,7 @@ const IUCN_STYLE: Record<string, string> = {
   VU: "bg-amber/15 text-amber border-amber/40",
   EN: "bg-orange-500/20 text-orange-300 border-orange-400/40",
   CR: "bg-coral/20 text-coral border-coral/40",
-  DD: "bg-white/10 text-white/60 border-white/20",
+  DD: "bg-white/10 text-beagle-mint/60 border-beagle-mint/20",
 };
 
 export function IucnBadge({ ecology }: { ecology: Ecology | null }) {
@@ -43,7 +43,7 @@ export function EcologyChips({ ecology }: { ecology: Ecology | null }) {
         <span
           key={c.label}
           className={`rounded-full px-2.5 py-0.5 text-[12px] ${
-            c.strong ? "bg-teal/15 text-teal" : "bg-white/5 text-white/65"
+            c.strong ? "bg-teal/15 text-teal" : "bg-white/5 text-beagle-mint/65"
           }`}
         >
           {c.label}
@@ -61,12 +61,12 @@ export function HowToRead({ ecology }: { ecology: Ecology | null }) {
         <BookOpen className="h-3 w-3" /> How to read the chart
       </p>
       {ecology.how_to_read.map((p, i) => (
-        <p key={i} className={`text-[13px] leading-relaxed text-white/75 ${i > 0 ? "mt-1.5" : ""}`}>
+        <p key={i} className={`text-[13px] leading-relaxed text-beagle-mint/75 ${i > 0 ? "mt-1.5" : ""}`}>
           {p}
         </p>
       ))}
       {ecology.trait_source && (
-        <p className="mt-2 text-[12px] text-white/35">
+        <p className="mt-2 text-[12px] text-beagle-mint/35">
           Traits: {ecology.trait_source} · Status: IUCN via Wikidata · Patterns: TABMON recordings
         </p>
       )}

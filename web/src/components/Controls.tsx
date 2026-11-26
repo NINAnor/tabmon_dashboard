@@ -10,13 +10,13 @@ export function YearToggle({
   onChange: (year: number | null) => void;
 }) {
   return (
-    <div className="inline-flex rounded-full border border-white/15 p-0.5 text-xs">
+    <div className="inline-flex rounded-full border border-beagle-mint/15 p-0.5 text-xs">
       {[null, ...years].map((y) => (
         <button
           key={y ?? "all"}
           onClick={() => onChange(y)}
           className={`rounded-full px-3 py-1 transition-colors ${
-            value === y ? "bg-teal text-ocean-950" : "text-white/65 hover:text-white"
+            value === y ? "bg-teal text-ocean-950" : "text-beagle-mint/65 hover:text-white"
           }`}
         >
           {y ?? "All years"}
@@ -38,14 +38,14 @@ export function Segmented<T extends string>({
   titles?: Record<string, string>;
 }) {
   return (
-    <div className="inline-flex rounded-full border border-white/15 p-0.5 text-xs">
+    <div className="inline-flex rounded-full border border-beagle-mint/15 p-0.5 text-xs">
       {options.map(([v, label]) => (
         <button
           key={v}
           title={titles?.[v]}
           onClick={() => onChange(v)}
           className={`rounded-full px-3 py-1 transition-colors ${
-            value === v ? "bg-white/90 text-ocean-950" : "text-white/65 hover:text-white"
+            value === v ? "bg-white/90 text-ocean-950" : "text-beagle-mint/65 hover:text-white"
           }`}
         >
           {label}

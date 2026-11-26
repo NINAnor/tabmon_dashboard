@@ -47,7 +47,7 @@ export function PlaceExplorer({
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           {title && <h3 className="font-serif text-3xl">{title}</h3>}
-          {subtitle && <p className="text-sm text-white/50">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-beagle-mint/50">{subtitle}</p>}
         </div>
         <YearToggle years={data?.years ?? []} value={year} onChange={setYear} />
       </div>
@@ -65,7 +65,7 @@ export function PlaceExplorer({
           <div className="flex flex-col gap-3">
             <div className="w-full">
             <p className="eyebrow">Acoustic clock</p>
-            <p className="mt-1 text-sm text-white/60">
+            <p className="mt-1 text-sm text-beagle-mint/60">
               {selected ? displayName(selected) : "All species together"} · hour of day around the dial, months
               from January (inside) to December (outside)
             </p>
@@ -136,12 +136,12 @@ function TopSpeciesList({ clusterId }: { clusterId: string }) {
               <span className="h-1.5 flex-1 rounded-full bg-white/5">
                 <span className="block h-full rounded-full bg-teal/70" style={{ width: `${((s.rate ?? 0) / max) * 100}%` }} />
               </span>
-              <span className="w-10 text-right text-xs tabular-nums text-white/50">{rate(s.rate)}</span>
+              <span className="w-10 text-right text-xs tabular-nums text-beagle-mint/50">{rate(s.rate)}</span>
             </Link>
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-[12px] text-white/35">Coloured dots: near threatened or worse on the IUCN Red List.</p>
+      <p className="mt-2 text-[12px] text-beagle-mint/35">Coloured dots: near threatened or worse on the IUCN Red List.</p>
     </div>
   );
 }
@@ -161,7 +161,7 @@ export function PlacesView({
     <section className="mx-auto max-w-7xl px-6 py-10">
       <p className="eyebrow">What does this place sound like?</p>
       <h1 className="mt-2 font-serif text-4xl">A year of sound, cluster by cluster.</h1>
-      <p className="mt-3 max-w-2xl text-white/60">
+      <p className="mt-3 max-w-2xl text-beagle-mint/60">
         Pick a cluster. The calendar shows which species are active each week; the clock shows when in the day
         they sing, from the dawn chorus to night-calling owls and migrants.
       </p>
@@ -193,7 +193,7 @@ export function PlacesView({
           {cluster?.habitats && (
             <div className="flex flex-wrap gap-1.5">
               {cluster.habitats.map((h) => (
-                <span key={h} className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-white/60">
+                <span key={h} className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-beagle-mint/60">
                   {h}
                 </span>
               ))}
@@ -210,7 +210,7 @@ export function PlacesView({
               <Headphones className="h-5 w-5 shrink-0 text-amber" />
               <span className="text-sm">
                 <span className="text-amber">Listen to recordings from {cluster.label}</span>
-                <span className="block text-xs text-white/50">
+                <span className="block text-xs text-beagle-mint/50">
                   Help confirm what BirdNET heard here in the Listening Lab →
                 </span>
               </span>

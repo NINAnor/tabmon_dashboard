@@ -36,7 +36,7 @@ export function TimeLapse({
   }, [playing, onWeek, onPlaying]);
 
   return (
-    <div className="flex items-center gap-3 rounded-full border border-white/15 bg-ocean-950/60 py-1 pl-1 pr-4">
+    <div className="flex items-center gap-3 rounded-full border border-beagle-mint/15 bg-ocean-950/60 py-1 pl-1 pr-4">
       <button
         aria-label={playing ? "Pause time-lapse" : "Play time-lapse"}
         className="flex h-8 w-8 items-center justify-center rounded-full bg-amber text-ocean-950 hover:bg-amber/90"
@@ -65,7 +65,7 @@ export function TimeLapse({
       {week !== null && (
         <button
           aria-label="Reset time-lapse"
-          className="text-white/50 hover:text-white"
+          className="text-beagle-mint/50 hover:text-white"
           onClick={() => {
             onPlaying(false);
             onWeek(null);

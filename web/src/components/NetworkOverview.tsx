@@ -132,11 +132,11 @@ function MonthlyHours({ rows }: { rows: Network["monthly"] }) {
               <span className="tabular-nums">{int(r.hours)} h</span>
             </div>
           ))}
-          <div className="mt-1 flex justify-between border-t border-white/10 pt-1">
+          <div className="mt-1 flex justify-between border-t border-beagle-mint/10 pt-1">
             <span>Total</span>
             <span className="tabular-nums text-teal">{int(totals[hover])} h</span>
           </div>
-          <div className="text-white/45">
+          <div className="text-beagle-mint/45">
             {hoverRows.reduce((s, r) => s + r.n_clusters, 0)} clusters recording
           </div>
         </div>
@@ -159,7 +159,7 @@ export function NetworkOverview({ clusters }: { clusters: Cluster[] }) {
             height={520}
             onSelect={(id) => router.push(`/sites?id=${encodeURIComponent(id)}`)}
           />
-          <p className="mt-2 text-xs text-white/40">Click a cluster to explore its soundscape.</p>
+          <p className="mt-2 text-xs text-beagle-mint/40">Click a cluster to explore its soundscape.</p>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -172,7 +172,7 @@ export function NetworkOverview({ clusters }: { clusters: Cluster[] }) {
                     <span className="font-serif text-lg" style={{ color: COUNTRY_COLORS[c.country] }}>
                       {c.country}
                     </span>
-                    <span className="text-xs tabular-nums text-white/55">
+                    <span className="text-xs tabular-nums text-beagle-mint/55">
                       {c.n_clusters} clusters · {c.n_sites} sites · {compact(c.hours)} h · {c.n_species} species
                     </span>
                   </div>
@@ -183,7 +183,7 @@ export function NetworkOverview({ clusters }: { clusters: Cluster[] }) {
                     />
                   </div>
                   {c.top_species && (
-                    <p className="mt-1 text-[12px] text-white/40">Most detected: {c.top_species}</p>
+                    <p className="mt-1 text-[12px] text-beagle-mint/40">Most detected: {c.top_species}</p>
                   )}
                 </li>
               ))}
@@ -237,16 +237,16 @@ function HowItWorks({ pipeline }: { pipeline?: Network["pipeline"] }) {
   return (
     <div className="mt-10">
       <p className="eyebrow mb-4">How it works</p>
-      <ol className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-4">
+      <ol className="grid gap-px overflow-hidden rounded-2xl border border-beagle-mint/10 bg-white/10 md:grid-cols-4">
         {steps.map((s, i) => (
           <li key={s.title} className="bg-ocean-900 p-5">
             <div className="flex items-center gap-2 text-teal">
               <s.icon className="h-4 w-4" />
-              <span className="text-xs text-white/40">{i + 1}</span>
+              <span className="text-xs text-beagle-mint/40">{i + 1}</span>
               <span className="font-serif text-lg text-white">{s.title}</span>
             </div>
             <p className="mt-2 font-serif text-xl tabular-nums text-amber">{s.value}</p>
-            <p className="mt-1 text-sm text-white/55">{s.text}</p>
+            <p className="mt-1 text-sm text-beagle-mint/55">{s.text}</p>
           </li>
         ))}
       </ol>

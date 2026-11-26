@@ -91,14 +91,14 @@ export function SpeciesView({
       <TimeLapse week={week} onWeek={setWeek} playing={playing} onPlaying={setPlaying} weekStarts={data?.week_starts ?? []} />
       {data?.migration.show_waves && (springClear || autumnClear) ? (
         (springSouth || autumnNorth) && (
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-beagle-mint/60">
             {springClear && springSouth && springNorth && (
               <>
                 Starts <b className="text-amber">{weekLabel(data.week_starts, springSouth.onset_week!)}</b> in {springSouth.label} →{" "}
                 <b className="text-amber">{weekLabel(data.week_starts, springNorth.onset_week!)}</b> in {springNorth.label}
               </>
             )}
-            {springClear && autumnClear && springSouth && autumnNorth && <span className="mx-2 text-white/35">·</span>}
+            {springClear && autumnClear && springSouth && autumnNorth && <span className="mx-2 text-beagle-mint/35">·</span>}
             {autumnClear && autumnNorth && autumnSouth && (
               <>
                 Falls silent <b className="text-coral">{weekLabel(data.week_starts, autumnNorth.end_week!)}</b> in {autumnNorth.label} →{" "}
@@ -109,7 +109,7 @@ export function SpeciesView({
         )
       ) : (
         data && peakGroup?.peak_week !== null && peakGroup && (
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-beagle-mint/60">
             Peak activity <b className="text-amber">{weekLabel(data.week_starts, peakGroup.peak_week)}</b> ({peakGroup.label})
           </p>
         )
@@ -179,7 +179,7 @@ export function SpeciesView({
                     setWeek(w);
                   }}
                 />
-                <p className="text-xs text-white/45">
+                <p className="text-xs text-beagle-mint/45">
                   {mode === "shape"
                     ? "Each cluster is scaled to its own peak, so quiet northern sites still light up on arrival."
                     : "One scale for all clusters: compare absolute calling rates."}{" "}
@@ -192,7 +192,7 @@ export function SpeciesView({
           <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
             <div className="card p-5">
               <p className="eyebrow mb-1">When does its vocal season start and end?</p>
-              <p className="mb-4 text-sm text-white/55">
+              <p className="mb-4 text-sm text-beagle-mint/55">
                 One ridge per cluster, from Arctic Norway (top) to the Ebro Delta (bottom). Height is detections per
                 hour of recording. Press play to watch the season sweep across a large map.
               </p>
@@ -206,7 +206,7 @@ export function SpeciesView({
               )}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <RidgelineLegend showWaves={data?.migration.show_waves ?? false} />
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-beagle-mint/40">
                   {mode === "shape" ? shapeTitle : absoluteTitle}
                 </p>
               </div>

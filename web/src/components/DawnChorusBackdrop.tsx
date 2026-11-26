@@ -80,12 +80,12 @@ export function DawnChorusBackdrop() {
         </div>
       </div>
       <div className="absolute right-6 top-5 z-10 flex max-w-md items-center gap-3 text-right">
-        <p className="hidden text-[12px] leading-snug text-white/50 md:block">
+        <p className="hidden text-[12px] leading-snug text-beagle-mint/50 md:block">
           <span className="block whitespace-nowrap">
             {playing ? "Listening · " : "Dawn chorus · "}
             {DAWN.place}, {DAWN.when}
           </span>
-          <span className="block text-white/35">{DAWN.species.map((s) => displayName(s)).join(" · ")}</span>
+          <span className="block text-beagle-mint/35">{DAWN.species.map((s) => displayName(s)).join(" · ")}</span>
         </p>
         <button
           type="button"

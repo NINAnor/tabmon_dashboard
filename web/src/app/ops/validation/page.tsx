@@ -40,7 +40,7 @@ export default function ValidationPage() {
                 {c ?? "Unknown"}
               </p>
               {rows.map((r) => (
-                <p key={r.source} className="mt-1 text-sm text-white/65">
+                <p key={r.source} className="mt-1 text-sm text-beagle-mint/65">
                   {r.source}: {r.n_clips != null && <><b className="text-white">{int(r.n_clips)}</b> clips · </>}
                   {int(r.n_validated)} detections · {r.n_species} species
                 </p>
@@ -52,7 +52,7 @@ export default function ValidationPage() {
 
       <div className="card mt-6 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-white/[0.03] text-left text-xs text-white/50">
+          <thead className="bg-white/[0.03] text-left text-xs text-beagle-mint/50">
             <tr>
               <th className="px-3 py-2 font-medium">Species</th>
               <th className="px-3 py-2 font-medium">Validated</th>
@@ -63,24 +63,24 @@ export default function ValidationPage() {
           </thead>
           <tbody>
             {data?.by_species.map((s) => (
-              <tr key={s.species} className="border-t border-white/5">
+              <tr key={s.species} className="border-t border-beagle-mint/5">
                 <td className="px-3 py-2">
-                  {displayName(s)} <span className="text-xs italic text-white/40">{s.species}</span>
+                  {displayName(s)} <span className="text-xs italic text-beagle-mint/40">{s.species}</span>
                 </td>
                 <td className="w-1/3 px-3 py-2">
                   <div className="flex items-center gap-2">
                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5">
                       <div className="flex h-full" style={{ width: `${(s.n_validated / maxSpecies) * 100}%` }}>
-                        <div className="bg-teal" style={{ width: `${(s.n_correct / s.n_validated) * 100}%` }} />
+                        <div className="bg-beagle-green" style={{ width: `${(s.n_correct / s.n_validated) * 100}%` }} />
                         <div className="flex-1 bg-coral/60" />
                       </div>
                     </div>
-                    <span className="w-14 text-right text-xs tabular-nums text-white/60">{int(s.n_validated)}</span>
+                    <span className="w-14 text-right text-xs tabular-nums text-beagle-mint/60">{int(s.n_validated)}</span>
                   </div>
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{pct(s.n_correct / s.n_validated, 0)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{s.threshold?.toFixed(2) ?? "–"}</td>
-                <td className="px-3 py-2 text-xs text-white/60">
+                <td className="px-3 py-2 text-xs text-beagle-mint/60">
                   {s.threshold_source ? SOURCE_LABEL[s.threshold_source] ?? s.threshold_source : "Excluded (unreliable)"}
                 </td>
               </tr>

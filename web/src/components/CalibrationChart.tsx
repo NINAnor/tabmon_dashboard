@@ -7,7 +7,7 @@ import useSWR from "swr";
 import { fetcher } from "@/lib/api";
 import { compact, displayName, int, pct } from "@/lib/format";
 import { useSize } from "@/lib/useSize";
-import { TEAL, tealAlpha } from "@/lib/color";
+import { blueAlpha, TEAL, tealAlpha } from "@/lib/color";
 
 type CurvePoint = {
   confidence: number;
@@ -197,7 +197,7 @@ function CalibrationChart({ data }: { data: Calibration }) {
           })}
 
           {/* Distribution of all detections */}
-          <path d={histPath} fill="rgba(127,184,255,0.35)" />
+          <path d={histPath} fill={blueAlpha(0.4)} />
           <text x={M.left} y={histTop - 4} className="fill-white/40 text-[12px]">
             All BirdNET detections by confidence
           </text>
@@ -209,7 +209,7 @@ function CalibrationChart({ data }: { data: Calibration }) {
       )}
       {hover && (
         <div
-          className="pointer-events-none absolute z-10 w-56 rounded-lg border border-white/10 bg-ocean-950/95 p-3 text-xs shadow-xl"
+          className="pointer-events-none absolute z-10 w-56 rounded-lg border border-beagle-mint/10 bg-ocean-950/95 p-3 text-xs shadow-xl"
           style={{ left: Math.min(x(hover.confidence) + 12, width - 232), top: M.top + 20 }}
         >
           <p className="font-medium">BirdNET confidence {hover.confidence.toFixed(2)}</p>
@@ -217,14 +217,14 @@ function CalibrationChart({ data }: { data: Calibration }) {
             <p className="mt-1 text-amber">
               {pct(hover.p_correct, 0)} chance a detection is correct
               {hover.p_lower !== null && hover.p_upper !== null && (
-                <span className="text-white/45">
+                <span className="text-beagle-mint/45">
                   {" "}
                   ({pct(hover.p_lower, 0)}–{pct(hover.p_upper, 0)})
                 </span>
               )}
             </p>
           )}
-          <p className="mt-1 text-white/50">
+          <p className="mt-1 text-beagle-mint/50">
             {compact(hover.n_detections_above)} detections at or above · {int(hover.n_validated_above)} checked
           </p>
         </div>
@@ -243,7 +243,7 @@ function Explanation({ data }: { data: Calibration }) {
         : ` (95% range from ${data.threshold_lower.toFixed(2)} upwards)`
       : "";
   return (
-    <div className="space-y-3 text-sm text-white/65">
+    <div className="space-y-3 text-sm text-beagle-mint/65">
       <p>
         <span className="text-white">{int(data.curve[0]?.n_validated_above)} clips</span> scoring 0.10 or more were checked
         by experts and volunteers, spread evenly across BirdNET&rsquo;s confidence scores. Each dot is the share that were correct in a 0.05-wide score

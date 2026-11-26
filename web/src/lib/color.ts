@@ -4,6 +4,10 @@
  * --color-teal in globals.css; canvas, SVG and map styles cannot read CSS variables. */
 export const TEAL = "#59a8ac";
 export const tealAlpha = (a: number) => `rgba(89,168,172,${a})`;
+/** Other BEAGLE colours: green for positive states, blue for information. */
+export const GREEN = "#9dd15a";
+export const BLUE = "#2d99e2";
+export const blueAlpha = (a: number) => `rgba(45,153,226,${a})`;
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);

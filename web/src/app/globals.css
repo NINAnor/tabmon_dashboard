@@ -10,6 +10,12 @@
   --color-teal: #59a8ac;
   --color-teal-dim: #3d7c80;
   --color-amber: #f4b860;
+  /* BEAGLE brand colours */
+  --color-beagle-navy: #262262;
+  --color-beagle-blue: #2d99e2;
+  --color-beagle-green: #9dd15a;
+  --color-beagle-sky: #eaf4fd;
+  --color-beagle-mint: #daeae0;
   --color-coral: #ff7a6b;
   /* BEAGLE uses Arial; Liberation Sans has the same metrics where Arial is missing. */
   --font-sans: Arial, Helvetica, "Liberation Sans", ui-sans-serif, system-ui, sans-serif;
@@ -23,7 +29,7 @@
 
 html {
   background: var(--color-ocean-900);
-  color: #e6eef3;
+  color: var(--color-beagle-sky);
   color-scheme: dark;
 }
 
@@ -56,15 +62,15 @@ body {
 
 @layer components {
   .eyebrow {
-    @apply text-[12px] font-medium tracking-[0.18em] uppercase text-white/50;
+    @apply text-[12px] font-medium tracking-[0.18em] uppercase text-beagle-mint/50;
   }
 
   .card {
-    @apply rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm;
+    @apply rounded-2xl border border-beagle-mint/10 bg-white/[0.03] backdrop-blur-sm;
   }
 
   .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-xs text-white/80 transition-colors hover:border-white/40 hover:bg-white/5;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-beagle-mint/15 px-3 py-1 text-xs text-beagle-mint/80 transition-colors hover:border-beagle-mint/40 hover:bg-white/5;
   }
 
   .pill-active {
@@ -72,17 +78,17 @@ body {
   }
 
   .input {
-    @apply w-full rounded-xl border border-white/15 bg-ocean-950/60 px-3 py-2 text-sm text-white placeholder:text-white/35 outline-none focus:border-teal/70;
+    @apply w-full rounded-xl border border-beagle-mint/15 bg-ocean-950/60 px-3 py-2 text-sm text-white placeholder:text-beagle-mint/35 outline-none focus:border-teal/70;
   }
 
   .tooltip {
-    @apply pointer-events-none absolute z-30 rounded-lg border border-white/15 bg-ocean-950/95 px-3 py-2 text-xs text-white/85 shadow-xl;
+    @apply pointer-events-none absolute z-30 rounded-lg border border-beagle-mint/15 bg-ocean-950/95 px-3 py-2 text-xs text-beagle-mint/85 shadow-xl;
   }
 }
 
 .maplibregl-popup-content {
   background: var(--color-ocean-950) !important;
-  color: #e6eef3;
+  color: var(--color-beagle-sky);
   border: 1px solid rgb(255 255 255 / 0.15);
   border-radius: 0.75rem !important;
 }

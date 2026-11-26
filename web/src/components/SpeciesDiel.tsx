@@ -131,7 +131,7 @@ function AverageDay({ data, byCountry }: { data: SpeciesDiel; byCountry: boolean
               <span className="tabular-nums">{rate(v[hover])}</span>
             </div>
           ))}
-          <div className="mt-1 text-white/40">detections per recorded hour</div>
+          <div className="mt-1 text-beagle-mint/40">detections per recorded hour</div>
         </div>
       )}
     </div>
@@ -150,7 +150,7 @@ export function SpeciesDielPanel({ species, year }: { species: string; year: num
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="eyebrow">An average day</p>
-            <p className="mt-1 text-sm text-white/55">
+            <p className="mt-1 text-sm text-beagle-mint/55">
               Detections per recorded hour by time of day (local time). Shaded: night (23:00–04:00).
               {data?.night_share !== null && data?.night_share !== undefined && (
                 <> {pct(data.night_share, 0)} of activity is at night.</>
@@ -168,7 +168,7 @@ export function SpeciesDielPanel({ species, year }: { species: string; year: num
         </div>
         {data ? <AverageDay data={data} byCountry={view === "country"} /> : <div className="h-56 animate-pulse rounded-xl bg-white/5" />}
         {view === "country" && data && (
-          <div className="mt-2 flex flex-wrap gap-4 text-xs text-white/60">
+          <div className="mt-2 flex flex-wrap gap-4 text-xs text-beagle-mint/60">
             {Object.keys(data.countries).map((c) => (
               <span key={c} className="flex items-center gap-1.5">
                 <span className="h-0.5 w-4 rounded" style={{ background: COUNTRY_COLORS[c] }} /> {c}
@@ -180,7 +180,7 @@ export function SpeciesDielPanel({ species, year }: { species: string; year: num
       <div className="card flex flex-col items-center p-5">
         <div className="w-full">
           <p className="eyebrow">Through the year</p>
-          <p className="mt-1 text-sm text-white/55">
+          <p className="mt-1 text-sm text-beagle-mint/55">
             Hour of day around the dial, January (inside) to December (outside), all clusters.
           </p>
         </div>

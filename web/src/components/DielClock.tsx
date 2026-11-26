@@ -85,7 +85,7 @@ export function DielClock({
         <div className="tooltip left-2 top-2">
           {MONTHS[hover.m]} · {String(hover.h).padStart(2, "0")}:00–{String(hover.h + 1).padStart(2, "0")}:00
           <div className="text-teal">{hv === null ? "Too little recording" : `${rate(hv)} detections / hour`}</div>
-          {onPickMonth && <div className="text-white/40">Click to hear this month</div>}
+          {onPickMonth && <div className="text-beagle-mint/40">Click to hear this month</div>}
         </div>
       )}
     </div>
