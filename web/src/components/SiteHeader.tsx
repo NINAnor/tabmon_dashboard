@@ -34,7 +34,7 @@ export function SiteHeader({ variant = "public" }: { variant?: "public" | "ops" 
       <nav className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-2 md:h-16 md:flex-nowrap md:py-0">
         <div className="flex shrink-0 items-center gap-3">
           <Link href="/" className="flex items-center gap-3">
-            <img src="/tabmon_logo.png" alt="TABMON" className="h-[42px] w-auto" />
+            <img src="/tabmon_logo.png" alt="TABMON" className="h-[52px] w-auto" />
           </Link>
           <a
             href={BEAGLE_URL}
